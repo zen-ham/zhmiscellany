@@ -186,7 +186,7 @@ def batch_ocr(image_paths, threads=10, prints=False):
     output_dict = {}
     for each in _batch_ocr_cache_dict[thread_string]:
         output_dict[each] = _batch_ocr_cache_dict[thread_string][each]
-    _batch_ocr_cache_dict[thread_string].pop(thread_string)
+    _batch_ocr_cache_dict.pop(thread_string)
 
     return output_dict
 
