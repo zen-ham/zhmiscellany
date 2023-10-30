@@ -16,9 +16,10 @@ Introduction
 Can be installed with `pip install zhmiscellany`
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.\
-(ᴵ ᵐᵃᵈᵉ ᵃ ˢᵐᵃˡˡ ᵐᶦˢᵗᵃᵏᵉ, ᵖˡᵉᵃˢᵉ ᶦᵍⁿᵒʳᵉ ᵗʰᵃᵗ ᵗʰᵉ ʳᵉᵖᵒ ᶜˡᵃᶦᵐˢ ᵗᵒ ʰᵃᵛᵉ ᶠᵃʳ ᶠᵉʷᵉʳ ᶜᵒᵐᵐᶦᵗˢ ᵗʰᵃⁿ ᵗʰᵉ ᵛᵉʳˢᶦᵒⁿ ⁿᵘᵐᵇᵉʳ ᵒᶠ ᵗʰᵉ ᵖᵃᶜᵏᵃᵍᵉ ʷᵒᵘˡᵈ ᶦᵐᵖˡʸ, ˢᵒʳᵗ ᵒᶠ ᵐʸ ᶠᵃᵘˡᵗ ᵇᵘᵗ ᵃˡˢᵒ ᵗʰᵉ ʷᵃʸ ᵍᶦᵗ ᶜᵃᶜʰᵉˢ ᶜʰᵃⁿᵍᵉˢ ˡᵒᶜᵃˡˡʸ ᶦˢ ˢᶦˡˡʸ.)
+<sup><sup><sup>(I made a small mistake, please ignore that the repo claims to have far fewer commits than the version number of the package would imply, sort of my fault but also the way git caches changes locally is silly.)
 
 If you want to reach out, you may add my on discord at @z_h_ or join [my server](https://discord.gg/ThBBAuueVJ).
+
 
 ---
 
