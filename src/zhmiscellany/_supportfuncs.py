@@ -139,7 +139,8 @@ def print_str_if(string, print_it):
 
 
 def set_tesseract_path():
-    pytesseract.pytesseract.tesseract_cmd = f'{os.path.dirname(__file__)}\\tesseract\\tesseract.exe'
+    tesseract_path = pkg_resources.resource_filename(__name__, 'resources/tesseract')
+    pytesseract.pytesseract.tesseract_cmd = f'{tesseract_path}\\tesseract.exe'
 
 
 def ocr(image_path):
@@ -168,7 +169,7 @@ _batch_ocr_cache_dict = {}
 def batch_ocr(image_paths, threads=10, prints=False):
     set_tesseract_path()
     global _batch_ocr_use_console, _batch_ocr_cache_dict, thread_string
-    batch_ocr_use_console = prints
+    _batch_ocr_use_console = prints
     thread_string = zhmiscellany.string.get_universally_unique_string()
     _batch_ocr_cache_dict[thread_string] = {}
     l_image_paths = image_paths[:]
@@ -189,8 +190,3 @@ def batch_ocr(image_paths, threads=10, prints=False):
     _batch_ocr_cache_dict.pop(thread_string)
 
     return output_dict
-
-
-def print_tesseract_path():
-    tesseract_path = pkg_resources.resource_filename(__name__, 'resources/tesseract')
-    print("Tesseract path:", tesseract_path)
