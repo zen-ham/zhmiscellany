@@ -6,3 +6,4 @@ from . import math
 from . import ocr
 from . import image
 from . import list
+from . import dict

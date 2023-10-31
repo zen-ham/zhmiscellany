@@ -75,3 +75,10 @@ def convert_bytes(size):
         n += 1
 
     return f"{size:.2f}{units[n]}"
+
+
+def decide(options, text):
+    output = input(f'{text} ({"/".join(options)})')
+    while not output in options:
+        output = input(f'{text} ({"/".join(options)})')
+    return output
