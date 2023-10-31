@@ -168,7 +168,7 @@ _batch_ocr_cache_dict = {}
 
 def batch_ocr(image_paths, threads=10, prints=False):
     set_tesseract_path()
-    global _batch_ocr_use_console, _batch_ocr_cache_dict, thread_string
+    global _batch_ocr_use_console, _batch_ocr_cache_dict
     _batch_ocr_use_console = prints
     thread_string = zhmiscellany.string.get_universally_unique_string()
     _batch_ocr_cache_dict[thread_string] = {}
