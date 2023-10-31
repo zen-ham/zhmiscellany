@@ -65,10 +65,13 @@ def concatenate_strings_to_length(strings, limit):
     return output
 
 
-def remove_duplicate_lines(file_path):
-    with open(file_path, 'r') as f:
-        file_data = f.read()
-    file_data = file_data.split('\n')
-    file_data = list(dict.fromkeys(file_data))
-    file_data = '\n'.join(file_data)
-    return file_data
+def convert_bytes(size):
+    power = 2**10
+    n = 0
+    units = {0: 'Bytes', 1: 'KB', 2: 'MB', 3: 'GB', 4: 'TB'}
+
+    while size > power:
+        size /= power
+        n += 1
+
+    return f"{size:.2f}{units[n]}"

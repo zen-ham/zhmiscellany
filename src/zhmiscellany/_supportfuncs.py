@@ -143,7 +143,7 @@ def set_tesseract_path():
     pytesseract.pytesseract.tesseract_cmd = f'{tesseract_path}\\tesseract.exe'
 
 
-def ocr(image_path):
+def ocr(image_path, _batch_ocr_use_console):
     set_tesseract_path()
     try:
         if '.ico' in image_path:
@@ -159,25 +159,29 @@ def ocr(image_path):
         return ''
 
 
-def l_ocr(image_path, thread_string):
-    _batch_ocr_cache_dict[thread_string][image_path] = ocr(image_path)
+def l_ocr(image, thread_string, pos, _batch_ocr_use_console):
+    if type(image) == str:
+        _batch_ocr_cache_dict[thread_string][image] = ocr(image, _batch_ocr_use_console)
+    else:
+        _batch_ocr_cache_dict[thread_string][pos] = ocr(image, _batch_ocr_use_console)
 
 
 _batch_ocr_cache_dict = {}
 
 
-def batch_ocr(image_paths, threads=10, prints=False):
+def batch_ocr(images, threads=10, prints=False):
+    global _batch_ocr_cache_dict
     set_tesseract_path()
-    global _batch_ocr_use_console, _batch_ocr_cache_dict
     _batch_ocr_use_console = prints
     thread_string = zhmiscellany.string.get_universally_unique_string()
     _batch_ocr_cache_dict[thread_string] = {}
-    l_image_paths = image_paths[:]
-    while len(l_image_paths) > 0:
+    l_images = images[:]
+    while len(l_images) > 0:
         while count_threads_by_string(thread_string) < threads:
-            path = l_image_paths.pop()
-            threading.Thread(target=l_ocr, args=(path, thread_string), name=f'{thread_string}_{zhmiscellany.string.get_universally_unique_string()}').start()
-            if len(l_image_paths) < 1:
+            image = l_images.pop()
+            pos = len(l_images)
+            threading.Thread(target=l_ocr, args=(image, thread_string, pos, _batch_ocr_use_console), name=f'{thread_string}_{zhmiscellany.string.get_universally_unique_string()}').start()
+            if len(l_images) < 1:
                 break
         time.sleep(0.1)
 

@@ -159,7 +159,10 @@ Documentation:
 [zhmiscellany.fileio](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyfileio) Functions for interacting with local files, such as json and other file related functions I find useful.\
 [zhmiscellany.string](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanystring) Functions for interacting with/generating strings that I find useful.\
 [zhmiscellany.math](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanymath) Functions for making some calculations easier.\
-[zhmiscellany.netio](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanynetio) Internet related functions that didn't make sense in any other another module.
+[zhmiscellany.netio](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanynetio) Internet related functions that didn't make sense in any other module.\
+[zhmiscellany.netio](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyocr) Functions for local OCR, aka image to text or text recognition in images.\
+[zhmiscellany.netio](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyimage) Functions for quantifying and manipulating images.\
+[zhmiscellany.netio](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanylist) Functions for manipulating lists.\
 
 `zhmiscellany.discord`:
 ---
