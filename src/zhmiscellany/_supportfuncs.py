@@ -146,7 +146,7 @@ def set_tesseract_path():
         # we are running in normal Python environment
         base_path = os.path.dirname(__file__)
     cwd = os.getcwd()
-    if not os.path.exists(os.path.join(base_path, '/resources/')):
+    if not os.path.exists(os.path.join(base_path, 'resources')):
         os.chdir(base_path)
         from ._py_resources import gen
         gen()
