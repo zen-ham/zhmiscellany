@@ -16,3 +16,5 @@ def batch_threading(targets, threads):
         while count_threads_by_string(batch_string) >= threads:
             time.sleep(0.01)
         threading.Thread(target=target[0], args=target[1], name=f'{batch_string}_{zhmiscellany.string.get_universally_unique_string()}').start()
+    while count_threads_by_string(batch_string) > 0:
+        time.sleep(0.01)
