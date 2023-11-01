@@ -11,7 +11,7 @@ def read_json_file(file_path):
             data = json.load(file)
     else:
         with open(file_path, 'w') as f:
-            f.write('')
+            f.write('{}')
         data = {}
     return data
 
