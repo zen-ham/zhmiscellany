@@ -139,6 +139,7 @@ def print_str_if(string, print_it):
 
 
 def set_tesseract_path():
+    print('a')
     tesseract_path = pkg_resources.resource_filename(__name__, 'resources/tesseract')
     pytesseract.pytesseract.tesseract_cmd = f'{tesseract_path}\\tesseract.exe'
 
