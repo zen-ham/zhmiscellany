@@ -65,16 +65,23 @@ def concatenate_strings_to_length(strings, limit):
     return output
 
 
+def smart_round(number, decimals=0):
+    if str(round(number, decimals)).endswith('.0'):
+        return round(number)
+    else:
+        return round(number, decimals)
+
+
 def convert_bytes(size):
     power = 2**10
     n = 0
-    units = {0: 'Bytes', 1: 'KB', 2: 'MB', 3: 'GB', 4: 'TB'}
+    units = {0: 'Bytes', 1: 'KB', 2: 'MB', 3: 'GB', 4: 'TB', 5: 'PB', 6: 'EB', 7: 'ZB', 8: 'YB'}
 
     while size > power:
         size /= power
         n += 1
 
-    return f"{size:.2f}{units[n]}"
+    return f"{smart_round(size, 2)}{units[n]}"
 
 
 def decide(options, text):
