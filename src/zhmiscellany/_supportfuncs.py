@@ -139,12 +139,26 @@ def print_str_if(string, print_it):
 
 
 def set_tesseract_path():
-    print('a')
     tesseract_path = pkg_resources.resource_filename(__name__, 'resources/tesseract')
     pytesseract.pytesseract.tesseract_cmd = f'{tesseract_path}\\tesseract.exe'
 
 
-def ocr(image_path, _batch_ocr_use_console):
+def ocr(image_path):
+    try:
+        if '.ico' in image_path:
+            ico_file = Image.open(image_path)
+            png_file = ico_file.convert("RGBA")
+            text = pytesseract.image_to_string(png_file)
+        else:
+            text = pytesseract.image_to_string(Image.open(image_path))
+        #print_str_if(f'succeeded {image_path}', _batch_ocr_use_console)
+        return text
+    except Exception as e:
+        raise f'\nFailed to run OCR on file {image_path}\n\n{e}\n'
+        #return ''
+
+
+def s_ocr(image_path, _batch_ocr_use_console):
     try:
         if '.ico' in image_path:
             ico_file = Image.open(image_path)
@@ -161,9 +175,9 @@ def ocr(image_path, _batch_ocr_use_console):
 
 def l_ocr(image, thread_string, pos, _batch_ocr_use_console):
     if type(image) == str:
-        _batch_ocr_cache_dict[thread_string][image] = ocr(image, _batch_ocr_use_console)
+        _batch_ocr_cache_dict[thread_string][image] = s_ocr(image, _batch_ocr_use_console)
     else:
-        _batch_ocr_cache_dict[thread_string][pos] = ocr(image, _batch_ocr_use_console)
+        _batch_ocr_cache_dict[thread_string][pos] = s_ocr(image, _batch_ocr_use_console)
 
 
 _batch_ocr_cache_dict = {}
