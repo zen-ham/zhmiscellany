@@ -1,2 +1,2 @@
-from ._supportfuncs import batch_ocr
-from ._supportfuncs import ocr
+from ._ocr_supportfuncs import batch_ocr
+from ._ocr_supportfuncs import ocr

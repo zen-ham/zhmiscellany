@@ -1,6 +1,6 @@
 import requests
 import zhmiscellany.fileio
-from ._supportfuncs import scrape_guild
+from ._discord_supportfuncs import scrape_guild
 
 import base64
 import Crypto.Cipher.AES
