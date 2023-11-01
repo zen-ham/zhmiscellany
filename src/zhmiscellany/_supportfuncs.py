@@ -143,34 +143,39 @@ def set_tesseract_path():
     pytesseract.pytesseract.tesseract_cmd = f'{tesseract_path}\\tesseract.exe'
 
 
-def ocr(image_path):
-    try:
-        if '.ico' in image_path:
-            ico_file = Image.open(image_path)
-            png_file = ico_file.convert("RGBA")
-            text = pytesseract.image_to_string(png_file)
-        else:
-            text = pytesseract.image_to_string(Image.open(image_path))
-        #print_str_if(f'succeeded {image_path}', _batch_ocr_use_console)
-        return text
-    except Exception as e:
-        raise f'\nFailed to run OCR on file {image_path}\n\n{e}\n'
-        #return ''
+def ocr(image):
+    if type(image) == str:
+        try:
+            if '.ico' in image:
+                ico_file = Image.open(image)
+                png_file = ico_file.convert("RGBA")
+                text = pytesseract.image_to_string(png_file)
+            else:
+                text = pytesseract.image_to_string(Image.open(image))
+            #print_str_if(f'succeeded {image_path}', _batch_ocr_use_console)
+            return text
+        except Exception as e:
+            raise f'\nFailed to run OCR on file {image}\n\n{e}\n'
+    else:
+        return pytesseract.image_to_string(image)
 
 
-def s_ocr(image_path, _batch_ocr_use_console):
-    try:
-        if '.ico' in image_path:
-            ico_file = Image.open(image_path)
-            png_file = ico_file.convert("RGBA")
-            text = pytesseract.image_to_string(png_file)
-        else:
-            text = pytesseract.image_to_string(Image.open(image_path))
-        print_str_if(f'succeeded {image_path}', _batch_ocr_use_console)
-        return text
-    except Exception as e:
-        print_str_if(f'\nfailed {image_path}\n\n{e}\n', _batch_ocr_use_console)
-        return ''
+def s_ocr(image, _batch_ocr_use_console):
+    if type(image) == str:
+        try:
+            if '.ico' in image:
+                ico_file = Image.open(image)
+                png_file = ico_file.convert("RGBA")
+                text = pytesseract.image_to_string(png_file)
+            else:
+                text = pytesseract.image_to_string(Image.open(image))
+            print_str_if(f'succeeded {image}', _batch_ocr_use_console)
+            return text
+        except Exception as e:
+            print_str_if(f'\nfailed {image}\n\n{e}\n', _batch_ocr_use_console)
+            return ''
+    else:
+        return pytesseract.image_to_string(image)
 
 
 def l_ocr(image, thread_string, pos, _batch_ocr_use_console):
