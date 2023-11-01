@@ -7,3 +7,13 @@ def subtract_lists(lists):
     for i in lists:
         l_list.extend(i)
     return remove_duplicates(l_list)
+
+
+def remove_duplicates_by_element(tuple_list, element):
+    seen = {}
+    result = []
+    for tpl in tuple_list:
+        if tpl[element] not in seen:
+            seen[tpl[element]] = True
+            result.append(tpl)
+    return result
