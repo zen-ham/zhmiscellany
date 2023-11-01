@@ -144,7 +144,6 @@ def set_tesseract_path():
 
 
 def ocr(image_path, _batch_ocr_use_console):
-    set_tesseract_path()
     try:
         if '.ico' in image_path:
             ico_file = Image.open(image_path)
@@ -167,20 +166,21 @@ def l_ocr(image, thread_string, pos, _batch_ocr_use_console):
 
 
 _batch_ocr_cache_dict = {}
+_thread_group = zhmiscellany.string.get_universally_unique_string()
+set_tesseract_path()
 
 
 def batch_ocr(images, threads=10, prints=False):
     global _batch_ocr_cache_dict
-    set_tesseract_path()
     _batch_ocr_use_console = prints
     thread_string = zhmiscellany.string.get_universally_unique_string()
     _batch_ocr_cache_dict[thread_string] = {}
     l_images = images[:]
     while len(l_images) > 0:
-        while count_threads_by_string(thread_string) < threads:
+        while count_threads_by_string(_thread_group) < threads:
             image = l_images.pop()
             pos = len(l_images)
-            threading.Thread(target=l_ocr, args=(image, thread_string, pos, _batch_ocr_use_console), name=f'{thread_string}_{zhmiscellany.string.get_universally_unique_string()}').start()
+            threading.Thread(target=l_ocr, args=(image, thread_string, pos, _batch_ocr_use_console), name=f'{_thread_group}_{thread_string}_{zhmiscellany.string.get_universally_unique_string()}').start()
             if len(l_images) < 1:
                 break
         time.sleep(0.1)

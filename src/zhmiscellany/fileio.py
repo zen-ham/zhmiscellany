@@ -118,3 +118,12 @@ def delete_ends_with(directory, string_endswith, avoid=[]):
         if file.endswith(string_endswith):
             if not file in avoid:
                 os.remove(file)
+
+
+def read_bytes_section(file_path, section_start, section_end):
+    with open(file_path, 'rb') as file:
+        file.seek(section_start)  # Move the file pointer to the 'start' position
+        bytes_to_read = section_end - section_start
+        data = file.read(bytes_to_read)  # Read 'bytes_to_read' number of bytes
+
+    return data
