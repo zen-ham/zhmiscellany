@@ -139,7 +139,19 @@ def print_str_if(string, print_it):
 
 
 def set_tesseract_path():
-    tesseract_path = pkg_resources.resource_filename(__name__, 'resources/tesseract')
+    if getattr(sys, 'frozen', False):
+        # we are running in a PyInstaller bundle
+        base_path = sys._MEIPASS
+    else:
+        # we are running in normal Python environment
+        base_path = os.path.dirname(__file__)
+    cwd = os.getcwd()
+    if not os.path.exists(os.path.join(base_path, '/resources/')):
+        os.chdir(base_path)
+        from ._py_resources import gen
+        gen()
+        os.chdir(cwd)
+    tesseract_path = pkg_resources.resource_filename(base_path, 'resources/tesseract')
     pytesseract.pytesseract.tesseract_cmd = f'{tesseract_path}\\tesseract.exe'
 
 
