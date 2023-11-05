@@ -165,7 +165,11 @@ Documentation:
 [zhmiscellany.netio](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanynetio) Internet related functions that didn't make sense in any other module.\
 [zhmiscellany.ocr](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyocr) Functions for doing OCR on the local machine without API, aka image to text or text recognition in images.\
 [zhmiscellany.image](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyimage) Functions for quantifying and manipulating images.\
-[zhmiscellany.list](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanylist) Functions for manipulating lists.
+[zhmiscellany.list](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanylist) Functions for manipulating lists.\
+[zhmiscellany.dict](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanydict) Functions for working with dicts.\
+[zhmiscellany.processing](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyprocessing) Functions for processing data in threads in a more straight forward way.\
+[zhmiscellany.misc](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanymisc) Misc functions that didn't fit anywhere else.
+
 
 `zhmiscellany.discord`:
 ---
@@ -355,3 +359,360 @@ members = zhmiscellany.discord.scrape_guild(
 for member_id in members:
     print(member_id)
 ```
+
+#
+
+`zhmiscellany.dict`
+---
+
+`zhmiscellany.dict.print_dict()`
+---
+
+`zhmiscellany.dict.print_dict(ldict)`
+
+Prints out a dict in a readable way.
+
+#
+
+---
+`zhmiscellany.fileio`
+---
+
+`zhmiscellany.fileio.read_json_file()`
+---
+
+`zhmiscellany.fileio.read_json_file(file_path)`
+
+Reads json data from a json file and returns it as a dict.
+
+#
+
+`zhmiscellany.fileio.write_json_file()`
+---
+
+`zhmiscellany.fileio.write_json_file(file_path, data)`
+
+Writes a dict to a json file.
+
+#
+
+`zhmiscellany.fileio.create_folder()`
+---
+
+`zhmiscellany.fileio.create_folder(folder_name)`
+
+Creates a folder.
+
+#
+
+`zhmiscellany.fileio.remove_folder()`
+---
+
+`zhmiscellany.fileio.remove_folder(folder_name)`
+
+Removes a folder and all contents.
+
+#
+
+`zhmiscellany.fileio.base_name_no_ext()`
+---
+
+`zhmiscellany.fileio.base_name_no_ext(file_path)`
+
+Get the name of a file without the ext.
+
+#
+
+`zhmiscellany.fileio.convert_name_to_filename()`
+---
+
+`zhmiscellany.fileio.convert_name_to_filename(name)`
+
+Convert a URL like name to a file system like name.
+
+#
+
+`zhmiscellany.fileio.convert_filename_to_name()`
+---
+
+`zhmiscellany.fileio.convert_filename_to_name(filename)`
+
+Convert a file system like name back to a URL like name.
+
+#
+
+`zhmiscellany.fileio.recursive_copy_files()`
+---
+
+`zhmiscellany.fileio.recursive_copy_files(source_dir, destination_dir, prints=False)`
+
+Copy all the files from a source directory and into a destination directory.
+
+#
+
+`zhmiscellany.fileio.empty_directory()`
+---
+
+`zhmiscellany.fileio.empty_directory(directory_path)`
+
+Delete all the files in a directory but not the directory itself.
+
+#
+
+`zhmiscellany.fileio.abs_listdir()`
+---
+
+`zhmiscellany.fileio.abs_listdir(path)`
+
+List the files in a directory, returns absolute paths.
+
+#
+
+`zhmiscellany.fileio.delete_ends_with()`
+---
+
+`zhmiscellany.fileio.delete_ends_with(directory, string_endswith, avoid=[])`
+
+Delete all the files in a directory that end with a string, optional list of what files to avoid.
+
+#
+
+`zhmiscellany.fileio.read_bytes_section()`
+---
+
+`zhmiscellany.fileio.read_bytes_section(file_path, section_start, section_end)`
+
+Read a section of a file without reading the whole thing.
+
+#
+
+---
+`zhmiscellany.image`
+---
+
+`zhmiscellany.image.image_diff()`
+---
+
+`zhmiscellany.image.image_diff(img1, img2)`
+
+Quantify the difference between 2 images, returns a float, lower means less difference.
+
+#
+
+---
+`zhmiscellany.list`
+---
+
+`zhmiscellany.list.subtract_lists()`
+---
+
+`zhmiscellany.list.subtract_lists(main_list, *other_lists)`
+
+Subtract some lists from a main list.
+
+#
+
+`zhmiscellany.list.remove_duplicates_by_element()`
+---
+
+`zhmiscellany.list.remove_duplicates_by_element(tuple_list, element)`
+
+Removes duplicates from a 2d list, takes an element for what to judge a duplicate by in the sub lists.
+
+#
+
+---
+`zhmiscellany.math`
+---
+
+`zhmiscellany.math.calculate_eta()`
+---
+
+`zhmiscellany.math.calculate_eta(timestamps, total_timestamps)`
+
+Calculates the ETA of an event by a list of timestamps and an expected total amount of timestamps.
+
+#
+
+`zhmiscellany.math.smart_percentage()`
+---
+
+`zhmiscellany.math.smart_percentage(things, total_things)`
+
+Returns a percentage that is automatically rounded to an appropriate amount of decimal points.
+
+#
+
+`zhmiscellany.math.calculate_evenly_spaced_points()`
+---
+
+`zhmiscellany.math.calculate_evenly_spaced_points(duration, segments)`
+
+Calculates some evenly spaced numbers out of a larger number, for instance (5, 3) would be [0, 2.5, 5].
+
+#
+
+`zhmiscellany.math.clamp()`
+---
+
+`zhmiscellany.math.clamp(value, minimum, maximum)`
+
+Clamps a value between 2 other values, (5, 2, 4) would return 4.
+
+#
+
+---
+`zhmiscellany.misc`
+---
+
+`zhmiscellany.misc.die()`
+---
+
+`zhmiscellany.misc.die()`
+
+Kills the entire program, even if ran in a thread. Often useful.
+
+#
+
+`zhmiscellany.misc.set_activity_timeout()`
+---
+
+`zhmiscellany.misc.set_activity_timeout(timeout)`
+
+Sets the timeout for how long the program should wait without an activity before closing.
+
+#
+
+`zhmiscellany.misc.activity()`
+---
+
+`zhmiscellany.misc.activity()`
+
+Signifies an activity to the timeout.
+
+#
+
+---
+`zhmiscellany.netio`
+---
+
+`zhmiscellany.netio.download_file()`
+---
+
+`zhmiscellany.netio.download_file(url, file_path, ext)`
+
+Downloads a file from a url to a file path, with an ext.
+
+#
+
+`zhmiscellany.ocr.ocr()`
+---
+
+`zhmiscellany.ocr.ocr(image)`
+
+Takes an image path or a PIL image object and runs local image text recognition and returns the text in the image. Does not use the internet to function.
+
+#
+
+`zhmiscellany.ocr.batch_ocr()`
+---
+
+`zhmiscellany.ocr.batch_ocr(images, threads=10, prints=False)`
+
+Takes a list of image paths or PIL image objects and concurrently runs local image text recognition and returns the text in the image. Does not use the internet to function.
+
+#
+
+`zhmiscellany.processing.batch_threading()`
+---
+
+`zhmiscellany.processing.batch_threading(targets, threads)`
+
+Takes a list of functions and arguments, for instance [(print_numbers_up_to, 8), (print_numbers_up_to, 11)]
+
+#
+
+---
+`zhmiscellany.string`
+---
+
+`zhmiscellany.string.convert_to_base62()`
+---
+
+`zhmiscellany.string.convert_to_base62(number)`
+
+Converts an integer to a base 62 number, this means all lower and upper letters, and numbers are used.
+
+#
+
+`zhmiscellany.string.get_universally_unique_string()`
+---
+
+`zhmiscellany.string.get_universally_unique_string()`
+
+Returns a universally unique string.
+
+#
+
+`zhmiscellany.string.multi_replace()`
+---
+
+`zhmiscellany.string.multi_replace(string, replaces)`
+
+Takes a string and a list of tuples, like (string, [(string1, string2)]) and in this instance replaces string1 in string with string2.
+
+#
+
+`zhmiscellany.string.timestamp_to_time()`
+---
+
+`zhmiscellany.string.timestamp_to_time(unix_timestamp)`
+
+Takes a unix timestamp and returns the actual time as a string.
+
+#
+
+`zhmiscellany.string.truncate_string()`
+---
+
+`zhmiscellany.string.truncate_string(input_string, max_length)`
+
+Truncates a string to a certain length.
+
+#
+
+`zhmiscellany.string.concatenate_strings_to_length()`
+---
+
+`zhmiscellany.string.concatenate_strings_to_length(strings, limit)`
+
+Takes a list of strings and adds them together until adding any more would exceed the limit, then returns the resulting string.
+
+#
+
+`zhmiscellany.string.smart_round()`
+---
+
+`zhmiscellany.string.smart_round(number, decimals=0)`
+
+Same as builtin "round" but removes any hanging .0 if it occurs.
+
+#
+
+`zhmiscellany.string.convert_bytes()`
+---
+
+`zhmiscellany.string.convert_bytes(size)`
+
+Converts an int of bytes to a string like '8.3MB'.
+
+#
+
+`zhmiscellany.string.decide()`
+---
+
+`zhmiscellany.string.decide(options, text)`
+
+Takes a list of options and a description text and makes the user decide between the options.
+
+#
