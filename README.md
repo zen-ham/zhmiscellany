@@ -5,7 +5,7 @@ a collection of miscellany functions/classes/modules made by me (zh).
 ---
 
 [Introduction](https://github.com/zen-ham/zhmiscellany/tree/master#Introduction) \
-[Usage examples](https://github.com/zen-ham/zhmiscellany/tree/master#Usageexamples) \
+[Usage examples](https://github.com/zen-ham/zhmiscellany/tree/master#Usage-examples) \
 [Documentation](https://github.com/zen-ham/zhmiscellany/tree/master#Documentation)
 
 ---
