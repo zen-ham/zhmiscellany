@@ -605,6 +605,9 @@ Downloads a file from a url to a file path, with an ext.
 
 #
 
+---
+`zhmiscellany.ocr`
+---
 `zhmiscellany.ocr.ocr()`
 ---
 
