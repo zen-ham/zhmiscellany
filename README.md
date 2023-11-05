@@ -623,6 +623,9 @@ Takes a list of image paths or PIL image objects and concurrently runs local ima
 
 #
 
+---
+`zhmiscellany.processing`
+---
 `zhmiscellany.processing.batch_threading()`
 ---
 
