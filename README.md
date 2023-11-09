@@ -22,7 +22,6 @@ If you want to reach out, you may add my on discord at @z_h_ or join [my server]
 ---
 <sup><sup><sup>Some small issues to take note of:\
 I made a small mistake, please ignore that the repo claims to have far fewer commits than the version number of the package would imply, sort of my fault but also the way git caches changes locally is silly.\
-docs are very incomplete as of right now, and currently only include discord related things, I will try to add every function to the docs eventually, but there is a lot.
 
 ---
 
