@@ -162,7 +162,6 @@ Documentation:
 [zhmiscellany.string](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanystring) Functions for interacting with/generating strings that I find useful.\
 [zhmiscellany.math](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanymath) Functions for making some calculations easier.\
 [zhmiscellany.netio](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanynetio) Internet related functions that didn't make sense in any other module.\
-[zhmiscellany.ocr](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyocr) Functions for doing OCR on the local machine without API, aka image to text or text recognition in images.\
 [zhmiscellany.image](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyimage) Functions for quantifying and manipulating images.\
 [zhmiscellany.list](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanylist) Functions for manipulating lists.\
 [zhmiscellany.dict](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanydict) Functions for working with dicts.\
@@ -601,27 +600,6 @@ Signifies an activity to the timeout.
 `zhmiscellany.netio.download_file(url, file_path, ext)`
 
 Downloads a file from a url to a file path, with an ext.
-
-#
-
----
-`zhmiscellany.ocr`
----
-`zhmiscellany.ocr.ocr()`
----
-
-`zhmiscellany.ocr.ocr(image)`
-
-Takes an image path or a PIL image object and runs local image text recognition and returns the text in the image. Does not use the internet to function.
-
-#
-
-`zhmiscellany.ocr.batch_ocr()`
----
-
-`zhmiscellany.ocr.batch_ocr(images, threads=10, prints=False)`
-
-Takes a list of image paths or PIL image objects and concurrently runs local image text recognition and returns the text in the image. Does not use the internet to function.
 
 #
 
