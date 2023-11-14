@@ -11,3 +11,9 @@ def show_progress(things, total_things):
     print(f'\r{zhmiscellany.math.smart_percentage(things, total_things)}%', end='')
     if things == total_things:
         print('')
+
+
+def every_nth(number, n):
+    if number % n == 0:
+        return True
+    return False
