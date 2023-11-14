@@ -89,3 +89,14 @@ def decide(options, text):
     while not output in options:
         output = input(f'{text} ({"/".join(options)})')
     return output
+
+
+def multi_split(string, splits):
+    string = [string]
+    for i in splits:
+        temp = []
+        for stri in string:
+            temp.extend(stri.split(i))
+        string = temp
+
+    return string

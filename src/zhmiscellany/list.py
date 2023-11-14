@@ -18,3 +18,14 @@ def remove_duplicates_by_element(tuple_list, element):
             seen[tpl[element]] = True
             result.append(tpl)
     return result
+
+
+def multi_split(string_list, splits):
+    string = string_list
+    for i in splits:
+        temp = []
+        for stri in string:
+            temp.extend(stri.split(i))
+        string = temp
+
+    return string
