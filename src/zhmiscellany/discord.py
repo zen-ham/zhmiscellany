@@ -249,3 +249,24 @@ def message_url_to_ids(message_url):
 
     # Invalid URL format
     return [None, None, None]
+
+
+def get_guilds(user_token, use_cache=True):
+    if use_cache:
+        potential_path = os.path.join('zhmiscellany_cache', f'user_guilds.json')
+        if os.path.exists(potential_path):
+            return zhmiscellany.fileio.read_json_file(potential_path)
+    headers = {
+        'Authorization': f'{user_token}'
+    }
+
+    response = requests.get('https://discord.com/api/v9/users/@me/guilds', headers=headers)
+
+    if response.status_code == 200:
+        guilds = response.json()
+        if use_cache:
+            zhmiscellany.fileio.create_folder('zhmiscellany_cache')
+            zhmiscellany.fileio.write_json_file(potential_path, guilds)
+        return guilds
+    else:
+        raise f"Failed to retrieve guilds. Status code: {response.status_code}"
