@@ -72,7 +72,8 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
             if use_cache:
                 zhmiscellany.fileio.create_folder('zhmiscellany_cache')
                 zhmiscellany.fileio.write_json_file(potential_path, messages)
-            print('')
+            if show_progress:
+                print('')
             return messages
 
         messages.extend(response.json())
@@ -80,11 +81,21 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
         if show_progress:
             print(f'\rFound {len(messages):,} messages', end='')
 
-        last_message_id = messages[-1:][0]['id']
+        try:
+            last_message_id = messages[-1:][0]['id']
+        except TypeError:
+            if show_progress:
+                print('no access to channel')
+            if use_cache:
+                zhmiscellany.fileio.create_folder('zhmiscellany_cache')
+                zhmiscellany.fileio.write_json_file(potential_path, {'no access to channel': True})
+            return {'no access to channel': True}
+
 
         if limit != 0:
             if len(messages) >= limit:
-                print('')
+                if show_progress:
+                    print('')
                 return messages[:limit]
 
 
