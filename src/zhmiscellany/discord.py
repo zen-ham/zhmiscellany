@@ -34,7 +34,7 @@ def add_reactions_to_message(user_token, emojis, channel_id, message_id):
                 output = False
 
 
-def get_channel_messages(user_token, channel_id, limit=0, use_cache=True):
+def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_progress=False):
     '''
     Function to get all client messages in a specific channel. Script by @z_h_ on discord.
     '''
@@ -72,16 +72,19 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True):
             if use_cache:
                 zhmiscellany.fileio.create_folder('zhmiscellany_cache')
                 zhmiscellany.fileio.write_json_file(potential_path, messages)
+            print('')
             return messages
 
         messages.extend(response.json())
 
-        #print(f'Found {len(response.json())} messages')
+        if show_progress:
+            print(f'\rFound {len(messages)} messages', end='')
 
         last_message_id = messages[-1:][0]['id']
 
         if limit != 0:
             if len(messages) >= limit:
+                print('')
                 return messages[:limit]
 
 
