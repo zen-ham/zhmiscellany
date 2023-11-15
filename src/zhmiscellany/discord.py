@@ -60,7 +60,11 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True):
     while True:
         if last_message_id:
             #print(f'Requesting new block before {last_message_id}')
-            response = requests.get(base_url, headers=headers, params={'limit': 100, 'before': last_message_id})
+            try:
+                response = requests.get(base_url, headers=headers, params={'limit': 100, 'before': last_message_id})
+            except:
+                # try again :(
+                    response = requests.get(base_url, headers=headers, params={'limit': 100, 'before': last_message_id})
         else:
             response = requests.get(base_url, headers=headers, params={'limit': 100})
 
