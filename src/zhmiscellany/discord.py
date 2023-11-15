@@ -78,7 +78,7 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
         messages.extend(response.json())
 
         if show_progress:
-            print(f'\rFound {len(messages)} messages', end='')
+            print(f'\rFound {len(messages):,} messages', end='')
 
         last_message_id = messages[-1:][0]['id']
 
