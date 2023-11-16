@@ -17,3 +17,11 @@ def every_nth(number, n):
     if number % n == 0:
         return True
     return False
+
+
+def smart_every_nth(number, n, total):
+    if number % n == 0:
+        return True
+    if number == total:
+        return True
+    return False
