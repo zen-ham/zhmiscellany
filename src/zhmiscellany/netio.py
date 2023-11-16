@@ -9,6 +9,8 @@ def download_file(url, destination_folder="."):
         # Get the file name from the URL
         file_name = urllib.parse.unquote(url.split("/")[-1])
         destination_path = f"{destination_folder}/{file_name}"
+        if len(destination_path) > 250:
+            destination_path = f'{destination_path[:(250-len(os.path.splitext(destination_path)[1]))]}{os.path.splitext(destination_path)[1]}'
 
         if os.path.exists(destination_path):
             return False
