@@ -1,6 +1,8 @@
 import os, signal
+import time
 from ._misc_supportfuncs import set_activity_timeout, activity
 import zhmiscellany.math
+import zhmiscellany.string
 
 
 def die():

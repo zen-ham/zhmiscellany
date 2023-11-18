@@ -1,5 +1,3 @@
-import time
-import zhmiscellany.string
 
 
 def smart_percentage(things, total_things):
