@@ -289,4 +289,4 @@ def get_guilds(user_token, use_cache=True):
             zhmiscellany.fileio.write_json_file(potential_path, guilds)
         return guilds
     else:
-        raise f"Failed to retrieve guilds. Status code: {response.status_code}"
+        raise Exception(f"Failed to retrieve guilds. Status code: {response.status_code}")

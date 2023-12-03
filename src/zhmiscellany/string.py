@@ -84,13 +84,6 @@ def convert_bytes(size):
     return f"{smart_round(size, 2)}{units[n]}"
 
 
-def decide(options, text):
-    output = input(f'{text} ({"/".join(options)})')
-    while not output in options:
-        output = input(f'{text} ({"/".join(options)})')
-    return output
-
-
 def multi_split(string, splits):
     string = [string]
     for i in splits:

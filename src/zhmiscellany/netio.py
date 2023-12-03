@@ -28,4 +28,4 @@ def download_file(url, destination_folder="."):
         return True
 
     else:
-        raise f"Failed to download the file. Status code: {response.status_code}"
+        raise Exception(f"Failed to download the file. Status code: {response.status_code}")

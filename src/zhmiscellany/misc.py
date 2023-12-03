@@ -49,3 +49,10 @@ def calculate_eta(timestamps, total_timestamps):
     estimated_arrival_time = current_time + estimated_remaining_time
 
     return zhmiscellany.string.timestamp_to_time(estimated_arrival_time)
+
+
+def decide(options, text):
+    output = input(f'{text} ({"/".join(options)})')
+    while not output in options:
+        output = input(f'{text} ({"/".join(options)})')
+    return output
