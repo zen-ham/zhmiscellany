@@ -88,7 +88,7 @@ def get_members(guild_id, channel_id, extra_scrape=True, wait=1):  # combination
     return _bot.gateway.session.guild(guild_id).members
 
 
-def scrape_guild_internal(guild_id, channel_id, user_token, console=False):
+def scrape_guild_internal(guild_id, channel_id, user_token, console=False, extra_scrape=True):
     global _bot, _allchars, _Queries, _scrape_guild_use_console
     _scrape_guild_use_console = console
     _bot = discum.Client(token=user_token, log=False)
@@ -102,23 +102,23 @@ def scrape_guild_internal(guild_id, channel_id, user_token, console=False):
     class _Queries:
         qList = ["!"]  # query list
 
-    members = get_members(guild_id, channel_id, extra_scrape=True, wait=1)
+    members = get_members(guild_id, channel_id, extra_scrape=extra_scrape, wait=1)
     return members  # returns a dict where the keys are user id strings
 
 
-def scrape_guild(guild_id, channel_id, user_token, use_cache=True, console=False):
+def scrape_guild(guild_id, channel_id, user_token, use_cache=True, console=False, extra_scrape=True):
     if use_cache:
         cache_folder = 'zhmiscellany_cache'
         potential_path = os.path.join(cache_folder, f'{guild_id}_members.json')
         if os.path.exists(potential_path):
             return zhmiscellany.fileio.read_json_file(potential_path)
 
-        data = scrape_guild_internal(guild_id, channel_id, user_token, console)
+        data = scrape_guild_internal(guild_id, channel_id, user_token, console, extra_scrape)
         zhmiscellany.fileio.create_folder(cache_folder)
         zhmiscellany.fileio.write_json_file(potential_path, data)
         return data
 
-    return scrape_guild_internal(guild_id, channel_id, user_token, console)
+    return scrape_guild_internal(guild_id, channel_id, user_token, console, extra_scrape)
 
 
 def print_str_if(string, print_it):
