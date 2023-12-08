@@ -229,11 +229,13 @@ def get_guild_channels(user_token, guild_id, use_cache=True):
 
 
 def send_message(user_token, text, channel_id):
-    requests.post(f"https://discord.com/api/v9/channels/{channel_id}/messages", headers={
+    res = requests.post(f"https://discord.com/api/v9/channels/{channel_id}/messages", headers={
         "Authorization": f"{user_token}"
     }, data={
         "content": text
     })
+    if res.status_code != 200:
+        raise Exception(f'Failed to send message:\n{res.status_code}\n{res.content}')
 
 
 def get_message(user_token, channel_id, message_id):
