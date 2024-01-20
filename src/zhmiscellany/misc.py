@@ -1,5 +1,4 @@
-import os, signal
-import time
+import os, signal, time, importlib
 from ._misc_supportfuncs import set_activity_timeout, activity
 import zhmiscellany.math
 import zhmiscellany.string
@@ -56,3 +55,12 @@ def decide(options, text):
     while not output in options:
         output = input(f'{text} ({"/".join(options)})')
     return output
+
+
+def import_module_from_path(path, module_name=None):
+    if not module_name:
+        module_name = zhmiscellany.string.get_universally_unique_string()
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
