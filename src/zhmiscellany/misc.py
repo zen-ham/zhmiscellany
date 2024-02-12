@@ -8,8 +8,16 @@ def die():
     os.kill(os.getpid(), signal.SIGTERM)
 
 
-def show_progress(things, total_things, extra_data=''):
-    print(f'\r{zhmiscellany.math.smart_percentage(things, total_things)}% {extra_data}', end='')
+def show_progress(things, total_things, extra_data='', smart_ratelimit=False, max_prints=1000):
+    do_print = True
+
+    if smart_ratelimit:
+        if total_things > max_prints:
+            if not smart_every_nth(things, round(total_things/max_prints), total_things):
+                do_print = False
+
+    if do_print:
+        print(f'\r{zhmiscellany.math.smart_percentage(things, total_things)}% {extra_data}', end='')
     if things == total_things:
         print('')
 
