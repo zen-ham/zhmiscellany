@@ -25,7 +25,7 @@ def download_file(url, destination_folder="."):
             for chunk in response.iter_content(chunk_size=128):
                 file.write(chunk)
 
-        return True
+        return destination_path
 
     else:
         raise Exception(f"Failed to download the file. Status code: {response.status_code}")
