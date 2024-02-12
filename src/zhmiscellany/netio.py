@@ -11,8 +11,11 @@ def resolve_file(url, destination_folder="."):
     return destination_path
 
 
-def download_file(url, destination_folder=".", just_return_path=False):
-    response = requests.get(url, stream=True)
+def download_file(url, destination_folder=".", just_return_path=False, headers=None):
+    if headers:
+        response = requests.get(url, stream=True, headers=headers)
+    else:
+        response = requests.get(url, stream=True)
     if response.status_code == 200:
         # Get the file name from the URL
         destination_path = resolve_file(url, destination_folder)
