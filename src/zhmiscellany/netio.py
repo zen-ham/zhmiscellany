@@ -5,6 +5,7 @@ import urllib.parse
 
 def resolve_file(url, destination_folder="."):
     file_name = urllib.parse.unquote(url.split("/")[-1])
+    file_name = file_name.split('?')[0]
     destination_path = f"{destination_folder}/{file_name}"
     if len(destination_path) > 250:
         destination_path = f'{destination_path[:(250 - len(os.path.splitext(destination_path)[1]))]}{os.path.splitext(destination_path)[1]}'
