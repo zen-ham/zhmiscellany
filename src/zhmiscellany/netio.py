@@ -13,18 +13,16 @@ def resolve_file(url, destination_folder="."):
 
 
 def download_file(url, destination_folder=".", just_return_path=False, headers=None):
+    destination_path = resolve_file(url, destination_folder)
+    if os.path.exists(destination_path):
+        if just_return_path:
+            return destination_path
+        return False
     if headers:
         response = requests.get(url, stream=True, headers=headers)
     else:
         response = requests.get(url, stream=True)
     if response.status_code == 200:
-        # Get the file name from the URL
-        destination_path = resolve_file(url, destination_folder)
-
-        if os.path.exists(destination_path):
-            if just_return_path:
-                return destination_path
-            return False
 
         # Save the file
         with open(destination_path, 'wb') as file:
