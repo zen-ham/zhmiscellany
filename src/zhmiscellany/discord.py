@@ -53,7 +53,7 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
     base_url = 'https://discord.com/api/v9/channels/{}/messages'.format(channel_id)
 
     headers = zhmiscellany.netio.generate_headers(base_url)
-    headers = ['Authorization'] = user_token
+    headers['Authorization'] = user_token
 
     last_message_id = ''
 
