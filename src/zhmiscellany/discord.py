@@ -220,9 +220,19 @@ def get_guild_channels(user_token, guild_id, use_cache=True):
         raise Exception(f"Failed to retrieve channels. Status code: {response.status_code}")
 
 
-def send_message(user_token, text, channel_id):
+def send_message(user_token, text, channel_id, attachments=None):
     url = f"https://discord.com/api/v9/channels/{channel_id}/messages"
-    response = requests.get(url, headers={**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token}, data={"content": text})
+
+    headers = {**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token}
+
+    data = {"content": text}
+
+    if attachments:
+        files = {f'file{i}': open(file_path, 'rb') for i, file_path in enumerate(attachments)}
+        response = requests.post(url, headers=headers, data=data, files=files)
+    else:
+        response = requests.post(url, headers=headers, data=data)
+
     if response.status_code != 200:
         raise Exception(f'Failed to send message:\n{response.status_code}\n{response.content}')
 
