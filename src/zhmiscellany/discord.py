@@ -217,8 +217,7 @@ def get_guild_channels(user_token, guild_id, use_cache=True):
             zhmiscellany.fileio.write_json_file(potential_path, channels_data)
         return channels_data
     else:
-        print(f"Failed to retrieve channels. Status code: {response.status_code}")
-        return None
+        raise Exception(f"Failed to retrieve channels. Status code: {response.status_code}")
 
 
 def send_message(user_token, text, channel_id):
