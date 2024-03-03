@@ -1,5 +1,6 @@
 import requests
 import zhmiscellany.fileio
+import zhmiscellany.netio
 from ._discord_supportfuncs import scrape_guild
 
 import base64
@@ -11,13 +12,10 @@ import win32crypt
 
 
 def add_reactions_to_message(user_token, emojis, channel_id, message_id):
-    headers = {
-        'Authorization': f'{user_token}',
-    }
 
-    # Extract the channel ID and message ID from the message URL
     for emoji in emojis:
         url = f'https://discord.com/api/v9/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me'
+        headers = zhmiscellany.netio.generate_headers(url)
 
         added = False
         while not added:
@@ -54,9 +52,8 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
     # Define the base URL for the Discord API
     base_url = 'https://discord.com/api/v9/channels/{}/messages'.format(channel_id)
 
-    headers = {
-        'Authorization': user_token
-    }
+    headers = zhmiscellany.netio.generate_headers(base_url)
+    headers = ['Authorization'] = user_token
 
     last_message_id = ''
 
@@ -182,14 +179,14 @@ def get_local_discord_user():
                 for value in checker:
                     if value not in already_check:
                         already_check.append(value)
-                        headers = {'Authorization': tok, 'Content-Type': 'application/json'}
                         try:
-                            res = requests.get('https://discordapp.com/api/v6/users/@me', headers=headers)
+                            url = 'https://discordapp.com/api/v6/users/@me'
+                            response = requests.get(url, headers={**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token})
                         except:
                             continue
-                        if res.status_code == 200:
+                        if response.status_code == 200:
                             # if True:
-                            res_json = res.json()
+                            res_json = response.json()
                             user_name = f'{res_json["username"]}#{res_json["discriminator"]}'
                             user_id = res_json['id']
                             email = res_json['email']
@@ -211,11 +208,8 @@ def get_guild_channels(user_token, guild_id, use_cache=True):
         if os.path.exists(potential_path):
             return zhmiscellany.fileio.read_json_file(potential_path)
     url = f"https://discord.com/api/v9/guilds/{guild_id}/channels"
-    headers = {
-        "Authorization": f"{user_token}",
-    }
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers={**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token})
 
     if response.status_code == 200:
         channels_data = response.json()
@@ -229,18 +223,15 @@ def get_guild_channels(user_token, guild_id, use_cache=True):
 
 
 def send_message(user_token, text, channel_id):
-    res = requests.post(f"https://discord.com/api/v9/channels/{channel_id}/messages", headers={
-        "Authorization": f"{user_token}"
-    }, data={
-        "content": text
-    })
-    if res.status_code != 200:
-        raise Exception(f'Failed to send message:\n{res.status_code}\n{res.content}')
+    url = f"https://discord.com/api/v9/channels/{channel_id}/messages"
+    response = requests.get(url, headers={**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token}, data={"content": text})
+    if response.status_code != 200:
+        raise Exception(f'Failed to send message:\n{response.status_code}\n{response.content}')
 
 
 def get_message(user_token, channel_id, message_id):
     message_url = f'https://discord.com/api/v9/channels/{channel_id}/messages?limit=1&around={message_id}'
-    message = requests.get(message_url, headers={'Authorization': user_token})
+    message = requests.get(message_url, headers={**zhmiscellany.netio.generate_headers(message_url), 'Authorization': user_token})
     message = message.json()
     return message[0]
 
@@ -278,11 +269,8 @@ def get_guilds(user_token, use_cache=True):
         potential_path = os.path.join('zhmiscellany_cache', f'user_guilds.json')
         if os.path.exists(potential_path):
             return zhmiscellany.fileio.read_json_file(potential_path)
-    headers = {
-        'Authorization': f'{user_token}'
-    }
-
-    response = requests.get('https://discord.com/api/v9/users/@me/guilds', headers=headers)
+    url = 'https://discord.com/api/v9/users/@me/guilds'
+    response = requests.get(url, headers={**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token})
 
     if response.status_code == 200:
         guilds = response.json()

@@ -1,6 +1,7 @@
 import os, requests
 import zhmiscellany.string
 import urllib.parse
+from random_header_generator import HeaderGenerator
 
 
 def resolve_file(url, destination_folder="."):
@@ -33,3 +34,17 @@ def download_file(url, destination_folder=".", just_return_path=False, headers=N
 
     else:
         raise Exception(f"Failed to download the file. Status code: {response.status_code}")
+
+
+def generate_headers(url):
+    generator = HeaderGenerator()
+    headers = {
+    }
+
+    for k, v in generator().items():
+        headers[k] = v
+
+    headers['Referer'] = url
+    headers['Host'] = urllib.parse.urlparse(url).netloc
+
+    return headers
