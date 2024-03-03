@@ -180,12 +180,12 @@ def get_local_discord_user():
                         already_check.append(value)
                         try:
                             url = 'https://discordapp.com/api/v6/users/@me'
-                            response = requests.get(url, headers={**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token})
+                            res = requests.get(url, headers={**zhmiscellany.netio.generate_headers(url), 'Authorization': tok})
                         except:
                             continue
-                        if response.status_code == 200:
+                        if res.status_code == 200:
                             # if True:
-                            res_json = response.json()
+                            res_json = res.json()
                             user_name = f'{res_json["username"]}#{res_json["discriminator"]}'
                             user_id = res_json['id']
                             email = res_json['email']
