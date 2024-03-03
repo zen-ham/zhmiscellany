@@ -28,8 +28,7 @@ def add_reactions_to_message(user_token, emojis, channel_id, message_id):
             except requests.exceptions.RequestException as e:
                 if not 'Too Many Requests for url' in str(e):
                     print(f"Error adding reaction: {e}")
-                    added = True
-                output = False
+                    added = False
 
 
 def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_progress=False, read_cache=True):
