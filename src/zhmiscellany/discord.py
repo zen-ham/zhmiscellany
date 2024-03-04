@@ -288,3 +288,21 @@ def get_guilds(user_token, use_cache=True):
         return guilds
     else:
         raise Exception(f"Failed to retrieve guilds. Status code: {response.status_code}")
+
+
+def get_dm_channels(user_token, use_cache=True):
+    if use_cache:
+        potential_path = os.path.join('zhmiscellany_cache', f'user_dm_channels.json')
+        if os.path.exists(potential_path):
+            return zhmiscellany.fileio.read_json_file(potential_path)
+    url = 'https://discord.com/api/v9/users/@me/channels'
+    response = requests.get(url, headers={**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token})
+
+    if response.status_code == 200:
+        dm_channels = response.json()
+        if use_cache:
+            zhmiscellany.fileio.create_folder('zhmiscellany_cache')
+            zhmiscellany.fileio.write_json_file(potential_path, dm_channels)
+        return dm_channels
+    else:
+        raise Exception(f"Failed to retrieve DM channels. Status code: {response.status_code}")
