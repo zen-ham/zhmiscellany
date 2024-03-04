@@ -272,9 +272,23 @@ def message_url_to_ids(message_url):
     return [None, None, None]
 
 
+def decode_user_id(user_token):
+    # Extracting the payload from the token
+    payload_base64 = user_token.split('.')[0]
+
+    # Padding the base64 string if needed
+    padded_base64 = payload_base64 + '=' * (4 - len(payload_base64) % 4)
+
+    # Decoding the base64 and converting to a JSON object
+    payload_json = base64.b64decode(padded_base64).decode('utf-8')
+    user_id = json.loads(payload_json)
+
+    return user_id
+
+
 def get_guilds(user_token, use_cache=True):
     if use_cache:
-        potential_path = os.path.join('zhmiscellany_cache', f'user_guilds.json')
+        potential_path = os.path.join('zhmiscellany_cache', f'{decode_user_id(user_token)}_guilds.json')
         if os.path.exists(potential_path):
             return zhmiscellany.fileio.read_json_file(potential_path)
     url = 'https://discord.com/api/v9/users/@me/guilds'
@@ -292,7 +306,7 @@ def get_guilds(user_token, use_cache=True):
 
 def get_dm_channels(user_token, use_cache=True):
     if use_cache:
-        potential_path = os.path.join('zhmiscellany_cache', f'user_dm_channels.json')
+        potential_path = os.path.join('zhmiscellany_cache', f'{decode_user_id(user_token)}_dm_channels.json')
         if os.path.exists(potential_path):
             return zhmiscellany.fileio.read_json_file(potential_path)
     url = 'https://discord.com/api/v9/users/@me/channels'
