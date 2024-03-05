@@ -319,3 +319,47 @@ def get_dm_channels(user_token, use_cache=True):
         return dm_channels
     else:
         raise Exception(f'Failed to retrieve DM channels:\n{response.status_code}\n{response.content}')
+
+
+def get_invite_info(user_token, invite_code, use_cache=True):
+    if use_cache:
+        potential_path = os.path.join('zhmiscellany_cache', f'{invite_code}_invite.json')
+        if os.path.exists(potential_path):
+            return zhmiscellany.fileio.read_json_file(potential_path)
+    url = f"https://discord.com/api/v9/invites/{invite_code}?with_counts=true"
+    response = requests.get(url, headers={**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token})
+
+    if response.status_code == 200:
+        info = response.json()
+        if use_cache:
+            zhmiscellany.fileio.create_folder('zhmiscellany_cache')
+            zhmiscellany.fileio.write_json_file(potential_path, info)
+        return info
+    else:
+        raise Exception(f'Failed to retrieve invite info:\n{response.status_code}\n{response.content}')
+
+
+def generate_server_invite(user_token, channel_id):
+    url = f"https://discord.com/api/v9/channels/{channel_id}/invites"
+    response = requests.get(url, headers={**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token})
+
+    if response.status_code == 200:
+        guild_info = response.json()
+        return guild_info
+    else:
+        raise Exception(f'Failed to generate invite:\n{response.status_code}\n{response.content}')
+
+
+def get_guild_member_count(user_token, channel_id, use_cache=True):
+    if use_cache:
+        potential_path = os.path.join('zhmiscellany_cache', f'{channel_id}_member_count.json')
+        if os.path.exists(potential_path):
+            return zhmiscellany.fileio.read_json_file(potential_path)
+    invite = generate_server_invite(user_token, channel_id)
+    invite_code = invite['code']
+    invite_info = get_invite_info(user_token, invite_code)
+    member_counts = {'approximate_member_count': invite_info['approximate_member_count'], 'approximate_online_count': invite_info['approximate_presence_count']}
+    if use_cache:
+        zhmiscellany.fileio.create_folder('zhmiscellany_cache')
+        zhmiscellany.fileio.write_json_file(potential_path, member_counts)
+    return member_counts
