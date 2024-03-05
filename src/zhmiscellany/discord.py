@@ -41,7 +41,7 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
         seen_ids = set()
         result = []
 
-        for d in sorted(data_list, key=lambda x: x.get('id', 0)):
+        for d in sorted(data_list, key=lambda x: x.get('id', 0), reverse=True):
             current_id = d.get('id')
             if current_id not in seen_ids:
                 result.append(d)
