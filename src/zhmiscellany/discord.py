@@ -51,7 +51,7 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
 
     last_message_id = ''
 
-
+    most_recent_id = 0
     special_first_request = False
     if use_cache:
         cache_folder = 'zhmiscellany_cache'
