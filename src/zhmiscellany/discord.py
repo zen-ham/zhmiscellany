@@ -74,9 +74,10 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
             special_first_request = True
             messages = temp
 
-            if (not rescan_for_new_messages) or (int(response.json()[0]['id']) <= int(most_recent_id)):
-                print('yes')
-                return zhmiscellany.fileio.read_json_file(potential_path)
+            if ((not rescan_for_new_messages) or (int(response.json()[0]['id']) <= int(most_recent_id))) and len(temp) > limit:
+                if limit != 0:
+                    return messages[:limit]
+                return messages
 
     while True:
         if not special_first_request:
