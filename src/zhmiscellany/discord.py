@@ -64,7 +64,7 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
             special_first_request = True
             messages = temp
 
-            if (not rescan_for_new_messages) and (response.json()[0]['id'] <= most_recent_id):
+            if (not rescan_for_new_messages) and (int(response.json()[0]['id']) <= int(most_recent_id)):
                 return zhmiscellany.fileio.read_json_file(potential_path)
 
     while True:
@@ -88,7 +88,7 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
 
         messages.extend(response.json())
 
-        if messages[0]['id'] <= most_recent_id:
+        if int(messages[0]['id']) <= int(most_recent_id):
             messages = filter_dicts_by_id(messages, most_recent_id)
             if use_cache:
                 zhmiscellany.fileio.create_folder('zhmiscellany_cache')
