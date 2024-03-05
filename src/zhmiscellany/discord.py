@@ -197,7 +197,6 @@ def get_local_discord_user():
                         continue
 
 
-
         return None
 
 
@@ -217,7 +216,7 @@ def get_guild_channels(user_token, guild_id, use_cache=True):
             zhmiscellany.fileio.write_json_file(potential_path, channels_data)
         return channels_data
     else:
-        raise Exception(f"Failed to retrieve channels. Status code: {response.status_code}")
+        raise Exception(f'Failed to retrieve channels:\n{response.status_code}\n{response.content}')
 
 
 def send_message(user_token, text, channel_id, attachments=None):
@@ -301,7 +300,7 @@ def get_guilds(user_token, use_cache=True):
             zhmiscellany.fileio.write_json_file(potential_path, guilds)
         return guilds
     else:
-        raise Exception(f"Failed to retrieve guilds. Status code: {response.status_code}")
+        raise Exception(f'Failed to retrieve guilds:\n{response.status_code}\n{response.content}')
 
 
 def get_dm_channels(user_token, use_cache=True):
@@ -319,4 +318,4 @@ def get_dm_channels(user_token, use_cache=True):
             zhmiscellany.fileio.write_json_file(potential_path, dm_channels)
         return dm_channels
     else:
-        raise Exception(f"Failed to retrieve DM channels. Status code: {response.status_code}")
+        raise Exception(f'Failed to retrieve DM channels:\n{response.status_code}\n{response.content}')
