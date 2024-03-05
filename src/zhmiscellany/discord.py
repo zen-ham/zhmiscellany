@@ -37,9 +37,17 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
     Function to get all client messages in a specific channel. Script by @z_h_ on discord.
     '''
 
-    def filter_dicts_by_id(data_list, target_id):
-        filtered_list = [d for d in copy.deepcopy(data_list) if d.get('id', 0) < target_id]
-        return filtered_list
+    def sort_and_dedupe_dicts(data_list):
+        seen_ids = set()
+        result = []
+
+        for d in sorted(data_list, key=lambda x: x.get('id', 0)):
+            current_id = d.get('id')
+            if current_id not in seen_ids:
+                result.append(d)
+                seen_ids.add(current_id)
+
+        return result
 
 
     messages = []
@@ -50,6 +58,7 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
     headers['Authorization'] = user_token
 
     last_message_id = ''
+    shown_progress = False
 
     most_recent_id = 0
     special_first_request = False
@@ -57,6 +66,7 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
         cache_folder = 'zhmiscellany_cache'
         zhmiscellany.fileio.create_folder(cache_folder)
         potential_path = os.path.join(cache_folder, f'{channel_id}_messages.json')
+
         if os.path.exists(potential_path):
             temp = zhmiscellany.fileio.read_json_file(potential_path)
             most_recent_id = temp[0]['id']
@@ -64,7 +74,8 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
             special_first_request = True
             messages = temp
 
-            if (not rescan_for_new_messages) and (int(response.json()[0]['id']) <= int(most_recent_id)):
+            if (not rescan_for_new_messages) or (int(response.json()[0]['id']) <= int(most_recent_id)):
+                print('yes')
                 return zhmiscellany.fileio.read_json_file(potential_path)
 
     while True:
@@ -82,18 +93,24 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
                 if use_cache:
                     zhmiscellany.fileio.create_folder('zhmiscellany_cache')
                     zhmiscellany.fileio.write_json_file(potential_path, messages)
-                if show_progress:
+                if shown_progress:
                     print('')
                 return messages
 
         messages.extend(response.json())
 
         if int(messages[0]['id']) <= int(most_recent_id):
-            messages = filter_dicts_by_id(messages, most_recent_id)
+            messages = sort_and_dedupe_dicts(messages)
             if use_cache:
                 zhmiscellany.fileio.create_folder('zhmiscellany_cache')
-                zhmiscellany.fileio.write_json_file(potential_path, {'no access to channel': True})
+                zhmiscellany.fileio.write_json_file(potential_path, messages)
+            if shown_progress:
+                print('')
+
+            if limit != 0:
+                return messages[:limit]
             return messages
+
 
         try:
             last_message_id = messages[-1]['id']
@@ -107,10 +124,14 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
 
         if show_progress:
             print(f'\rFound {len(messages):,} messages', end='')
+            shown_progress = True
 
         if limit != 0:
             if len(messages) >= limit:
-                if show_progress:
+                if use_cache:
+                    zhmiscellany.fileio.create_folder('zhmiscellany_cache')
+                    zhmiscellany.fileio.write_json_file(potential_path, messages)
+                if shown_progress:
                     print('')
                 return messages[:limit]
 
