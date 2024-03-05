@@ -350,7 +350,7 @@ def generate_server_invite(user_token, channel_id):
         raise Exception(f'Failed to generate invite:\n{response.status_code}\n{response.content}')
 
 
-def get_guild_member_count(user_token, channel_id, use_cache=True):
+def get_approximate_member_count(user_token, channel_id, use_cache=True):
     if use_cache:
         potential_path = os.path.join('zhmiscellany_cache', f'{channel_id}_member_count.json')
         if os.path.exists(potential_path):
