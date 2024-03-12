@@ -32,89 +32,55 @@ def add_reactions_to_message(user_token, emojis, channel_id, message_id):
                     added = False
 
 
-def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_progress=False, rescan_for_new_messages=True):
+def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_progress=False, read_cache=True):
     '''
     Function to get all client messages in a specific channel. Script by @z_h_ on discord.
     '''
 
-    def sort_and_dedupe_dicts(data_list):
-        seen_ids = set()
-        result = []
-
-        for d in sorted(data_list, key=lambda x: x.get('id', 0), reverse=True):
-            current_id = d.get('id')
-            if current_id not in seen_ids:
-                result.append(d)
-                seen_ids.add(current_id)
-
-        return result
-
-
-    messages = []
-
-    base_url = 'https://discord.com/api/v9/channels/{}/messages'.format(channel_id)
-
-    headers = zhmiscellany.netio.generate_headers(base_url)
-    headers['Authorization'] = user_token
-
-    last_message_id = ''
-    shown_progress = False
-
-    most_recent_id = 0
-    special_first_request = False
     if use_cache:
         cache_folder = 'zhmiscellany_cache'
         zhmiscellany.fileio.create_folder(cache_folder)
         potential_path = os.path.join(cache_folder, f'{channel_id}_messages.json')
-
         if os.path.exists(potential_path):
-            temp = zhmiscellany.fileio.read_json_file(potential_path)
-            most_recent_id = temp[0]['id']
-            response = requests.get(base_url, headers=headers, params={'limit': 100})
-            special_first_request = True
-            messages = temp
+            if read_cache:
+                return zhmiscellany.fileio.read_json_file(potential_path)
+            else:
+                return None
 
-            if ((not rescan_for_new_messages) or (int(response.json()[0]['id']) <= int(most_recent_id))) and len(temp) > limit:
-                if limit != 0:
-                    return messages[:limit]
-                return messages
+    messages = []
+
+    # Define the base URL for the Discord API
+    base_url = 'https://discord.com/api/v9/channels/{}/messages'.format(channel_id)
+
+    headers = {
+        'Authorization': user_token
+    }
+
+    last_message_id = ''
 
     while True:
-        if not special_first_request:
-            if last_message_id:
-                try:
-                    response = requests.get(base_url, headers=headers, params={'limit': 100, 'before': last_message_id})
-                except:
-                    # try again :(
-                    response = requests.get(base_url, headers=headers, params={'limit': 100, 'before': last_message_id})
-            else:
-                response = requests.get(base_url, headers=headers, params={'limit': 100})
+        if last_message_id:
+            #print(f'Requesting new block before {last_message_id}')
+            try:
+                response = requests.get(base_url, headers=headers, params={'limit': 100, 'before': last_message_id})
+            except:
+                # try again :(
+                response = requests.get(base_url, headers=headers, params={'limit': 100, 'before': last_message_id})
+        else:
+            response = requests.get(base_url, headers=headers, params={'limit': 100})
 
-            if not response.json():
-                if use_cache:
-                    zhmiscellany.fileio.create_folder('zhmiscellany_cache')
-                    zhmiscellany.fileio.write_json_file(potential_path, messages)
-                if shown_progress:
-                    print('')
-                return messages
-
-        messages.extend(response.json())
-
-        if int(messages[0]['id']) <= int(most_recent_id):
-            messages = sort_and_dedupe_dicts(messages)
+        if not response.json():
             if use_cache:
                 zhmiscellany.fileio.create_folder('zhmiscellany_cache')
                 zhmiscellany.fileio.write_json_file(potential_path, messages)
-            if shown_progress:
+            if show_progress:
                 print('')
-
-            if limit != 0:
-                return messages[:limit]
             return messages
 
+        messages.extend(response.json())
 
         try:
-            last_message_id = messages[-1]['id']
+            last_message_id = messages[-1:][0]['id']
         except TypeError:
             if show_progress:
                 print('no access to channel')
@@ -125,14 +91,10 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
 
         if show_progress:
             print(f'\rFound {len(messages):,} messages', end='')
-            shown_progress = True
 
         if limit != 0:
             if len(messages) >= limit:
-                if use_cache:
-                    zhmiscellany.fileio.create_folder('zhmiscellany_cache')
-                    zhmiscellany.fileio.write_json_file(potential_path, messages)
-                if shown_progress:
+                if show_progress:
                     print('')
                 return messages[:limit]
 
