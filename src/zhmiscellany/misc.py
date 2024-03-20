@@ -2,6 +2,7 @@ import os, signal, time, importlib
 from ._misc_supportfuncs import set_activity_timeout, activity
 import zhmiscellany.math
 import zhmiscellany.string
+import win32api, win32con, time
 
 
 def die():
@@ -72,3 +73,43 @@ def import_module_from_path(path, module_name=None):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def click_pixel(x, y, click_duration=None, right_click=False, shift=False, ctrl=False, act_start=True, act_end=True, middle_click=False):
+    keys_down = []
+
+    if ctrl:
+        win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
+        keys_down.append(win32con.VK_CONTROL)
+
+    if shift:
+        win32api.keybd_event(win32con.VK_SHIFT, 0, 0, 0)
+        keys_down.append(win32con.VK_SHIFT)
+
+    win32api.SetCursorPos((x, y))
+
+    if middle_click:
+        if act_start:
+            win32api.mouse_event(win32con.MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, 0)
+        if click_duration:
+            time.sleep(click_duration)
+        if act_end:
+            win32api.mouse_event(win32con.MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0)
+    elif right_click:
+        if act_start:
+            win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0)
+        if click_duration:
+            time.sleep(click_duration)
+        if act_end:
+            win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0)
+    else:
+        if act_start:
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+        if click_duration:
+            time.sleep(click_duration)
+        if act_end:
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+
+    # All good things must come to an end. Lift the keys
+    for key in keys_down:
+        win32api.keybd_event(key, 0, win32con.KEYEVENTF_KEYUP, 0)
