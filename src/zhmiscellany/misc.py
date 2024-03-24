@@ -113,3 +113,8 @@ def click_pixel(x, y, click_duration=None, right_click=False, shift=False, ctrl=
     # All good things must come to an end. Lift the keys
     for key in keys_down:
         win32api.keybd_event(key, 0, win32con.KEYEVENTF_KEYUP, 0)
+
+
+def get_mouse_xy():
+    x, y = win32api.GetCursorPos()
+    return x, y
