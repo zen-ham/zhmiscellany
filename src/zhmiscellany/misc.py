@@ -118,3 +118,7 @@ def click_pixel(x, y, click_duration=None, right_click=False, shift=False, ctrl=
 def get_mouse_xy():
     x, y = win32api.GetCursorPos()
     return x, y
+
+
+def base62_hash(__obj):
+    return zhmiscellany.string.convert_to_base62(hash(__obj))
