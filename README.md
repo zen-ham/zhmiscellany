@@ -5,8 +5,8 @@ a collection of miscellany functions/classes/modules made by me (zh).
 ---
 
 [Introduction](https://github.com/zen-ham/zhmiscellany/tree/master#Introduction) \
-[Usage examples](https://github.com/zen-ham/zhmiscellany/tree/master#Usage-examples) \
-[Documentation](https://github.com/zen-ham/zhmiscellany/tree/master#Documentation)
+[Documentation](https://github.com/zen-ham/zhmiscellany/tree/master#Documentation) \
+[Usage examples](https://github.com/zen-ham/zhmiscellany/tree/master#Usage-examples)
 
 ---
 
@@ -17,9 +17,25 @@ Can be installed with `pip install zhmiscellany`
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
-If you want to reach out, you may add my on discord at @z_h_ or join [my server](https://discord.gg/ThBBAuueVJ).
+If you wish to reach out, you may add @z_h_ on Discord, or join [the server](https://discord.gg/ThBBAuueVJ).
 
 ---
+
+Documentation:
+===
+
+[Usage-examples](https://github.com/zen-ham/zhmiscellany/blob/master/README.md#usage-examples) Usage examples.\
+[zhmiscellany.discord](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanydiscord) Functions for interacting with discord in various ways.\
+[zhmiscellany.fileio](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyfileio) Functions for interacting with local files, such as json and other file related functions I find useful.\
+[zhmiscellany.string](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanystring) Functions for interacting with/generating strings that I find useful.\
+[zhmiscellany.math](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanymath) Functions for making some calculations easier.\
+[zhmiscellany.netio](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanynetio) Internet related functions that didn't make sense in any other module.\
+[zhmiscellany.image](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyimage) Functions for quantifying and manipulating images.\
+[zhmiscellany.list](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanylist) Functions for manipulating lists.\
+[zhmiscellany.dict](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanydict) Functions for working with dicts.\
+[zhmiscellany.processing](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyprocessing) Functions for processing data in threads in a more straight forward way.\
+[zhmiscellany.misc](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanymisc) Misc functions that didn't fit anywhere else.
+
 
 Usage examples
 ===
@@ -147,23 +163,7 @@ for attachment in message['attachments']:
     url = attachment['url']
     print(url)
 ```
-
 ---
-
-Documentation:
-===
-
-[zhmiscellany.discord](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanydiscord) Functions for interacting with discord in various ways.\
-[zhmiscellany.fileio](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyfileio) Functions for interacting with local files, such as json and other file related functions I find useful.\
-[zhmiscellany.string](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanystring) Functions for interacting with/generating strings that I find useful.\
-[zhmiscellany.math](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanymath) Functions for making some calculations easier.\
-[zhmiscellany.netio](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanynetio) Internet related functions that didn't make sense in any other module.\
-[zhmiscellany.image](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyimage) Functions for quantifying and manipulating images.\
-[zhmiscellany.list](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanylist) Functions for manipulating lists.\
-[zhmiscellany.dict](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanydict) Functions for working with dicts.\
-[zhmiscellany.processing](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyprocessing) Functions for processing data in threads in a more straight forward way.\
-[zhmiscellany.misc](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanymisc) Misc functions that didn't fit anywhere else.
-
 
 `zhmiscellany.discord`:
 ---
