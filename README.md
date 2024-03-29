@@ -1,7 +1,7 @@
 `zhmiscellany`,
 ===
 
-a collection of miscellany functions/classes/modules made by me (zh).
+An organized collection of unique and useful functions/classes/modules.
 ---
 
 [Introduction](https://github.com/zen-ham/zhmiscellany/tree/master#Introduction) \
