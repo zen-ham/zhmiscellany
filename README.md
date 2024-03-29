@@ -20,10 +20,6 @@ The git repository for this package can be found [here](https://github.com/zen-h
 If you want to reach out, you may add my on discord at @z_h_ or join [my server](https://discord.gg/ThBBAuueVJ).
 
 ---
-<sup><sup><sup>Some small issues to take note of:\
-I made a small mistake, please ignore that the repo claims to have far fewer commits than the version number of the package would imply, sort of my fault but also the way git caches changes locally is silly.
-
----
 
 Usage examples
 ===
