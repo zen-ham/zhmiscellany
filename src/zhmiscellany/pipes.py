@@ -4,18 +4,14 @@ import win32pipe
 import win32file
 
 
-class PipeCommunication:
+class PipeTransmitter:
     def __init__(self, pipe_name):
         self.pipe_name = r'\\.\pipe'+'\\'+pipe_name
         self.send_queue = queue.Queue()
-        self.receive_queue = queue.Queue()
-        self.callback_function = None
 
         # Start threads for sending and receiving data
         self.send_thread = threading.Thread(target=self.send_data_thread)
-        self.receive_thread = threading.Thread(target=self.receive_data_thread)
         self.send_thread.start()
-        self.receive_thread.start()
 
     def send_data_thread(self):
         pipe_handle = win32pipe.CreateNamedPipe(
@@ -38,6 +34,17 @@ class PipeCommunication:
 
     def send_data(self, data):
         self.send_queue.put(data)
+
+
+class PipeReceiver:
+    def __init__(self, pipe_name):
+        self.pipe_name = r'\\.\pipe'+'\\'+pipe_name
+        self.receive_queue = queue.Queue()
+        self.callback_function = None
+
+        # Start threads for sending and receiving data
+        self.receive_thread = threading.Thread(target=self.receive_data_thread)
+        self.receive_thread.start()
 
     def receive_data_thread(self):
         pipe_handle = win32file.CreateFile(
