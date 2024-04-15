@@ -2,7 +2,7 @@ import os, signal, time, importlib
 from ._misc_supportfuncs import set_activity_timeout, activity
 import zhmiscellany.math
 import zhmiscellany.string
-import win32api, win32con, time
+import win32api, win32con, time, hashlib
 
 
 def die():
@@ -120,8 +120,8 @@ def get_mouse_xy():
     return x, y
 
 
-def base62_hash(__obj):
-    return zhmiscellany.string.convert_to_base62(abs(hash(__obj)))
+def base62_hash(data):
+    return zhmiscellany.string.convert_to_base62(int(int(hashlib.md5(data if isinstance(data, bytes) else str(data).encode()).hexdigest(), 16)**0.5))
 
 
 def high_precision_sleep(duration):
