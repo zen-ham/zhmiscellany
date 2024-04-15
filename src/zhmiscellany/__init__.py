@@ -8,3 +8,4 @@ from . import list
 from . import dict
 from . import processing
 from . import misc
+from . import pipes
