@@ -121,7 +121,7 @@ def get_mouse_xy():
 
 
 def base62_hash(__obj):
-    return zhmiscellany.string.convert_to_base62(hash(__obj))
+    return zhmiscellany.string.convert_to_base62(abs(hash(__obj)))
 
 
 def high_precision_sleep(duration):
