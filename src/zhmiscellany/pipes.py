@@ -18,7 +18,7 @@ class PipeTransmitter:
             self.pipe_name,
             win32pipe.PIPE_ACCESS_OUTBOUND,
             win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
-            2,  # Max instances
+            1,  # Max instances
             65536,  # Out buffer size
             65536,  # In buffer size
             0,  # Timeout
