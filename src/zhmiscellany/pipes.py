@@ -37,24 +37,6 @@ class PipeTransmitter:
     def send_data(self, data):
         self.send_queue.put(data)
 
-    def raw_send_data(self, data, pipe_name):
-        def _raw_send_data(data, pipe_name):
-            pipe_name = r'\\.\pipe' + '\\' + pipe_name
-            pipe_handle = win32pipe.CreateNamedPipe(
-                pipe_name,
-                win32pipe.PIPE_ACCESS_OUTBOUND,
-                win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
-                1,  # Max instances
-                65536,  # Out buffer size
-                65536,  # In buffer size
-                0,  # Timeout
-                None  # Security attributes
-            )
-            win32pipe.ConnectNamedPipe(pipe_handle, None)
-            win32file.WriteFile(pipe_handle, data.encode())
-
-        threading.Thread(target=_raw_send_data, args=(data, pipe_name))
-
 
 class PipeReceiver:
     def __init__(self, pipe_name):
@@ -92,18 +74,38 @@ class PipeReceiver:
     def register_callback(self, callback_function):
         self.callback_function = callback_function
 
-    def raw_receive_data(self, pipe_name):
-        try:
-            pipe_name = r'\\.\pipe' + '\\' + pipe_name
-            pipe_handle = win32file.CreateFile(
-                pipe_name,
-                win32file.GENERIC_READ,
-                0,
-                None,
-                win32file.OPEN_EXISTING,
-                0,
-                None
-            )
-            return win32file.ReadFile(pipe_handle, 4096)[1].decode()
-        except:
-            return None
+
+def raw_receive_data(pipe_name):
+    try:
+        pipe_name = r'\\.\pipe' + '\\' + pipe_name
+        pipe_handle = win32file.CreateFile(
+            pipe_name,
+            win32file.GENERIC_READ,
+            0,
+            None,
+            win32file.OPEN_EXISTING,
+            0,
+            None
+        )
+        return win32file.ReadFile(pipe_handle, 4096)[1].decode()
+    except:
+        return None
+
+
+def raw_send_data(data, pipe_name):
+    def _raw_send_data(data, pipe_name):
+        pipe_name = r'\\.\pipe' + '\\' + pipe_name
+        pipe_handle = win32pipe.CreateNamedPipe(
+            pipe_name,
+            win32pipe.PIPE_ACCESS_OUTBOUND,
+            win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
+            1,  # Max instances
+            65536,  # Out buffer size
+            65536,  # In buffer size
+            0,  # Timeout
+            None  # Security attributes
+        )
+        win32pipe.ConnectNamedPipe(pipe_handle, None)
+        win32file.WriteFile(pipe_handle, data.encode())
+
+    threading.Thread(target=_raw_send_data, args=(data, pipe_name))
