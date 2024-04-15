@@ -13,8 +13,12 @@ def resolve_file(url, destination_folder="."):
     return destination_path
 
 
-def download_file(url, destination_folder=".", just_return_path=False, headers=None):
-    destination_path = resolve_file(url, destination_folder)
+def download_file(url, destination_folder=".", just_return_path=False, headers=None, file_path=None):
+    if file_path:
+        destination_path = file_path
+    else:
+        destination_path = resolve_file(url, destination_folder)
+
     if os.path.exists(destination_path):
         if just_return_path:
             return destination_path
