@@ -2,6 +2,7 @@ import threading
 import queue
 import win32pipe
 import win32file
+import zhmiscellany.string
 
 
 class PipeTransmitter:
@@ -108,4 +109,4 @@ def raw_send_data(data, pipe_name):
         win32pipe.ConnectNamedPipe(pipe_handle, None)
         win32file.WriteFile(pipe_handle, data.encode())
 
-    threading.Thread(target=_raw_send_data, args=(data, pipe_name))
+    zhmiscellany.processing.start_daemon(target=_raw_send_data, args=(data, pipe_name))
