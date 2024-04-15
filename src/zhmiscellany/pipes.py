@@ -9,6 +9,7 @@ class PipeCommunication:
         self.pipe_name = r'\\.\pipe'+'\\'+pipe_name
         self.send_queue = queue.Queue()
         self.receive_queue = queue.Queue()
+        self.callback_function = None
 
         # Start threads for sending and receiving data
         self.send_thread = threading.Thread(target=self.send_data_thread)
@@ -52,8 +53,13 @@ class PipeCommunication:
         while True:
             data = win32file.ReadFile(pipe_handle, 4096)[1].decode()
             self.receive_queue.put(data)
+            if self.callback_function:
+                self.callback_function(data)
 
         win32file.CloseHandle(pipe_handle)
 
     def receive_data(self):
         return self.receive_queue.get()
+
+    def register_callback(self, callback_function):
+        self.callback_function = callback_function
