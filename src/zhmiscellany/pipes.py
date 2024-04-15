@@ -1,5 +1,7 @@
 import threading
 import queue
+import time
+
 import win32pipe
 import win32file
 import zhmiscellany.string
@@ -95,18 +97,24 @@ def raw_receive_data(pipe_name):
 
 def raw_send_data(data, pipe_name):
     def _raw_send_data(data, pipe_name):
-        pipe_name = r'\\.\pipe' + '\\' + pipe_name
-        pipe_handle = win32pipe.CreateNamedPipe(
-            pipe_name,
-            win32pipe.PIPE_ACCESS_OUTBOUND,
-            win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
-            1,  # Max instances
-            65536,  # Out buffer size
-            65536,  # In buffer size
-            0,  # Timeout
-            None  # Security attributes
-        )
-        win32pipe.ConnectNamedPipe(pipe_handle, None)
-        win32file.WriteFile(pipe_handle, data.encode())
+        sent = False
+        while not sent:
+            try:
+                pipe_name = r'\\.\pipe' + '\\' + pipe_name
+                pipe_handle = win32pipe.CreateNamedPipe(
+                    pipe_name,
+                    win32pipe.PIPE_ACCESS_OUTBOUND,
+                    win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
+                    1,  # Max instances
+                    65536,  # Out buffer size
+                    65536,  # In buffer size
+                    0,  # Timeout
+                    None  # Security attributes
+                )
+                win32pipe.ConnectNamedPipe(pipe_handle, None)
+                win32file.WriteFile(pipe_handle, data.encode())
+                sent = True
+            except:
+                time.sleep(1)
 
     zhmiscellany.processing.start_daemon(target=_raw_send_data, args=(data, pipe_name))
