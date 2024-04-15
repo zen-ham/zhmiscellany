@@ -5,8 +5,9 @@ import win32file
 
 
 class PipeTransmitter:
-    def __init__(self, pipe_name):
+    def __init__(self, pipe_name, close_pipes=False):
         self.pipe_name = r'\\.\pipe'+'\\'+pipe_name
+        self.close_pipes = close_pipes
         self.send_queue = queue.Queue()
 
         # Start threads for sending and receiving data
@@ -30,7 +31,8 @@ class PipeTransmitter:
             data = self.send_queue.get()
             win32file.WriteFile(pipe_handle, data.encode())
 
-        win32file.CloseHandle(pipe_handle)
+        if self.close_pipes:
+            win32file.CloseHandle(pipe_handle)
 
     def send_data(self, data):
         self.send_queue.put(data)
@@ -63,7 +65,8 @@ class PipeReceiver:
             if self.callback_function:
                 self.callback_function(data)
 
-        win32file.CloseHandle(pipe_handle)
+        if self.close_pipes:
+            win32file.CloseHandle(pipe_handle)
 
     def receive_data(self):
         return self.receive_queue.get()
