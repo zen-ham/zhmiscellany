@@ -117,4 +117,4 @@ def raw_send_data(data, pipe_name):
             except:
                 time.sleep(1)
 
-    zhmiscellany.processing.start_daemon(target=_raw_send_data, args=(data, pipe_name))
+    threading.Thread(target=_raw_send_data, args=(data, pipe_name)).start()
