@@ -31,7 +31,7 @@ def download_file(url, destination_folder=".", just_return_path=False, headers=N
 
         # Save the file
         with open(destination_path, 'wb') as file:
-            for chunk in response.iter_content(chunk_size=128):
+            for chunk in response.iter_content(chunk_size=2**12):
                 file.write(chunk)
 
         return destination_path
