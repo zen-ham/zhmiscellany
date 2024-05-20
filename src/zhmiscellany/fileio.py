@@ -127,3 +127,9 @@ def read_bytes_section(file_path, section_start, section_end):
         data = file.read(bytes_to_read)  # Read 'bytes_to_read' number of bytes
 
     return data
+
+
+def copy_file_with_overwrite(src, dst):
+    if os.path.exists(dst):
+        os.remove(dst)
+    shutil.copy2(src, dst)
