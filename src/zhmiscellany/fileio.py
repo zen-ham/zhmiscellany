@@ -1,4 +1,4 @@
-import json, os, shutil
+import json, os, shutil, dill
 import zhmiscellany.string
 
 
@@ -133,3 +133,13 @@ def copy_file_with_overwrite(src, dst):
     if os.path.exists(dst):
         os.remove(dst)
     shutil.copy2(src, dst)
+
+
+def save_object_to_file(object, file_name):
+    with open(file_name, 'wb') as f:
+        dill.dump(object, f, protocol=5)
+
+
+def load_object_from_file(file_name):
+    with open(file_name, 'rb') as f:
+        return dill.load(f)
