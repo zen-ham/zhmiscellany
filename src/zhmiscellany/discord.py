@@ -18,7 +18,8 @@ def add_reactions_to_message(user_token, emojis, channel_id, message_id):
 
     for emoji in emojis:
         url = f'https://discord.com/api/v9/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me'
-        headers = {**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token}
+        #headers = {**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token}
+        headers = {'Authorization': user_token}
 
         added = False
         while not added:
