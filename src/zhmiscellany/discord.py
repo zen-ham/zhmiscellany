@@ -1,3 +1,5 @@
+import time
+
 import requests
 import copy
 import zhmiscellany.fileio
@@ -16,7 +18,7 @@ def add_reactions_to_message(user_token, emojis, channel_id, message_id):
 
     for emoji in emojis:
         url = f'https://discord.com/api/v9/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me'
-        headers = zhmiscellany.netio.generate_headers(url)
+        headers = {**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token}
 
         added = False
         while not added:
@@ -26,10 +28,14 @@ def add_reactions_to_message(user_token, emojis, channel_id, message_id):
                 response.raise_for_status()
                 #print(f"Reaction {emoji} added successfully!")
                 added = True
+                time.sleep(1) # sleep to avoid rate limits
             except requests.exceptions.RequestException as e:
                 if not 'Too Many Requests for url' in str(e):
-                    print(f"Error adding reaction: {e}")
-                    added = False
+                    print(f"Error adding reaction (moving on to next emoji): {e}")
+                    added = True
+                else:
+                    print(f"Error adding reaction (will try to add emoji again in 2 seconds): {e}")
+                    time.sleep(2)
 
 
 def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_progress=False, read_cache=True):
