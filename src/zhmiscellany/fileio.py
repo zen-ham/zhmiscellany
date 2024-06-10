@@ -100,11 +100,9 @@ def empty_directory(directory_path):
 
         if os.path.isfile(item_path):
             # If it's a file, delete it
-            #print(f'Deleting {item_path}')
             os.unlink(item_path)
         elif os.path.isdir(item_path):
             # If it's a directory, delete it recursively
-            #print(f'Removing {item_path}')
             shutil.rmtree(item_path)
 
 
@@ -143,3 +141,11 @@ def save_object_to_file(object, file_name):
 def load_object_from_file(file_name):
     with open(file_name, 'rb') as f:
         return dill.load(f)
+
+
+def list_files_by_modified_time(directory):
+    files_with_times = [(file, os.path.getmtime(os.path.join(directory, file))) for file in os.listdir(directory) if os.path.isfile(os.path.join(directory, file))]
+    sorted_files = sorted(files_with_times, key=lambda x: x[1], reverse=True)
+    sorted_file_names = [file for file, _ in sorted_files]
+
+    return sorted_file_names
