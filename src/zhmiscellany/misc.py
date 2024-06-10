@@ -2,7 +2,7 @@ import os, signal, time, importlib
 from ._misc_supportfuncs import set_activity_timeout, activity
 import zhmiscellany.math
 import zhmiscellany.string
-import win32api, win32con, time, hashlib
+import win32api, win32con, time, hashlib, ctypes, sys
 
 
 def die():
@@ -135,3 +135,38 @@ def high_precision_sleep(duration):
             time.sleep(max(remaining_time/2, 0.0001))  # Sleep for the remaining time or minimum sleep interval
         else:
             pass
+
+
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except Exception:
+        return False
+
+
+def run_as_admin():
+    if is_admin():
+        print("Already running as administrator.")
+        return
+
+    # Get the script path
+    if getattr(sys, 'frozen', False):
+        # If the script is compiled to an EXE
+        script_path = sys.executable
+        compiled = True
+    else:
+        # If the script is being run as a .py file
+        script_path = sys.argv[0]
+        compiled = False
+
+    # Run the script with admin privileges
+    params = ' '.join([script_path] + sys.argv[1:])
+    try:
+        ctypes.windll.shell32.ShellExecuteW(
+            None, "runas", sys.executable, params, None, 1)
+    except Exception as e:
+        print(f"Failed to elevate privileges: {e}")
+        die()
+
+    # Exit the current script after attempting to rerun as admin
+    die()
