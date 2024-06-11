@@ -1,6 +1,8 @@
 import os, requests
 import zhmiscellany.string
 import urllib.parse
+from zhmiscellany._misc_supportfuncs import patch_rhg
+patch_rhg()  # patches random_header_genoration libaries missing files. this only matters if zhmiscellany has been compiled into a pyinstaller executable. zhmiscellany chooses to patch this broken package for the benefit of the user.
 from random_header_generator import HeaderGenerator
 
 

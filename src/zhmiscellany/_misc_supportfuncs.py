@@ -29,7 +29,7 @@ def activity():
     _misc_action = time.time()
 
 
-def patch_rhg():  # patches random_header_genoration libaries missing files. this only matters if zhmiscellany has been compiled into a pyinstaller executable.
+def patch_rhg():  # patches random_header_genoration libaries missing files. this only matters if zhmiscellany has been compiled into a pyinstaller executable. zhmiscellany chooses to patch this broken package for the benefit of the user.
     def get_gsudo_binary_path():
         anyway = False
         if getattr(sys, 'frozen', False):
@@ -43,6 +43,3 @@ def patch_rhg():  # patches random_header_genoration libaries missing files. thi
         else:
             # we are running in normal Python environment
             pass
-
-
-patch_rhg()
