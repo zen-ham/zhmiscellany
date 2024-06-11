@@ -139,7 +139,7 @@ def high_precision_sleep(duration):
 
 def is_admin():
     try:
-        return ctypes.windll.shell32.IsUserAnAdmin()
+        return ctypes.windll.shell32.IsUserAnAdmin() == 1
     except Exception:
         return False
 
