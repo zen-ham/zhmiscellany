@@ -144,7 +144,7 @@ def is_admin():
         return False
 
 
-def run_as_admin():
+def run_as_admin(keep_console = False):
     if is_admin():
         print("Already running as administrator.")
         return
@@ -166,7 +166,9 @@ def run_as_admin():
             None, "runas", sys.executable, params, None, 1)
     except Exception as e:
         print(f"Failed to elevate privileges: {e}")
-        die()
+        if not keep_console:
+            die()
 
     # Exit the current script after attempting to rerun as admin
-    die()
+    if not keep_console:
+        die()
