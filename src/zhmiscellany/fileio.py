@@ -1,4 +1,4 @@
-import json, os, shutil, dill
+import json, os, shutil, dill, sys
 import zhmiscellany.string
 
 
@@ -149,3 +149,11 @@ def list_files_by_modified_time(directory):
     sorted_file_names = [file for file, _ in sorted_files]
 
     return sorted_file_names
+
+def get_script_path():
+    if getattr(sys, 'frozen', False):
+        # Running as a standalone executable
+        return sys.executable
+    else:
+        # Running as a Python script
+        return __file__
