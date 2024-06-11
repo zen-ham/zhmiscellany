@@ -1,4 +1,5 @@
-import threading, os, signal, time
+import threading, os, signal, time, sys
+import zhmiscellany.fileio
 
 
 _misc_action = 0
@@ -26,3 +27,22 @@ def set_activity_timeout(timeout):
 def activity():
     global _misc_action
     _misc_action = time.time()
+
+
+def patch_rhg():  # patches random_header_genoration libaries missing files. this only matters if zhmiscellany has been compiled into a pyinstaller executable.
+    def get_gsudo_binary_path():
+        anyway = False
+        if getattr(sys, 'frozen', False):
+            # we are running in a PyInstaller bundle
+            base_path = sys._MEIPASS
+            cwd = os.getcwd()
+            os.chdir(base_path)
+            from ._py_resources import gen
+            gen()
+            os.chdir(cwd)
+        else:
+            # we are running in normal Python environment
+            pass
+
+
+patch_rhg()
