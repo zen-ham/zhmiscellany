@@ -168,7 +168,13 @@ def run_as_admin(keep_console = False):
         print(f"Failed to elevate privileges: {e}")
         if not keep_console:
             die()
+        else:
+            while True:
+                time.sleep(1)
 
     # Exit the current script after attempting to rerun as admin
     if not keep_console:
         die()
+    else:
+        while True:
+            time.sleep(1)
