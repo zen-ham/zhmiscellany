@@ -1,4 +1,4 @@
-import threading, os, signal, time, sys
+import threading, os, signal, time, sys, shutil
 import zhmiscellany.fileio
 
 
@@ -37,6 +37,8 @@ def patch_rhg():  # patches random_header_genoration library's missing files. th
         os.chdir(base_path)
         from ._py_resources import gen
         gen()
+        os.makedirs(r'random_header_generator\data')
+        shutil.move(r'resources\random_header_generator\data', r'random_header_generator\data')
         os.chdir(cwd)
     else:
         # we are running in normal Python environment
