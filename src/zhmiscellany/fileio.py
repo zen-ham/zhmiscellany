@@ -156,4 +156,4 @@ def get_script_path():
         return sys.executable
     else:
         # Running as a Python script
-        return __file__
+        return sys.argv[0]
