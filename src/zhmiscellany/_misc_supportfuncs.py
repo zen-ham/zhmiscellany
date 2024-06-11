@@ -37,8 +37,11 @@ def patch_rhg():  # patches random_header_genoration library's missing files. th
         os.chdir(base_path)
         from ._py_resources import gen
         gen()
+        rem_res = not os.path.exists('resources')
         os.makedirs(r'random_header_generator')
         shutil.move(r'resources\random_header_generator\data', r'random_header_generator')
+        if rem_res:
+            zhmiscellany.fileio.remove_folder('resources')
         os.chdir(cwd)
     else:
         # we are running in normal Python environment
