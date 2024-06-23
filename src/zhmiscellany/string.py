@@ -93,3 +93,44 @@ def multi_split(string, splits):
         string = temp
 
     return string
+
+
+def format_duration(seconds):
+    # Define time units in seconds
+    minute, hour, day = 60, 3600, 86400
+    week = day * 7
+    month = day * 30  # Approximation, since months vary in length
+    year = day * 365  # Approximation, not accounting for leap years
+
+    # Calculate the number of years, months, weeks, days, hours, minutes, and seconds
+    years = seconds // year
+    seconds %= year
+    months = seconds // month
+    seconds %= month
+    weeks = seconds // week
+    seconds %= week
+    days = seconds // day
+    seconds %= day
+    hours = seconds // hour
+    seconds %= hour
+    minutes = seconds // minute
+    seconds %= minute
+
+    # Build the formatted string
+    parts = []
+    if years > 0:
+        parts.append(f"{years} year{'s' if years != 1 else ''}")
+    if months > 0:
+        parts.append(f"{months} month{'s' if months != 1 else ''}")
+    if weeks > 0:
+        parts.append(f"{weeks} week{'s' if weeks != 1 else ''}")
+    if days > 0:
+        parts.append(f"{days} day{'s' if days != 1 else ''}")
+    if hours > 0:
+        parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+    if minutes > 0:
+        parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+    if seconds > 0 or not parts:
+        parts.append(f"{seconds} second{'s' if seconds != 1 else ''}")
+
+    return ', '.join(parts)
