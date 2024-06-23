@@ -1,5 +1,6 @@
 import json, os, shutil, dill, sys
 import zhmiscellany.string
+import zhmiscellany.misc
 
 
 def read_json_file(file_path):
@@ -150,6 +151,7 @@ def list_files_by_modified_time(directory):
 
     return sorted_file_names
 
+
 def get_script_path():
     if getattr(sys, 'frozen', False):
         # Running as a standalone executable
@@ -157,3 +159,11 @@ def get_script_path():
     else:
         # Running as a Python script
         return sys.argv[0]
+
+
+def cache_object(object, key):
+    try:
+        file_name = f'{str(key)[:10]}.pkl'
+    except:
+        file_name = f'{zhmiscellany.misc.base62_hash(object)[:10]}.pkl'
+    save_object_to_file(object, file_name)
