@@ -119,18 +119,18 @@ def format_duration(seconds):
     # Build the formatted string
     parts = []
     if years > 0:
-        parts.append(f"{years} year{'s' if years != 1 else ''}")
+        parts.append(f"{round(years) if str(years).endswith('.0') else years} year{'s' if years != 1 else ''}")
     if months > 0:
-        parts.append(f"{months} month{'s' if months != 1 else ''}")
+        parts.append(f"{round(months) if str(months).endswith('.0') else months} month{'s' if months != 1 else ''}")
     if weeks > 0:
-        parts.append(f"{weeks} week{'s' if weeks != 1 else ''}")
+        parts.append(f"{round(weeks) if str(weeks).endswith('.0') else weeks} week{'s' if weeks != 1 else ''}")
     if days > 0:
-        parts.append(f"{days} day{'s' if days != 1 else ''}")
+        parts.append(f"{round(days) if str(days).endswith('.0') else days} day{'s' if days != 1 else ''}")
     if hours > 0:
-        parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+        parts.append(f"{round(hours) if str(hours).endswith('.0') else hours} hour{'s' if hours != 1 else ''}")
     if minutes > 0:
-        parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+        parts.append(f"{round(minutes) if str(minutes).endswith('.0') else minutes} minute{'s' if minutes != 1 else ''}")
     if seconds > 0 or not parts:
-        parts.append(f"{seconds} second{'s' if seconds != 1 else ''}")
+        parts.append(f"{round(seconds) if str(seconds).endswith('.0') else seconds} second{'s' if seconds != 1 else ''}")
 
     return ', '.join(parts)
