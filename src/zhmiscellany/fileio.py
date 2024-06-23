@@ -159,11 +159,3 @@ def get_script_path():
     else:
         # Running as a Python script
         return sys.argv[0]
-
-
-def cache_object(object, key):
-    try:
-        file_name = f'{str(key)[:10]}.pkl'
-    except:
-        file_name = f'{zhmiscellany.misc.base62_hash(object)[:10]}.pkl'
-    save_object_to_file(object, file_name)
