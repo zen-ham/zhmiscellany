@@ -134,3 +134,11 @@ def format_duration(seconds):
         parts.append(f"{round(seconds) if str(seconds).endswith('.0') else seconds} second{'s' if seconds != 1 else ''}")
 
     return ', '.join(parts)
+
+
+def filter_chars(input_string, filter_string):
+    result = ""
+    for c in list(input_string):
+        if c in filter_string:
+            result += c
+    return result
