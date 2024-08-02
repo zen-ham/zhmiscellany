@@ -4,6 +4,7 @@ import requests
 import copy
 import zhmiscellany.fileio
 import zhmiscellany.netio
+import zhmiscellany.processing
 from ._discord_supportfuncs import scrape_guild
 
 import base64
@@ -237,7 +238,7 @@ def send_type(user_token, channel_id):  # after sending the typing post request,
 def send_message(user_token, text, channel_id, attachments=None, typing_time=0):
     typing_time_increments = 9.5  # not set to 10 because then every 10 seconds the typing would stop very briefly
     while typing_time > 0:
-        send_type(user_token, channel_id)
+        zhmiscellany.processing.start_daemon(target=send_type, args=(user_token, channel_id))
         prev_time = typing_time
         typing_time -= typing_time_increments
         if typing_time <= 0:
