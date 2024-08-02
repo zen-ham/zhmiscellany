@@ -14,7 +14,7 @@ def smart_percentage(things, total_things):
             return percentage
 
 
-def calculate_evenly_spaced_points(duration, segments):
+def calculate_evenly_spaced_points(duration, segments, offset=0):
     interval = duration / (segments - 1)
     return [interval * i for i in range(segments)]
 

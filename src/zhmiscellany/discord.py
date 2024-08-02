@@ -228,7 +228,24 @@ def get_guild_channels(user_token, guild_id, use_cache=True):
         raise Exception(f'Failed to retrieve channels:\n{response.status_code}\n{response.content}')
 
 
-def send_message(user_token, text, channel_id, attachments=None):
+def send_type(user_token, channel_id):  # after sending the typing post request, the account will be shown as "typing" in the given channel for 10 seconds, or until a message is sent.
+    url = f'https://discord.com/api/v9/channels/{channel_id}/typing'
+    headers = {**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token}
+    return requests.post(url, headers=headers)
+
+
+def send_message(user_token, text, channel_id, attachments=None, typing_time=0):
+    typing_time_increments = 9.5  # not set to 10 because then every 10 seconds the typing would stop very briefly
+    while typing_time > 0:
+        send_type(user_token, channel_id)
+        prev_time = typing_time
+        typing_time -= typing_time_increments
+        if typing_time <= 0:
+            time.sleep(prev_time)
+        else:
+            time.sleep(typing_time_increments)
+
+
     url = f"https://discord.com/api/v9/channels/{channel_id}/messages"
 
     headers = {**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token}
