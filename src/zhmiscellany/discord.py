@@ -390,3 +390,13 @@ def get_approximate_member_count(user_token, channel_id, use_cache=True):
         zhmiscellany.fileio.create_folder('zhmiscellany_cache')
         zhmiscellany.fileio.write_json_file(potential_path, member_counts)
     return member_counts
+
+
+def id_to_timestamp(id):
+    DISCORD_EPOCH = 1420070400000
+    return (id / 4194304 + DISCORD_EPOCH)/1000
+
+
+def timestamp_to_id(timestamp):
+    DISCORD_EPOCH = 1420070400000
+    return int((timestamp * 1000 - DISCORD_EPOCH) * 4194304)

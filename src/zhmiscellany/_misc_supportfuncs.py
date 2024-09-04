@@ -29,7 +29,7 @@ def activity():
     _misc_action = time.time()
 
 
-def patch_rhg():  # patches random_header_genoration library's missing files. this only matters if zhmiscellany has been compiled into a pyinstaller executable. zhmiscellany chooses to patch this broken package for the benefit of the user.
+def patch_rhg():  # patches random_header_generator library's missing files. this only matters if zhmiscellany has been compiled into a pyinstaller executable. zhmiscellany chooses to patch this broken package for the benefit of the user.
     if getattr(sys, 'frozen', False):
         # we are running in a PyInstaller bundle
         base_path = sys._MEIPASS
