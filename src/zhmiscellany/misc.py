@@ -75,7 +75,7 @@ def import_module_from_path(path, module_name=None):
     return module
 
 
-def click_pixel(x, y, click_duration=None, right_click=False, shift=False, ctrl=False, act_start=True, act_end=True, middle_click=False):
+def click_pixel(x, y, click_duration=None, right_click=False, shift=False, ctrl=False, act_start=True, act_end=True, middle_click=False, click_end_duration=None):
     keys_down = []
 
     if ctrl:
@@ -110,9 +110,11 @@ def click_pixel(x, y, click_duration=None, right_click=False, shift=False, ctrl=
         if act_end:
             win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
 
-    # All good things must come to an end. Lift the keys
     for key in keys_down:
         win32api.keybd_event(key, 0, win32con.KEYEVENTF_KEYUP, 0)
+
+    if click_end_duration:
+        time.sleep(click_end_duration)
 
 
 def get_mouse_xy():
