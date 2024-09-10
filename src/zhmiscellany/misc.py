@@ -75,7 +75,10 @@ def import_module_from_path(path, module_name=None):
     return module
 
 
-def click_pixel(x, y, click_duration=None, right_click=False, shift=False, ctrl=False, act_start=True, act_end=True, middle_click=False, click_end_duration=None):
+def click_pixel(x=None, y=None, click_duration=None, right_click=False, shift=False, ctrl=False, act_start=True, act_end=True, middle_click=False, click_end_duration=None, double_click=False):
+    if (x is None and y is not None) or (x is not None and y is None):
+        raise Exception('x and y need to be either both defined or neither defined, you passed one and not the other.')
+
     keys_down = []
 
     if ctrl:
@@ -86,7 +89,8 @@ def click_pixel(x, y, click_duration=None, right_click=False, shift=False, ctrl=
         win32api.keybd_event(win32con.VK_SHIFT, 0, 0, 0)
         keys_down.append(win32con.VK_SHIFT)
 
-    win32api.SetCursorPos((x, y))
+    if x is not None and y is not None:
+        win32api.SetCursorPos((x, y))
 
     if middle_click:
         if act_start:
@@ -115,6 +119,9 @@ def click_pixel(x, y, click_duration=None, right_click=False, shift=False, ctrl=
 
     if click_end_duration:
         time.sleep(click_end_duration)
+
+    if double_click:
+        click_pixel(x, y, click_duration, right_click, shift, ctrl, act_start, act_end, middle_click, click_end_duration)
 
 
 def get_mouse_xy():
