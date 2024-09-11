@@ -96,21 +96,21 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, shift=Fa
         if act_start:
             win32api.mouse_event(win32con.MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, 0)
         if click_duration:
-            time.sleep(click_duration)
+            high_precision_sleep(click_duration)
         if act_end:
             win32api.mouse_event(win32con.MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0)
     elif right_click:
         if act_start:
             win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0)
         if click_duration:
-            time.sleep(click_duration)
+            high_precision_sleep(click_duration)
         if act_end:
             win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0)
     else:
         if act_start:
             win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
         if click_duration:
-            time.sleep(click_duration)
+            high_precision_sleep(click_duration)
         if act_end:
             win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
 
@@ -118,10 +118,58 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, shift=Fa
         win32api.keybd_event(key, 0, win32con.KEYEVENTF_KEYUP, 0)
 
     if click_end_duration:
-        time.sleep(click_end_duration)
+        high_precision_sleep(click_end_duration)
 
     if double_click:
         click_pixel(x, y, click_duration, right_click, shift, ctrl, act_start, act_end, middle_click, click_end_duration)
+
+
+def type_keys(text, delay_between=1/30, hold_time=1/30):
+    key_map = {
+        'a': 0x41, 'b': 0x42, 'c': 0x43, 'd': 0x44, 'e': 0x45, 'f': 0x46,
+        'g': 0x47, 'h': 0x48, 'i': 0x49, 'j': 0x4A, 'k': 0x4B, 'l': 0x4C,
+        'm': 0x4D, 'n': 0x4E, 'o': 0x4F, 'p': 0x50, 'q': 0x51, 'r': 0x52,
+        's': 0x53, 't': 0x54, 'u': 0x55, 'v': 0x56, 'w': 0x57, 'x': 0x58,
+        'y': 0x59, 'z': 0x5A, '0': 0x30, '1': 0x31, '2': 0x32, '3': 0x33,
+        '4': 0x34, '5': 0x35, '6': 0x36, '7': 0x37, '8': 0x38, '9': 0x39,
+        ' ': win32con.VK_SPACE,
+        '.': win32con.VK_DECIMAL, ',': win32con.VK_OEM_COMMA, ';': win32con.VK_OEM_1,
+        ':': win32con.VK_OEM_1, '!': win32con.VK_1, '@': win32con.VK_2, '#': win32con.VK_3,
+        '$': win32con.VK_4, '%': win32con.VK_5, '^': win32con.VK_6, '&': win32con.VK_7,
+        '*': win32con.VK_8, '(': win32con.VK_9, ')': win32con.VK_0, '-': win32con.VK_OEM_MINUS,
+        '_': win32con.VK_OEM_MINUS, '=': win32con.VK_OEM_PLUS, '+': win32con.VK_OEM_PLUS,
+        '/': win32con.VK_OEM_2, '?': win32con.VK_OEM_2, '\\': win32con.VK_OEM_5,
+        '|': win32con.VK_OEM_5, '[': win32con.VK_OEM_4, '{': win32con.VK_OEM_4,
+        ']': win32con.VK_OEM_6, '}': win32con.VK_OEM_6, "'": win32con.VK_OEM_7,
+        '"': win32con.VK_OEM_7, '`': win32con.VK_OEM_3, '~': win32con.VK_OEM_3,
+    }
+
+    shift_chars = '!@#$%^&*()_+{}:"<>?|~'
+
+    for char in text:
+        shift = False
+
+        # Check if the character requires Shift (e.g., uppercase letters or symbols)
+        if char.isupper() or char in shift_chars:
+            shift = True
+            win32api.keybd_event(win32con.VK_SHIFT, 0, 0, 0)
+
+        # Get the virtual key code (handles lowercase automatically)
+        vk_code = key_map.get(char.lower())
+
+        if vk_code:
+            # Simulate key press down
+            win32api.keybd_event(vk_code, 0, 0, 0)
+            high_precision_sleep(hold_time)  # Hold the key for a specific duration
+
+            # Simulate key release
+            win32api.keybd_event(vk_code, 0, win32con.KEYEVENTF_KEYUP, 0)
+
+        if shift:
+            win32api.keybd_event(win32con.VK_SHIFT, 0, win32con.KEYEVENTF_KEYUP, 0)
+
+        # Wait between keystrokes
+        high_precision_sleep(delay_between)
 
 
 def get_mouse_xy():
