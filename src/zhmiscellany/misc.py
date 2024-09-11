@@ -152,7 +152,7 @@ def type_string(text, delay=None, key_hold_time=None):
         if shift:
             win32api.keybd_event(win32con.VK_SHIFT, 0, 0, 0)
         win32api.keybd_event(vk_code, 0, 0, 0)
-        if delay:
+        if key_hold_time:
             high_precision_sleep(key_hold_time)
         win32api.keybd_event(vk_code, 0, win32con.KEYEVENTF_KEYUP, 0)
         if shift:
