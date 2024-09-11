@@ -124,7 +124,7 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, shift=Fa
         click_pixel(x, y, click_duration, right_click, shift, ctrl, act_start, act_end, middle_click, click_end_duration)
 
 
-def simulated_typing(text, delay=None, key_hold_time=None):
+def type_string(text, delay=None, key_hold_time=None):
     # Dictionary mapping characters to their virtual key codes and shift state
     char_to_vk = {
         'a': (0x41, False), 'b': (0x42, False), 'c': (0x43, False), 'd': (0x44, False),
