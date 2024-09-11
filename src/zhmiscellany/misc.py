@@ -124,52 +124,51 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, shift=Fa
         click_pixel(x, y, click_duration, right_click, shift, ctrl, act_start, act_end, middle_click, click_end_duration)
 
 
-def type_keys(text, delay_between=1/30, hold_time=1/30):
-    key_map = {
-        'a': 0x41, 'b': 0x42, 'c': 0x43, 'd': 0x44, 'e': 0x45, 'f': 0x46,
-        'g': 0x47, 'h': 0x48, 'i': 0x49, 'j': 0x4A, 'k': 0x4B, 'l': 0x4C,
-        'm': 0x4D, 'n': 0x4E, 'o': 0x4F, 'p': 0x50, 'q': 0x51, 'r': 0x52,
-        's': 0x53, 't': 0x54, 'u': 0x55, 'v': 0x56, 'w': 0x57, 'x': 0x58,
-        'y': 0x59, 'z': 0x5A, '0': 0x30, '1': 0x31, '2': 0x32, '3': 0x33,
-        '4': 0x34, '5': 0x35, '6': 0x36, '7': 0x37, '8': 0x38, '9': 0x39,
-        ' ': win32con.VK_SPACE,
-        '.': win32con.VK_DECIMAL, ',': win32con.VK_OEM_COMMA, ';': win32con.VK_OEM_1,
-        ':': win32con.VK_OEM_1, '!': win32con.VK_1, '@': win32con.VK_2, '#': win32con.VK_3,
-        '$': win32con.VK_4, '%': win32con.VK_5, '^': win32con.VK_6, '&': win32con.VK_7,
-        '*': win32con.VK_8, '(': win32con.VK_9, ')': win32con.VK_0, '-': win32con.VK_OEM_MINUS,
-        '_': win32con.VK_OEM_MINUS, '=': win32con.VK_OEM_PLUS, '+': win32con.VK_OEM_PLUS,
-        '/': win32con.VK_OEM_2, '?': win32con.VK_OEM_2, '\\': win32con.VK_OEM_5,
-        '|': win32con.VK_OEM_5, '[': win32con.VK_OEM_4, '{': win32con.VK_OEM_4,
-        ']': win32con.VK_OEM_6, '}': win32con.VK_OEM_6, "'": win32con.VK_OEM_7,
-        '"': win32con.VK_OEM_7, '`': win32con.VK_OEM_3, '~': win32con.VK_OEM_3,
+def simulated_typing(text, delay=None, key_hold_time=None):
+    # Dictionary mapping characters to their virtual key codes and shift state
+    char_to_vk = {
+        'a': (0x41, False), 'b': (0x42, False), 'c': (0x43, False), 'd': (0x44, False),
+        'e': (0x45, False), 'f': (0x46, False), 'g': (0x47, False), 'h': (0x48, False),
+        'i': (0x49, False), 'j': (0x4A, False), 'k': (0x4B, False), 'l': (0x4C, False),
+        'm': (0x4D, False), 'n': (0x4E, False), 'o': (0x4F, False), 'p': (0x50, False),
+        'q': (0x51, False), 'r': (0x52, False), 's': (0x53, False), 't': (0x54, False),
+        'u': (0x55, False), 'v': (0x56, False), 'w': (0x57, False), 'x': (0x58, False),
+        'y': (0x59, False), 'z': (0x5A, False), '0': (0x30, False), '1': (0x31, False),
+        '2': (0x32, False), '3': (0x33, False), '4': (0x34, False), '5': (0x35, False),
+        '6': (0x36, False), '7': (0x37, False), '8': (0x38, False), '9': (0x39, False),
+        ' ': (0x20, False), '.': (0xBE, False), ',': (0xBC, False), ';': (0xBA, False),
+        '/': (0xBF, False), '[': (0xDB, False), ']': (0xDD, False), '\\': (0xDC, False),
+        '-': (0xBD, False), '=': (0xBB, False), '`': (0xC0, False), "'": (0xDE, False),
+        '\n': (0x0D, False), '\t': (0x09, False),
+        '{': (0xDB, True), '}': (0xDD, True), '_': (0xBD, True), '%': (0x35, True),
+        '!': (0x31, True), '@': (0x32, True), '#': (0x33, True), '$': (0x34, True),
+        '^': (0x36, True), '&': (0x37, True), '*': (0x38, True), '(': (0x39, True),
+        ')': (0x30, True), '+': (0xBB, True), '|': (0xDC, True), ':': (0xBA, True),
+        '"': (0xDE, True), '<': (0xBC, True), '>': (0xBE, True), '?': (0xBF, True),
+        '~': (0xC0, True)
     }
 
-    shift_chars = '!@#$%^&*()_+{}:"<>?|~'
-
-    for char in text:
-        shift = False
-
-        # Check if the character requires Shift (e.g., uppercase letters or symbols)
-        if char.isupper() or char in shift_chars:
-            shift = True
+    def press_key(vk_code, shift=False):
+        if shift:
             win32api.keybd_event(win32con.VK_SHIFT, 0, 0, 0)
-
-        # Get the virtual key code (handles lowercase automatically)
-        vk_code = key_map.get(char.lower())
-
-        if vk_code:
-            # Simulate key press down
-            win32api.keybd_event(vk_code, 0, 0, 0)
-            high_precision_sleep(hold_time)  # Hold the key for a specific duration
-
-            # Simulate key release
-            win32api.keybd_event(vk_code, 0, win32con.KEYEVENTF_KEYUP, 0)
-
+        win32api.keybd_event(vk_code, 0, 0, 0)
+        if delay:
+            high_precision_sleep(key_hold_time)
+        win32api.keybd_event(vk_code, 0, win32con.KEYEVENTF_KEYUP, 0)
         if shift:
             win32api.keybd_event(win32con.VK_SHIFT, 0, win32con.KEYEVENTF_KEYUP, 0)
 
-        # Wait between keystrokes
-        high_precision_sleep(delay_between)
+    for char in text:
+        lower_char = char.lower()
+        if lower_char in char_to_vk:
+            vk_code, shift = char_to_vk[lower_char]
+            if char.isupper():
+                shift = True
+            press_key(vk_code, shift)
+        else:
+            print(f"Character '{char}' not supported")
+        if delay:
+            high_precision_sleep(delay)
 
 
 def get_mouse_xy():
