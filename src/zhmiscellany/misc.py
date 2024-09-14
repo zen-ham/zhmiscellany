@@ -2,7 +2,9 @@ import os, signal, time, importlib
 from ._misc_supportfuncs import set_activity_timeout, activity
 import zhmiscellany.math
 import zhmiscellany.string
+import zhmiscellany.processing
 import win32api, win32con, time, hashlib, ctypes, sys
+import keyboard
 
 
 def die():
@@ -234,3 +236,12 @@ def run_as_admin(keep_console = False):
     else:
         while True:
             time.sleep(1)
+
+
+def die_on_key(key='f9', show_message=False):
+    def _die_on_key(key):
+        keyboard.wait(key)
+        if show_message:
+            print("Stopping the process because exit key was pressed.")
+        die()
+    zhmiscellany.processing.start_daemon(target=_die_on_key, args=(key,))
