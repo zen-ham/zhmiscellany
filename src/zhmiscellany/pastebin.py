@@ -6,6 +6,7 @@ API Documentation: https://pastebin.com/doc_api
 
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
 
 
 class PasteBin:
@@ -38,7 +39,12 @@ class PasteBin:
         params = {'api_dev_key': self.api_dev_key, 'api_user_key': self.api_user_key, 'api_option': 'list'}
         if results_limit:
             params['api_results_limit'] = results_limit
-        return self.api_call('api_post.php', params)
+        root = ET.fromstring(f"<root>{self.api_call('api_post.php', params)}</root>")
+        pastes_list = []
+        for paste in root.findall('paste'):
+            paste_dict = {child.tag: child.text for child in paste}
+            pastes_list.append(paste_dict)
+        return pastes_list
 
     def trending_pastes(self):
         '''List trending pastes.'''
