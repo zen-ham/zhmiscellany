@@ -9,3 +9,4 @@ from . import dict
 from . import processing
 from . import misc
 from . import pipes
+from . import pastebin
