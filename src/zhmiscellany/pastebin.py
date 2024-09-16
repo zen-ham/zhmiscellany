@@ -17,7 +17,10 @@ class PasteBin:
         '''Make a call to the PasteBin API.'''
         url = f'https://pastebin.com/api/{method}'
         response = requests.post(url, data=params, timeout=10)
-        response.raise_for_status()  # Raise an exception for HTTP errors
+        try:
+            response.raise_for_status()  # Raise an exception for HTTP errors
+        except:
+            raise Exception(f'ERROR {response.status_code}: {response.text}')
         return response.text
 
     def create_user_key(self, username, password):
@@ -100,3 +103,46 @@ class PasteBin:
             'api_option': 'show_paste'
         }
         return self.api_call('api_raw.php', params)
+
+
+class Pastee:
+    def __init__(self, api_key):
+        self.api_key = api_key
+        self.base_url = "https://api.paste.ee/v1/pastes"
+
+    def api_call(self, method, endpoint, params=None, json_data=None):
+        '''Make a call to the Pastee API.'''
+        headers = {'X-Auth-Token': self.api_key}
+        url = f"{self.base_url}{endpoint}"
+
+        if method == 'POST':
+            response = requests.post(url, headers=headers, json=json_data, params=params, timeout=10)
+        elif method == 'GET':
+            response = requests.get(url, headers=headers, params=params, timeout=10)
+        elif method == 'DELETE':
+            response = requests.delete(url, headers=headers, params=params, timeout=10)
+
+        try:
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            raise Exception(f'ERROR {response.status_code}: {response.text}') from e
+
+        return response.json()
+
+    def paste(self, data, name=None, expire=None):
+        '''Create a paste on Pastee.'''
+        json_data = {
+            'sections': [{'name': name or 'Untitled', 'contents': data}]
+        }
+        if expire:
+            json_data['expiration'] = expire
+
+        return self.api_call('POST', '', json_data=json_data)
+
+    def get_paste(self, paste_id):
+        '''Retrieve a paste by its ID.'''
+        return self.api_call('GET', f'/{paste_id}')
+
+    def delete_paste(self, paste_id):
+        '''Delete a paste by its ID.'''
+        return self.api_call('DELETE', f'/{paste_id}')
