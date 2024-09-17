@@ -148,7 +148,7 @@ class Pasteee:
         '''Delete a paste by its ID.'''
         return self.api_call('DELETE', f'/{paste_id}')
 
-    def list_pastes(self, per_page, page):
+    def list_pastes(self, per_page=None, page=None):
         '''List all pastes on account.'''
         perameters = {}
         if page:
