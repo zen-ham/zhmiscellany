@@ -146,3 +146,7 @@ class Pasteee:
     def delete_paste(self, paste_id):
         '''Delete a paste by its ID.'''
         return self.api_call('DELETE', f'/{paste_id}')
+
+    def list_pastes(self):
+        '''List all pastes on account.'''
+        return self.api_call('GET', '')
