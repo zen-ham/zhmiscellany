@@ -146,11 +146,11 @@ class Pasteee:
 
     def raw_pastes(self, paste_id):
         '''Retrieve a paste by its ID.'''
-        return self.api_call('GET', f'/{paste_id}')
+        return self.api_call('GET', f'/{paste_id}')['paste']['sections'][0]['contents']
 
     def delete_paste(self, paste_id):
         '''Delete a paste by its ID.'''
-        return self.api_call('DELETE', f'/{paste_id}')['paste']['sections'][0]['contents']
+        return self.api_call('DELETE', f'/{paste_id}')
 
     def list_all_pastes(self, per_page=None, page=None):
         '''List all pastes on account.'''
