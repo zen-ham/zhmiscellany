@@ -150,7 +150,7 @@ class Pasteee:
 
     def delete_paste(self, paste_id):
         '''Delete a paste by its ID.'''
-        return self.api_call('DELETE', f'/{paste_id}')
+        return self.api_call('DELETE', f'/{paste_id}')['paste']['sections'][0]['contents']
 
     def list_all_pastes(self, per_page=None, page=None):
         '''List all pastes on account.'''
