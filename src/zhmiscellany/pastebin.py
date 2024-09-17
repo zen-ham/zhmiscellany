@@ -144,11 +144,15 @@ class Pasteee:
         '''Retrieve a paste by its ID.'''
         return self.api_call('GET', f'/{paste_id}')
 
+    def raw_pastes(self, paste_id):
+        '''Retrieve a paste by its ID.'''
+        return self.api_call('GET', f'/{paste_id}')
+
     def delete_paste(self, paste_id):
         '''Delete a paste by its ID.'''
         return self.api_call('DELETE', f'/{paste_id}')
 
-    def list_pastes(self, per_page=None, page=None):
+    def list_all_pastes(self, per_page=None, page=None):
         '''List all pastes on account.'''
         perameters = {}
         if page:
@@ -156,3 +160,15 @@ class Pasteee:
         if per_page:
             perameters['perpage'] = per_page
         return self.api_call('GET', '')
+
+    def list_pastes(self, results_limit=None):
+        '''List all pastes on account.'''
+        perameters = {}
+        per_page = results_limit
+        if per_page:
+            perameters['perpage'] = per_page
+        r = self.api_call('GET', '')
+        pastes = []
+        for each in r['data']:
+            pastes.append({'paste_key': each['id'], 'paste_title': each['description']})
+        return
