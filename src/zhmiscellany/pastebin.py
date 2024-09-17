@@ -131,10 +131,10 @@ class Pasteee:
         }
         if expire:
             json_data['expiration'] = expire
-        if description:
-            json_data['description'] = description
         if name:
             json_data['sections'][0]['name'] = name
+        if description or name:
+            json_data['description'] = description or name
         if syntax:
             json_data['sections'][0]['syntax'] = syntax
 
