@@ -105,7 +105,7 @@ class PasteBin:
         return self.api_call('api_raw.php', params)
 
 
-class Pastee:
+class Pasteee:
     def __init__(self, api_key):
         self.api_key = api_key
         self.base_url = "https://api.paste.ee/v1/pastes"
@@ -129,10 +129,10 @@ class Pastee:
 
         return response.json()
 
-    def paste(self, data, name=None, expire=None):
+    def paste(self, data, name=None, description=None, expire=None):
         '''Create a paste on Pastee.'''
         json_data = {
-            'sections': [{'name': name or 'Untitled', 'contents': data}]
+            'description': description or 'Undescribed', 'sections': [{'name': name or 'Untitled', 'contents': data, 'syntax': 'autodetect'}]
         }
         if expire:
             json_data['expiration'] = expire
