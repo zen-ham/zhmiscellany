@@ -171,4 +171,4 @@ class Pasteee:
         pastes = []
         for each in r['data']:
             pastes.append({'paste_key': each['id'], 'paste_title': each['description']})
-        return
+        return pastes
