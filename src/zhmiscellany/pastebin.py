@@ -1,13 +1,8 @@
-# PasteBin API Class - Developed by acidvegas in Python, modernized for use in zhmiscellany package. (https://git.acid.vegas/pastebin)
-
-'''
-API Documentation: https://pastebin.com/doc_api
-'''
 
 import requests
 import xml.etree.ElementTree as ET
 
-
+# PasteBin API Class - Developed by acidvegas in Python, modernized for use in zhmiscellany package. (https://git.acid.vegas/pastebin)
 class PasteBin:
     def __init__(self, api_dev_key, api_user_key=None):
         self.api_dev_key = api_dev_key
@@ -129,13 +124,19 @@ class Pasteee:
 
         return response.json()
 
-    def paste(self, data, name=None, description=None, expire=None):
+    def paste(self, data, name=None, description=None, expire=None, syntax=None):
         '''Create a paste on Pastee.'''
         json_data = {
-            'description': description or 'Undescribed', 'sections': [{'name': name or 'Untitled', 'contents': data, 'syntax': 'autodetect'}]
+            'sections': [{'contents': data}]
         }
         if expire:
             json_data['expiration'] = expire
+        if description:
+            json_data['description'] = description
+        if name:
+            json_data['sections'][0]['name'] = name
+        if syntax:
+            json_data['sections'][0]['syntax'] = syntax
 
         return self.api_call('POST', '', json_data=json_data)
 
@@ -147,6 +148,11 @@ class Pasteee:
         '''Delete a paste by its ID.'''
         return self.api_call('DELETE', f'/{paste_id}')
 
-    def list_pastes(self):
+    def list_pastes(self, per_page, page):
         '''List all pastes on account.'''
+        perameters = {}
+        if page:
+            perameters['page'] = page
+        if per_page:
+            perameters['perpage'] = per_page
         return self.api_call('GET', '')
