@@ -418,8 +418,13 @@ def timestamp_to_id(timestamp):
     return int((timestamp * 1000 - DISCORD_EPOCH) * 4194304)
 
 
-def get_user_avatar_url(user_token, user_id):
+def get_user_avatar_url(user_token, user_id, use_cache=True):
     url = f"https://discord.com/api/v10/users/{user_id}"
+
+    if use_cache:
+        potential_path = os.path.join('zhmiscellany_cache', f'{user_id}_avatar_url.json')
+        if os.path.exists(potential_path):
+            return zhmiscellany.fileio.read_json_file(potential_path)
 
     # Make the API request to get the user data
     response = requests.get(url, headers={**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token})
@@ -433,10 +438,12 @@ def get_user_avatar_url(user_token, user_id):
         if avatar_hash:
             # Construct the custom avatar URL
             avatar_url = f"https://cdn.discordapp.com/avatars/{user_id}/{avatar_hash}.png"
-            return avatar_url
         else:
             # User has a default avatar, use their discriminator modulo 5
-            default_avatar_url = f"https://cdn.discordapp.com/embed/avatars/{int(discriminator) % 5}.png"
-            return default_avatar_url
+            avatar_url = f"https://cdn.discordapp.com/embed/avatars/{int(discriminator) % 5}.png"
     else:
-        raise Exception(f"Failed to retrieve user data for user {user_id}: {response.status_code}")
+        avatar_url = f"https://cdn.discordapp.com/embed/avatars/0.png"
+    if use_cache:
+        zhmiscellany.fileio.create_folder('zhmiscellany_cache')
+        zhmiscellany.fileio.write_json_file(potential_path, avatar_url)
+    return avatar_url
