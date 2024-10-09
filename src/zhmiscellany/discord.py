@@ -416,3 +416,27 @@ def id_to_timestamp(id):
 def timestamp_to_id(timestamp):
     DISCORD_EPOCH = 1420070400000
     return int((timestamp * 1000 - DISCORD_EPOCH) * 4194304)
+
+
+def get_user_avatar_url(user_token, user_id):
+    url = f"https://discord.com/api/v10/users/{user_id}"
+
+    # Make the API request to get the user data
+    response = requests.get(url, headers={**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token})
+
+    if response.status_code == 200:
+        user_data = response.json()
+        avatar_hash = user_data.get("avatar")
+        discriminator = user_data.get("discriminator")
+
+        # If the user has a custom avatar
+        if avatar_hash:
+            # Construct the custom avatar URL
+            avatar_url = f"https://cdn.discordapp.com/avatars/{user_id}/{avatar_hash}.png"
+            return avatar_url
+        else:
+            # User has a default avatar, use their discriminator modulo 5
+            default_avatar_url = f"https://cdn.discordapp.com/embed/avatars/{int(discriminator) % 5}.png"
+            return default_avatar_url
+    else:
+        raise Exception(f"Failed to retrieve user data for user {user_id}: {response.status_code}")
