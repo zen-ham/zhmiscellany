@@ -409,11 +409,13 @@ def get_approximate_member_count(user_token, channel_id, use_cache=True):
 
 
 def id_to_timestamp(id):
+    id=int(id)
     DISCORD_EPOCH = 1420070400000
     return (id / 4194304 + DISCORD_EPOCH)/1000
 
 
 def timestamp_to_id(timestamp):
+    id = int(id)
     DISCORD_EPOCH = 1420070400000
     return int((timestamp * 1000 - DISCORD_EPOCH) * 4194304)
 
