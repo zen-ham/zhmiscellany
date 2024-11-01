@@ -78,8 +78,12 @@ def import_module_from_path(path, module_name=None):
 
 
 def click_pixel(x=None, y=None, click_duration=None, right_click=False, shift=False, ctrl=False, act_start=True, act_end=True, middle_click=False, click_end_duration=None, double_click=False):
-    if (x is None and y is not None) or (x is not None and y is None):
-        raise Exception('x and y need to be either both defined or neither defined, you passed one and not the other.')
+    if type(x) != tuple and type(x) != list:
+        if (x is None and y is not None) or (x is not None and y is None):
+            raise Exception('x and y need to be either both defined or neither defined, you passed one and not the other.')
+    else:
+        y = x[1]
+        x = x[0]
 
     keys_down = []
 
