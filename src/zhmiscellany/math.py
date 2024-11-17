@@ -24,12 +24,16 @@ def clamp(value, minimum, maximum):
     return max(min(value, maximum), minimum)
 
 
-def generate_grid(top_left, bottom_right, rows, cols, int_coords=True):
+def generate_grid(top_left, bottom_right, rows, cols, int_coords=True, row_major=False):
     x = np.linspace(top_left[0], bottom_right[0], cols)
     y = np.linspace(top_left[1], bottom_right[1], rows)
     grid = np.array(np.meshgrid(x, y)).T.reshape(-1, 2)
 
     if int_coords:
         grid = np.rint(grid).astype(int)
+
+    # Reorder to row-major (left-to-right, top-to-bottom) if specified
+    if row_major:
+        grid = grid.reshape(rows, cols, 2).transpose(1, 0, 2).reshape(-1, 2)
 
     return [tuple(coord) for coord in grid]
