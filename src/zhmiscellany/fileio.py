@@ -176,3 +176,4 @@ def cache(seed, function):
     else:
         result = function(seed)
         save_object_to_file(result, cache_file)
+        return result
