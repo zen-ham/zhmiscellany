@@ -1,6 +1,7 @@
 import json, os, shutil, dill, sys
 import zhmiscellany.string
 import zhmiscellany.misc
+import hashlib
 
 
 def read_json_file(file_path):
@@ -159,3 +160,19 @@ def get_script_path():
     else:
         # Running as a Python script
         return sys.argv[0]
+
+
+def cache(seed, function):
+    def generate_hash(obj):
+        obj_str = str(obj)
+        return hashlib.md5(obj_str.encode()).hexdigest()
+
+    seed_hash = generate_hash(seed)
+
+    cache_file = f'{seed_hash}.pkl'
+
+    if os.path.exists(cache_file):
+        return load_object_from_file(cache_file)
+    else:
+        result = function(seed)
+        save_object_to_file(result, cache_file)
