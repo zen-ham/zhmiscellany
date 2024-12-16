@@ -163,13 +163,16 @@ def get_script_path():
 
 
 def cache(seed, function):
+    cache_folder = 'zhmiscellany_cache'
+    zhmiscellany.fileio.create_folder(cache_folder)
+
     def generate_hash(obj):
         obj_str = str(obj)
         return hashlib.md5(obj_str.encode()).hexdigest()
 
     seed_hash = generate_hash(seed)
 
-    cache_file = f'{seed_hash}.pkl'
+    cache_file = f'{cache_folder}/fn_cache_{seed_hash}.pkl'
 
     if os.path.exists(cache_file):
         return load_object_from_file(cache_file)
@@ -177,3 +180,16 @@ def cache(seed, function):
         result = function(seed)
         save_object_to_file(result, cache_file)
         return result
+
+
+def load_all_cached():
+    cache_folder = 'zhmiscellany_cache'
+    if os.path.exists(cache_folder):
+        files = abs_listdir(cache_folder)
+        files = [file for file in files if 'fn_cache_' in file]
+        if files:
+            return [load_object_from_file(file) for file in files]
+        else:
+            raise Exception('Nothing has been cached yet')
+    else:
+        raise Exception('Nothing has been cached yet')
