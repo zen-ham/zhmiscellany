@@ -1,3 +1,4 @@
+import math
 import os, signal, time, importlib
 from ._misc_supportfuncs import set_activity_timeout, activity
 import zhmiscellany.math
@@ -92,6 +93,7 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, shift=Fa
         end = (x, y)
         num_points = animation_fps*animation_time  # 60 fps animation
         num_points += 2  # don't need start and end points
+        num_points = math.ceil(num_points)
         animation_points = zhmiscellany.math.generate_eased_points(start, end, num_points)
         animation_points.pop()  # remove start and end
         animation_points.pop(0)
