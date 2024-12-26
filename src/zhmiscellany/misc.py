@@ -130,7 +130,7 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, shift=Fa
         click_pixel(x, y, click_duration, right_click, shift, ctrl, act_start, act_end, middle_click, click_end_duration)
 
 
-def type_string(text, delay=None, key_hold_time=None):
+def type_string(text=None, delay=None, key_hold_time=None, vk_codes=None, combine=False):
     # Dictionary mapping characters to their virtual key codes and shift state
     char_to_vk = {
         'a': (0x41, False), 'b': (0x42, False), 'c': (0x43, False), 'd': (0x44, False),
@@ -154,27 +154,52 @@ def type_string(text, delay=None, key_hold_time=None):
         '~': (0xC0, True)
     }
 
-    def press_key(vk_code, shift=False):
+    def press_key(vk_code, shift=False, act_start=True, act_end=True):
         if shift:
             win32api.keybd_event(win32con.VK_SHIFT, 0, 0, 0)
-        win32api.keybd_event(vk_code, 0, 0, 0)
+        if act_start:
+            win32api.keybd_event(vk_code, 0, 0, 0)  # press
         if key_hold_time:
             high_precision_sleep(key_hold_time)
-        win32api.keybd_event(vk_code, 0, win32con.KEYEVENTF_KEYUP, 0)
+        if act_end:
+            win32api.keybd_event(vk_code, 0, win32con.KEYEVENTF_KEYUP, 0)  # release
         if shift:
             win32api.keybd_event(win32con.VK_SHIFT, 0, win32con.KEYEVENTF_KEYUP, 0)
 
-    for char in text:
-        lower_char = char.lower()
-        if lower_char in char_to_vk:
-            vk_code, shift = char_to_vk[lower_char]
-            if char.isupper():
-                shift = True
-            press_key(vk_code, shift)
-        else:
-            print(f"Character '{char}' not supported")
-        if delay:
-            high_precision_sleep(delay)
+    if text:
+        for char in text:
+            lower_char = char.lower()
+            if lower_char in char_to_vk:
+                vk_code, shift = char_to_vk[lower_char]
+                if char.isupper():
+                    shift = True
+                press_key(vk_code, shift, act_end=not combine)
+            else:
+                print(f"Character '{char}' not supported")
+            if delay:
+                high_precision_sleep(delay)
+        if combine:
+            for char in text:
+                lower_char = char.lower()
+                if lower_char in char_to_vk:
+                    vk_code, shift = char_to_vk[lower_char]
+                    if char.isupper():
+                        shift = True
+                    press_key(vk_code, shift, act_start=False, act_end=True)
+                else:
+                    print(f"Character '{char}' not supported")
+    if vk_codes:
+        for vk_code in vk_codes:
+            press_key(vk_code, False, act_end=not combine)
+            if delay:
+                high_precision_sleep(delay)
+        if combine:
+            for vk_code in vk_codes:
+                press_key(vk_code, False, act_start=False, act_end=True)
+
+
+def scroll(amount):
+    win32api.mouse_event(win32con.MOUSEEVENTF_WHEEL, 0, 0, amount, 0)
 
 
 def get_mouse_xy():
@@ -206,42 +231,6 @@ def is_admin():
         return False
 
 
-def run_as_admin(keep_console = False):
-    if is_admin():
-        print("Already running as administrator.")
-        return
-
-    # Get the script path
-    if getattr(sys, 'frozen', False):
-        # If the script is compiled to an EXE
-        script_path = sys.executable
-        compiled = True
-    else:
-        # If the script is being run as a .py file
-        script_path = sys.argv[0]
-        compiled = False
-
-    # Run the script with admin privileges
-    params = ' '.join([script_path] + sys.argv[1:])
-    try:
-        ctypes.windll.shell32.ShellExecuteW(
-            None, "runas", sys.executable, params, None, 1)
-    except Exception as e:
-        print(f"Failed to elevate privileges: {e}")
-        if not keep_console:
-            die()
-        else:
-            while True:
-                time.sleep(1)
-
-    # Exit the current script after attempting to rerun as admin
-    if not keep_console:
-        die()
-    else:
-        while True:
-            time.sleep(1)
-
-
 def die_on_key(key='f9', show_message=False):
     def _die_on_key(key):
         keyboard.wait(key)
@@ -263,6 +252,9 @@ KEY_CODES = {
     'Tab': 9,
     'Clear': 12,
     'Enter': 13,
+    'Shift': 16,
+    'Ctrl': 17,
+    'Alt': 18,
     'Pause': 19,
     'CapsLock': 20,
     'Escape': 27,

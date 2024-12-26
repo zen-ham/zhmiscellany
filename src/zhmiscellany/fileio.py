@@ -162,6 +162,10 @@ def get_script_path():
         return sys.argv[0]
 
 
+def chdir_to_script_dir():
+    os.chdir(os.path.dirname(get_script_path()))
+
+
 def cache(seed, function):
     cache_folder = 'zhmiscellany_cache'
     zhmiscellany.fileio.create_folder(cache_folder)
