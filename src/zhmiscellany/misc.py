@@ -198,8 +198,15 @@ def type_string(text=None, delay=None, key_hold_time=None, vk_codes=None, combin
                 press_key(vk_code, False, act_start=False, act_end=True)
 
 
-def scroll(amount):
-    win32api.mouse_event(win32con.MOUSEEVENTF_WHEEL, 0, 0, amount, 0)
+def scroll(amount, delay=None):
+    if not delay:
+        win32api.mouse_event(win32con.MOUSEEVENTF_WHEEL, 0, 0, amount, 0)
+    else:
+        direction = 1 if amount > 0 else -1
+        amount = amount*direction
+        for _ in range(amount):
+            win32api.mouse_event(win32con.MOUSEEVENTF_WHEEL, 0, 0, direction, 0)
+            high_precision_sleep(delay/amount)
 
 
 def get_mouse_xy():
