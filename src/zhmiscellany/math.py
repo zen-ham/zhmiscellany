@@ -41,3 +41,24 @@ def generate_grid(top_left, bottom_right, rows, cols, int_coords=True, row_major
         return grid
     else:
         return [tuple(coord) for coord in grid]
+
+
+def generate_eased_points(p1, p2, num_points):
+    def ease_in_out(t):
+        return t * t * (3 - 2 * t)  # Smoothstep formula
+    x1, y1 = p1
+    x2, y2 = p2
+
+    # Generate normalized times (t) from 0 to 1
+    t_values = np.linspace(0, 1, num_points)
+
+    # Apply ease-in-out transformation to the normalized times
+    eased_t_values = ease_in_out(t_values)
+
+    # Interpolate x and y values using the eased t values
+    points = [
+        (x1 + (x2 - x1) * t, y1 + (y2 - y1) * t)
+        for t in eased_t_values
+    ]
+
+    return points

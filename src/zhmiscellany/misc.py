@@ -77,7 +77,7 @@ def import_module_from_path(path, module_name=None):
     return module
 
 
-def click_pixel(x=None, y=None, click_duration=None, right_click=False, shift=False, ctrl=False, act_start=True, act_end=True, middle_click=False, click_end_duration=None, double_click=False):
+def click_pixel(x=None, y=None, click_duration=None, right_click=False, shift=False, ctrl=False, act_start=True, act_end=True, middle_click=False, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60):
     if type(x) != tuple and type(x) != list:
         if (x is None and y is not None) or (x is not None and y is None):
             raise Exception('x and y need to be either both defined or neither defined, you passed one and not the other.')
@@ -86,6 +86,17 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, shift=Fa
         x = x[0]
 
     keys_down = []
+
+    if animation_time:
+        start = get_mouse_xy()
+        end = (x, y)
+        num_points = animation_fps*animation_time  # 60 fps animation
+        num_points += 2  # don't need start and end points
+        animation_points = zhmiscellany.math.generate_eased_points(start, end, num_points)
+        animation_points.pop()  # remove start and end
+        animation_points.pop(0)
+        for point in animation_points:
+            click_pixel(point, act_start=False, act_end=False, click_end_duration=1/animation_fps)
 
     if ctrl:
         win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
