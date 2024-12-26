@@ -96,7 +96,7 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, shift=Fa
         animation_points.pop()  # remove start and end
         animation_points.pop(0)
         for point in animation_points:
-            click_pixel(point, act_start=False, act_end=False, click_end_duration=1/animation_fps)
+            click_pixel((round(point[0]), round(point[1])), act_start=False, act_end=False, click_end_duration=1/animation_fps)
 
     if ctrl:
         win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
