@@ -78,10 +78,12 @@ def import_module_from_path(path, module_name=None):
     return module
 
 
-def click_pixel(x=None, y=None, click_duration=None, right_click=False, shift=False, ctrl=False, act_start=True, act_end=True, middle_click=False, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60):
+def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True):
+    if right_click and middle_click:
+        raise Exception('Both right click and middle click were set to true. Make sure just one is set to true at a time, or neither.')
     if type(x) != tuple and type(x) != list:
         if (x is None and y is not None) or (x is not None and y is None):
-            raise Exception('x and y need to be either both defined or neither defined, you passed one and not the other.')
+            raise Exception('x and y need to be either both defined or neither defined, or x needs to be a tuple or list, with 2 elements. you passed one and not the other and x was not such a tuple.')
     else:
         y = x[1]
         x = x[0]
@@ -94,7 +96,10 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, shift=Fa
         num_points = animation_fps*animation_time  # 60 fps animation
         num_points += 2  # don't need start and end points
         num_points = math.ceil(num_points)
-        animation_points = zhmiscellany.math.generate_eased_points(start, end, num_points)
+        if animation_easing:
+            animation_points = zhmiscellany.math.generate_eased_points(start, end, num_points)
+        else:
+            animation_points = zhmiscellany.math.generate_linear_points(start, end, num_points)
         animation_points.pop()  # remove start and end
         animation_points.pop(0)
         for point in animation_points:

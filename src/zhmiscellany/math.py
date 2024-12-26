@@ -62,3 +62,19 @@ def generate_eased_points(p1, p2, num_points):
     ]
 
     return points
+
+
+def generate_linear_points(p1, p2, num_points):
+    x1, y1 = p1
+    x2, y2 = p2
+
+    # Generate normalized times (t) from 0 to 1
+    t_values = np.linspace(0, 1, num_points)
+
+    # Interpolate x and y values using linear t values
+    points = [
+        (x1 + (x2 - x1) * t, y1 + (y2 - y1) * t)
+        for t in t_values
+    ]
+
+    return points
