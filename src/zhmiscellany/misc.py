@@ -199,13 +199,51 @@ def type_string(text=None, delay=None, key_hold_time=None, vk_codes=None, combin
 
 
 def scroll(amount, delay=None):
-    if not delay:
-        win32api.mouse_event(win32con.MOUSEEVENTF_WHEEL, 0, 0, amount, 0)
+    def raw_scroll(amount):
+        # Constants for mouse input
+        INPUT_MOUSE = 0
+        MOUSEEVENTF_WHEEL = 0x0800
+
+        class MOUSEINPUT(ctypes.Structure):
+            _fields_ = [
+                ("dx", ctypes.c_long),
+                ("dy", ctypes.c_long),
+                ("mouseData", ctypes.c_ulong),
+                ("dwFlags", ctypes.c_ulong),
+                ("time", ctypes.c_ulong),
+                ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong)),
+            ]
+
+        class INPUT(ctypes.Structure):
+            _fields_ = [
+                ("type", ctypes.c_ulong),
+                ("mi", MOUSEINPUT),
+            ]
+
+        amount = amount * 120
+        # Prepare the input structure
+        extra = ctypes.c_ulong(0)
+        x = INPUT(
+            type=INPUT_MOUSE,
+            mi=MOUSEINPUT(
+                dx=0,
+                dy=0,
+                mouseData=amount,
+                dwFlags=MOUSEEVENTF_WHEEL,
+                time=0,
+                dwExtraInfo=ctypes.pointer(extra),
+            ),
+        )
+        # Send the input
+        ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+
+    if delay is None:
+        raw_scroll(amount)
     else:
         direction = 1 if amount > 0 else -1
         amount = amount*direction
         for _ in range(amount):
-            win32api.mouse_event(win32con.MOUSEEVENTF_WHEEL, 0, 0, direction, 0)
+            raw_scroll(amount)
             high_precision_sleep(delay/amount)
 
 
