@@ -78,7 +78,7 @@ def import_module_from_path(path, module_name=None):
     return module
 
 
-def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True):
+def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=True):
     if right_click and middle_click:
         raise Exception('Both right click and middle click were set to true. Make sure just one is set to true at a time, or neither.')
     if type(x) != tuple and type(x) != list:
@@ -88,10 +88,17 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         y = x[1]
         x = x[0]
 
+    if relative or animation_time:
+        mxy = get_mouse_xy()
+
+    if relative:
+        cx, cy = mxy
+        x += cx
+        y += cy
     keys_down = []
 
     if animation_time:
-        start = get_mouse_xy()
+        start = mxy
         end = (x, y)
         num_points = animation_fps*animation_time  # 60 fps animation
         num_points += 2  # don't need start and end points
