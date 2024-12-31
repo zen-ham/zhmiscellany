@@ -1,4 +1,5 @@
-import threading, os, signal, time, sys, shutil
+import threading, os, signal, time, sys, shutil, ctypes
+from ctypes import Structure, c_long, c_uint, c_int, POINTER, sizeof
 import zhmiscellany.fileio
 
 
@@ -46,3 +47,120 @@ def patch_rhg():  # patches random_header_generator library's missing files. thi
     else:
         # we are running in normal Python environment
         pass
+
+
+class POINT(Structure):
+    _fields_ = [("x", c_long),
+                ("y", c_long)]
+
+
+class MOUSEINPUT(Structure):
+    _fields_ = [("dx", c_long),
+                ("dy", c_long),
+                ("mouseData", c_uint),
+                ("dwFlags", c_uint),
+                ("time", c_uint),
+                ("dwExtraInfo", POINTER(c_uint))]
+
+
+class INPUT_UNION(ctypes.Union):
+    _fields_ = [("mi", MOUSEINPUT)]
+
+
+class INPUT(Structure):
+    _fields_ = [("type", c_int),
+                ("union", INPUT_UNION)]
+
+
+# Constants
+MOUSEEVENTF_ABSOLUTE = 0x8000
+MOUSEEVENTF_MOVE = 0x0001
+MOUSEEVENTF_LEFTDOWN = 0x0002
+MOUSEEVENTF_LEFTUP = 0x0004
+MOUSEEVENTF_RIGHTDOWN = 0x0008
+MOUSEEVENTF_RIGHTUP = 0x0010
+MOUSEEVENTF_MIDDLEDOWN = 0x0020
+MOUSEEVENTF_MIDDLEUP = 0x0040
+
+# Screen metrics
+SCREEN_WIDTH = ctypes.windll.user32.GetSystemMetrics(0)
+SCREEN_HEIGHT = ctypes.windll.user32.GetSystemMetrics(1)
+
+
+def move_mouse(x: int, y: int):
+    """Move mouse to specified coordinates."""
+    # Convert coordinates to normalized coordinates (0-65535)
+    normalized_x = int(x * (65535 / SCREEN_WIDTH))
+    normalized_y = int(y * (65535 / SCREEN_HEIGHT))
+
+    input_struct = INPUT(
+        type=0,  # INPUT_MOUSE
+        union=INPUT_UNION(
+            mi=MOUSEINPUT(
+                dx=normalized_x,
+                dy=normalized_y,
+                mouseData=0,
+                dwFlags=MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE,
+                time=0,
+                dwExtraInfo=None
+            )
+        )
+    )
+
+    ctypes.windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
+
+
+def mouse_down(button: int):
+    """Press mouse button down. button: 1=left, 2=right, 3=middle"""
+    if button not in [1, 2, 3]:
+        raise ValueError("Button must be 1 (left), 2 (right), or 3 (middle)")
+
+    flags = {
+        1: MOUSEEVENTF_LEFTDOWN,
+        2: MOUSEEVENTF_RIGHTDOWN,
+        3: MOUSEEVENTF_MIDDLEDOWN
+    }
+
+    input_struct = INPUT(
+        type=0,  # INPUT_MOUSE
+        union=INPUT_UNION(
+            mi=MOUSEINPUT(
+                dx=0,
+                dy=0,
+                mouseData=0,
+                dwFlags=flags[button],
+                time=0,
+                dwExtraInfo=None
+            )
+        )
+    )
+
+    ctypes.windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
+
+
+def mouse_up(button: int):
+    """Release mouse button. button: 1=left, 2=right, 3=middle"""
+    if button not in [1, 2, 3]:
+        raise ValueError("Button must be 1 (left), 2 (right), or 3 (middle)")
+
+    flags = {
+        1: MOUSEEVENTF_LEFTUP,
+        2: MOUSEEVENTF_RIGHTUP,
+        3: MOUSEEVENTF_MIDDLEUP
+    }
+
+    input_struct = INPUT(
+        type=0,  # INPUT_MOUSE
+        union=INPUT_UNION(
+            mi=MOUSEINPUT(
+                dx=0,
+                dy=0,
+                mouseData=0,
+                dwFlags=flags[button],
+                time=0,
+                dwExtraInfo=None
+            )
+        )
+    )
+
+    ctypes.windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))

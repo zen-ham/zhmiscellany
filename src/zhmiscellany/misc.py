@@ -1,10 +1,10 @@
 import math
 import os, signal, time, importlib
-from ._misc_supportfuncs import set_activity_timeout, activity
+from ._misc_supportfuncs import set_activity_timeout, activity, move_mouse, mouse_down, mouse_up
 import zhmiscellany.math
 import zhmiscellany.string
 import zhmiscellany.processing
-import win32api, win32con, time, hashlib, ctypes, sys
+import win32api, win32con, time, hashlib, ctypes
 import keyboard
 
 
@@ -121,29 +121,29 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         keys_down.append(win32con.VK_SHIFT)
 
     if x is not None and y is not None:
-        win32api.SetCursorPos((x, y))
+        move_mouse(x, y)
 
     if middle_click:
         if act_start:
-            win32api.mouse_event(win32con.MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, 0)
+            mouse_down(3)
         if click_duration:
             high_precision_sleep(click_duration)
         if act_end:
-            win32api.mouse_event(win32con.MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0)
+            mouse_up(3)
     elif right_click:
         if act_start:
-            win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0)
+            mouse_down(2)
         if click_duration:
             high_precision_sleep(click_duration)
         if act_end:
-            win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0)
+            mouse_up(2)
     else:
         if act_start:
-            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+            mouse_down(1)
         if click_duration:
             high_precision_sleep(click_duration)
         if act_end:
-            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+            mouse_up(1)
 
     for key in keys_down:
         win32api.keybd_event(key, 0, win32con.KEYEVENTF_KEYUP, 0)
