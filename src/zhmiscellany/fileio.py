@@ -138,7 +138,7 @@ def copy_file_with_overwrite(src, dst):
 def save_object_to_file(object, file_name):
     try:
         with open(file_name, 'wb') as f:
-            pickle.dump(object, f, protocol=5)
+            pickle.dump(object, f, protocol=5)  # pickle is much faster so at least attempt to use it at first
     except:
         with open(file_name, 'wb') as f:
             dill.dump(object, f, protocol=5)
@@ -147,7 +147,7 @@ def save_object_to_file(object, file_name):
 def load_object_from_file(file_name):
     try:
         with open(file_name, 'rb') as f:
-            return pickle.load(f)
+            return pickle.load(f)  # pickle is much faster so at least attempt to use it at first
     except:
         with open(file_name, 'rb') as f:
             return dill.load(f)
