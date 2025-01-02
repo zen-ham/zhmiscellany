@@ -1,4 +1,4 @@
-import json, os, shutil, dill, sys
+import json, os, shutil, dill, sys, pickle
 import zhmiscellany.string
 import zhmiscellany.misc
 import hashlib
@@ -136,13 +136,21 @@ def copy_file_with_overwrite(src, dst):
 
 
 def save_object_to_file(object, file_name):
-    with open(file_name, 'wb') as f:
-        dill.dump(object, f, protocol=5)
+    try:
+        with open(file_name, 'wb') as f:
+            pickle.dump(object, f, protocol=5)
+    except:
+        with open(file_name, 'wb') as f:
+            dill.dump(object, f, protocol=5)
 
 
 def load_object_from_file(file_name):
-    with open(file_name, 'rb') as f:
-        return dill.load(f)
+    try:
+        with open(file_name, 'rb') as f:
+            return pickle.load(f)
+    except:
+        with open(file_name, 'rb') as f:
+            return dill.load(f)
 
 
 def list_files_by_modified_time(directory):
