@@ -3,6 +3,7 @@ import zhmiscellany.math
 import zhmiscellany.string
 import zhmiscellany.processing
 import zhmiscellany.mousekb
+import zhmiscellany.fileio
 import time, hashlib, ctypes
 import keyboard
 import subprocess
@@ -125,9 +126,7 @@ def obfuscate_python(python_code_string, remove_prints=True):
     root_folder = f'{temp_folder}/{zhmiscellany.string.get_universally_unique_string()}'
     src_folder = f'{root_folder}/{zhmiscellany.string.get_universally_unique_string()}'
     obf_folder = f'{root_folder}/{zhmiscellany.string.get_universally_unique_string()}'
-    file = zhmiscellany.string.get_universally_unique_string()
-    src_file = f'{src_folder}/{file}.py'
-    obf_file = f'{obf_folder}/{file}.py'
+    src_file = f'{src_folder}/{zhmiscellany.string.get_universally_unique_string()}.py'
     [zhmiscellany.fileio.create_folder(folder) for folder in [root_folder, src_folder, obf_folder]]
     with open(src_file, 'w', encoding='u8') as f:
         f.write(python_code_string)
@@ -141,5 +140,8 @@ def obfuscate_python(python_code_string, remove_prints=True):
         )
     except subprocess.CalledProcessError as e:
         raise Exception(f'Calling pobfuscatory failed with return code {e.returncode}')
+
+    obf_file = zhmiscellany.fileio.abs_listdir(obf_folder)[0]
+
     with open(obf_file, 'r', encoding='u8') as f:
         return f.read()
