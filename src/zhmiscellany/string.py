@@ -94,6 +94,7 @@ def multi_split(string, splits):
         for stri in string:
             temp.extend(stri.split(i))
         string = temp
+    string = [i for i in string if i != '']
 
     return string
 
