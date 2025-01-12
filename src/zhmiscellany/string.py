@@ -29,8 +29,11 @@ def get_universally_unique_string():
 
 
 def multi_replace(string, replaces):
-    for i in replaces:
-        string = string.replace(i[0], i[1])
+    st = ''
+    while st != string:
+        st = string
+        for i in replaces:
+            string = string.replace(i[0], i[1])
     return string
 
 

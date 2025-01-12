@@ -122,31 +122,9 @@ def die_on_key(key='f9', show_message=False):
 temp_folder = os.popen(r'echo %TEMP%').read().replace('\n', '')
 
 
-def obfuscate_python(python_code_string, remove_prints=True):
-    root_folder = f'{temp_folder}/{zhmiscellany.string.get_universally_unique_string()}'
-    src_folder = f'{root_folder}/{zhmiscellany.string.get_universally_unique_string()}'
-    obf_folder = f'{root_folder}/{zhmiscellany.string.get_universally_unique_string()}'
-    src_file = f'{src_folder}/{zhmiscellany.string.get_universally_unique_string()}.py'
-    [zhmiscellany.fileio.create_folder(folder) for folder in [root_folder, src_folder, obf_folder]]
-    with open(src_file, 'w', encoding='u8') as f:
-        f.write(python_code_string)
-    command = ['python', '-m', 'pobfuscatory', '-s', src_file, '-t', obf_folder]
-    try:
-        result = subprocess.run(
-            command,
-            stdout=subprocess.DEVNULL,  # Suppress standard output
-            stderr=subprocess.DEVNULL,  # Suppress standard error
-            check=True                  # Raise CalledProcessError if the exit code is non-zero
-        )
-    except subprocess.CalledProcessError as e:
-        raise Exception(f'Calling pobfuscatory failed with return code {e.returncode}')
-
-    obf_file = zhmiscellany.fileio.abs_listdir(obf_folder)[0]
-
-    with open(obf_file, 'r', encoding='u8') as f:
-        obf = f.read()
-
-    if remove_prints:
+def obfuscate_python(python_code_string, remove_prints=True, remove_comments=True):
+    obf = python_code_string
+    if remove_prints or remove_comments:
         lines = obf.split('\n')
         for i, line in enumerate(lines):
             if line.replace(' ', '').startswith('print('):
@@ -156,7 +134,5 @@ def obfuscate_python(python_code_string, remove_prints=True):
                         break
                 lines[i] = f'{" "*j}pass'
         obf = '\n'.join(lines)
-
-    zhmiscellany.fileio.remove_folder(root_folder)
 
     return obf
