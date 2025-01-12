@@ -155,6 +155,7 @@ def obfuscate_python(python_code_string, remove_prints=True):
                     if char != ' ':
                         break
                 lines[i] = f'{" "*j}pass'
+        obf = '\n'.join(lines)
 
     zhmiscellany.fileio.remove_folder(root_folder)
 
