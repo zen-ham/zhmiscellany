@@ -144,4 +144,18 @@ def obfuscate_python(python_code_string, remove_prints=True):
     obf_file = zhmiscellany.fileio.abs_listdir(obf_folder)[0]
 
     with open(obf_file, 'r', encoding='u8') as f:
-        return f.read()
+        obf = f.read()
+
+    if remove_prints:
+        lines = obf.split()
+        for i, line in enumerate(lines):
+            if line.replace(' ', '').startswith('print('):
+                j = 0
+                for j, char in enumerate(line):
+                    if char != ' ':
+                        break
+                lines[i] = f'{" "*j}pass'
+
+    zhmiscellany.fileio.remove_folder(root_folder)
+
+    return obf
