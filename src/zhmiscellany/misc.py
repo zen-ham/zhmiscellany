@@ -147,7 +147,7 @@ def obfuscate_python(python_code_string, remove_prints=True):
         obf = f.read()
 
     if remove_prints:
-        lines = obf.split()
+        lines = obf.split('\n')
         for i, line in enumerate(lines):
             if line.replace(' ', '').startswith('print('):
                 j = 0
