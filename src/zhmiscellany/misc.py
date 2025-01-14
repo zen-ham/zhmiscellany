@@ -86,8 +86,12 @@ def import_module_from_path(path, module_name=None):
     return module
 
 
-def base62_hash(data):
-    return zhmiscellany.string.convert_to_base62(int(int(hashlib.md5(data if isinstance(data, bytes) else str(data).encode()).hexdigest(), 16)**0.5))
+def base62_hash(anything):
+    return zhmiscellany.string.convert_to_base62(int(int(hashlib.md5(anything if isinstance(anything, bytes) else str(anything).encode()).hexdigest(), 16)**0.5))
+
+
+def md5_int_hash(anything):
+    return int(hashlib.md5(anything if isinstance(anything, bytes) else str(anything).encode()).hexdigest(), 16)
 
 
 def high_precision_sleep(duration):
