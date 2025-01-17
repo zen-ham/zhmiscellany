@@ -355,7 +355,7 @@ def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='
                 vars['all'].append(cvar)
                 return cvar
 
-            while rngs['global_rng'].random() > 1/(new_line_ratio*2) and (not any([prev.endswith(char) for char in list(' ,\\[{(')])) and (not any([char in line for char in ':'])):
+            while rngs['global_rng'].random() > 1/(new_line_ratio*2) and (not any([prev.endswith(char) for char in list(' ,\\[{(')+reserved])) and (not any([char in line for char in ':'])):
 
                 def rand_num(vars, will_run=True):  # var (new/old) to random int
                     cvar = gen_num_var(vars)
