@@ -254,7 +254,7 @@ def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='
             lst_str = lst_str + ']'
             return lst_str
 
-        vars = {
+        varis = {
             'added_lines': [],
             'all': [],
             'num': [],
@@ -293,7 +293,7 @@ def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='
                 else:
                     break
             single_indent = 4 if indent % 4 == 0 else 2
-            vars['indent'] = indent
+            varis['indent'] = indent
 
             if line.endswith(dno_char) or indent == dno_indent:
                 dno_indent = indent
@@ -535,12 +535,12 @@ def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='
                     cvar = variation(vars, will_run)
                     return cvar
 
-                add_random_line(vars)
+                add_random_line(varis)
 
             prev = line
 
-        vars['added_lines'].reverse()
-        for line in vars['added_lines']:
+        varis['added_lines'].reverse()
+        for line in varis['added_lines']:
             lines.insert(line[0], line[1])
         obf = '\n'.join(lines)
 
