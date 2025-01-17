@@ -7,6 +7,7 @@ import zhmiscellany.fileio
 import time, hashlib, ctypes
 import keyboard
 import random, string, copy
+import keyword, builtins, inspect
 
 # support backwards compatibility
 click_pixel = zhmiscellany.mousekb.click_pixel
@@ -156,6 +157,12 @@ def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='
         obf = '\n'.join(lines)
 
     if add_lines:
+        # gather reserved strings
+        reserved = []
+        reserved.extend(keyword.kwlist)  # keywords
+        reserved.extend(dir(builtins))  # functions/constants
+        reserved.extend([attr for attr in dir(object) if attr.startswith('__') and attr.endswith('__')])  # dunders
+        reserved.extend([name for name, obj in vars(builtins).items() if inspect.isclass(obj) and issubclass(obj, BaseException)])  # exceptions
         # tokenize file
         base_splits = '\n\\!#$%&()*+,-./:;<=>?@[\]^`{|}~'
         var_splits = base_splits + ' "\''
@@ -164,6 +171,7 @@ def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='
         tokens = zhmiscellany.string.multi_split(obf, list(token_splits))
         tokens = [token for token in tokens if all([char in list(string.ascii_letters + string.digits + "_") for char in token])]
         tokens = [token for token in tokens if dno_char not in token]
+        tokens = [token for token in tokens if token not in reserved]
         tokens = list(dict.fromkeys(tokens))
         number_tokens = [token for token in tokens if all([char in '1234567890' for char in token])]
         #number_tokens = [token for token in number_tokens if set(token) != set('0')]
