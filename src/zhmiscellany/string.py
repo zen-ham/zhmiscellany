@@ -28,12 +28,14 @@ def get_universally_unique_string():
     return unique_filename
 
 
-def multi_replace(string, replaces):
+def multi_replace(string, replaces, recursive=False):
     st = ''
     while st != string:
         st = string
         for i in replaces:
             string = string.replace(i[0], i[1])
+        if not recursive:
+            break
     return string
 
 
