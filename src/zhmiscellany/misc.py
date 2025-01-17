@@ -166,12 +166,8 @@ def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='
         tokens = [token for token in tokens if dno_char not in token]
         tokens = list(dict.fromkeys(tokens))
         number_tokens = [token for token in tokens if all([char in '1234567890' for char in token])]
-        number_tokens = [token for token in number_tokens if set(token) != set('0')]
-        for i, token in enumerate(number_tokens):
-            char_list = list(token)
-            while token[0] == '0':
-                char_list.pop(0)
-            number_tokens[i] = ''.join(char_list)
+        #number_tokens = [token for token in number_tokens if set(token) != set('0')]
+        number_tokens = [token for token in number_tokens if not token.startswith('0')]
         all_tkns = copy.deepcopy(tokens)
         for i in number_tokens:
             tokens.remove(i)
