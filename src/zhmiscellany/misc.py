@@ -395,7 +395,7 @@ def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='
                     vars['indent'] -= single_indent
 
                 def rand_func(vars, will_run=True):
-                    if rngs['rand_func'].random() > 1/(new_line_ratio/2):
+                    if rngs['rand_func'].random() > 1/(new_line_ratio):
                         add_random_line(vars, will_run)
                         return
                     cvar = gen_func_var(vars)
