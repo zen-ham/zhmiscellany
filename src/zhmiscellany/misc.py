@@ -558,7 +558,7 @@ def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='
     return obf
 
 
-def setup_window(position_xy, scale_xy, always_on_top=True):
+def setup_window(position_xy=(0, 0), scale_xy=(400, 200), always_on_top=True):
     if always_on_top:
         if not zhmiscellanygsudo.is_admin():
             raise Exception('Missing privileges to set window to always on top.')
