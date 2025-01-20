@@ -8,6 +8,8 @@ import time, hashlib, ctypes
 import keyboard
 import random, string, copy
 import keyword, builtins, inspect
+import zhmiscellanygsudo
+from ctypes import wintypes
 
 # support backwards compatibility
 click_pixel = zhmiscellany.mousekb.click_pixel
@@ -554,3 +556,34 @@ def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='
             lines[i] = ''.join(line_char_list)
         obf = '\n'.join(lines)
     return obf
+
+
+def setup_window(position_xy, scale_xy, always_on_top=True):
+    if always_on_top:
+        if not zhmiscellanygsudo.is_admin():
+            raise Exception('Missing privileges to set window to always on top.')
+    SWP_NOSIZE = 0x0001
+    SWP_NOMOVE = 0x0002
+    SWP_SHOWWINDOW = 0x0040
+    HWND_TOPMOST = -1
+
+    GetConsoleWindow = ctypes.windll.kernel32.GetConsoleWindow
+    SetWindowPos = ctypes.windll.user32.SetWindowPos
+    MoveWindow = ctypes.windll.user32.MoveWindow
+
+    GetConsoleWindow.restype = wintypes.HWND
+    SetWindowPos.argtypes = [wintypes.HWND, wintypes.HWND, wintypes.INT, wintypes.INT,
+                             wintypes.INT, wintypes.INT, wintypes.UINT]
+    MoveWindow.argtypes = [wintypes.HWND, wintypes.INT, wintypes.INT, wintypes.INT,
+                           wintypes.INT, wintypes.BOOL]
+
+    hwnd = GetConsoleWindow()
+
+    if hwnd:
+        # set the console window to always be on top
+        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW)
+
+        # move the window
+        MoveWindow(hwnd, position_xy[0], position_xy[1], scale_xy[0], scale_xy[1], True)
+    else:
+        raise Exception("Could not get the console window handle. Are you sure this is running in a console window and not an IDE?")
