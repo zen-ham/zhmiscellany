@@ -10,3 +10,4 @@ from . import processing
 from . import misc
 from . import pipes
 from . import pastebin
+from . import mousekb

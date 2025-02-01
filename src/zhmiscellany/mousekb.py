@@ -133,6 +133,7 @@ def type_string(text=None, delay=None, key_hold_time=None, vk_codes=None, combin
             if delay:
                 zhmiscellany.misc.high_precision_sleep(delay)
         if combine:
+            key_hold_time = 0  # release all keys at the same time
             for char in text:
                 lower_char = char.lower()
                 if lower_char in char_to_vk:
@@ -148,6 +149,7 @@ def type_string(text=None, delay=None, key_hold_time=None, vk_codes=None, combin
             if delay:
                 zhmiscellany.misc.high_precision_sleep(delay)
         if combine:
+            key_hold_time = 0  # release all keys at the same time
             for vk_code in vk_codes:
                 press_key(vk_code, False, act_start=False, act_end=True)
 
