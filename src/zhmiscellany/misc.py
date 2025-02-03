@@ -10,12 +10,100 @@ import random, string, copy
 import keyword, builtins, inspect
 import win32gui, win32con
 
+import psutil
+
 # support backwards compatibility
 click_pixel = zhmiscellany.mousekb.click_pixel
 type_string = zhmiscellany.mousekb.type_string
 scroll = zhmiscellany.mousekb.scroll
 get_mouse_xy = zhmiscellany.mousekb.get_mouse_xy
 KEY_CODES = zhmiscellany.mousekb.KEY_CODES
+
+
+def focus_window(process_name: str, interval=0):
+    # Import user32.dll for additional window handling
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+    
+    # Constants
+    SWP_NOMOVE = 0x0002
+    SWP_NOSIZE = 0x0001
+    HWND_TOPMOST = -1
+    HWND_NOTOPMOST = -2
+    
+    def force_focus_window(hwnd):
+        try:
+            # Get window placement info
+            placement = win32gui.GetWindowPlacement(hwnd)
+            
+            # Force restore if minimized
+            if placement[1] == win32con.SW_SHOWMINIMIZED:
+                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+            
+            # Set window position and focus aggressively
+            user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
+            user32.SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
+            
+            # Multiple focus attempts
+            user32.ShowWindow(hwnd, win32con.SW_SHOW)
+            user32.SetForegroundWindow(hwnd)
+            user32.BringWindowToTop(hwnd)
+            user32.SetActiveWindow(hwnd)
+            user32.SetFocus(hwnd)
+            
+            # Force input processing
+            user32.BlockInput(True)
+            time.sleep(0.01)  # Brief pause
+            user32.BlockInput(False)
+        
+        except Exception as e:
+            print(f"Focus attempt error: {str(e)}")
+    
+    def get_window_handle(process_name):
+        handles = []
+        
+        def callback(hwnd, _):
+            if win32gui.IsWindowVisible(hwnd):
+                try:
+                    _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                    if psutil.Process(pid).name().lower() == process_name.lower():
+                        handles.append(hwnd)
+                except:
+                    pass
+            return True
+        
+        win32gui.EnumWindows(callback, None)
+        return handles[0] if handles else None
+    
+    try:
+        while True:
+            hwnd = get_window_handle(process_name)
+            
+            if hwnd:
+                # Attempt multiple focus methods
+                force_focus_window(hwnd)
+                
+                # Additional focus attempts with thread attachment
+                try:
+                    fore_hwnd = user32.GetForegroundWindow()
+                    fore_thread = user32.GetWindowThreadProcessId(fore_hwnd, None)
+                    target_thread = user32.GetWindowThreadProcessId(hwnd, None)
+                    
+                    user32.AttachThreadInput(target_thread, fore_thread, True)
+                    force_focus_window(hwnd)
+                    user32.AttachThreadInput(target_thread, fore_thread, False)
+                except:
+                    pass
+            
+            if interval == 0:
+                return
+            time.sleep(interval)
+    
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+    finally:
+        # Ensure input is not blocked if script is interrupted
+        user32.BlockInput(False)
 
 
 def setup_console_window(xy=(0, 0), wh=(400, 100), always_on_top=True):
