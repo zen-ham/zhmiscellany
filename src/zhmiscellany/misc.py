@@ -8,6 +8,7 @@ import time, hashlib, ctypes
 import keyboard
 import random, string, copy
 import keyword, builtins, inspect
+import win32gui, win32con
 
 # support backwards compatibility
 click_pixel = zhmiscellany.mousekb.click_pixel
@@ -15,6 +16,22 @@ type_string = zhmiscellany.mousekb.type_string
 scroll = zhmiscellany.mousekb.scroll
 get_mouse_xy = zhmiscellany.mousekb.get_mouse_xy
 KEY_CODES = zhmiscellany.mousekb.KEY_CODES
+
+
+def setup_console_window(xy=(0, 0), wh=(400, 100), always_on_top=True):
+    # Get the console window handle
+    hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+    ontop = win32con.HWND_NOTOPMOST
+    if always_on_top:
+        ontop = win32con.HWND_TOPMOST
+    # Set window to always be on top
+    win32gui.SetWindowPos(
+        hwnd,
+        ontop,
+        xy[0], xy[1],  # x, y coordinates
+        wh[0], wh[1],  # width, height
+        win32con.SWP_SHOWWINDOW
+    )
 
 
 def die():
