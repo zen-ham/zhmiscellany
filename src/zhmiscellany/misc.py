@@ -8,7 +8,7 @@ import time, hashlib, ctypes
 import keyboard
 import random, string, copy
 import keyword, builtins, inspect
-import win32gui, win32con
+import win32gui, win32con, win32process
 
 import psutil
 
