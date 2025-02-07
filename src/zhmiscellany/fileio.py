@@ -1,4 +1,4 @@
-import json, os, shutil, dill, sys, pickle
+import json, os, shutil, dill, sys, pickle, base64
 import zhmiscellany.string
 import zhmiscellany.misc
 import hashlib
@@ -135,22 +135,43 @@ def copy_file_with_overwrite(src, dst):
     shutil.copy2(src, dst)
 
 
-def save_object_to_file(object, file_name):
+def fast_dill_dumps(object):
     try:
-        with open(file_name, 'wb') as f:
-            pickle.dump(object, f, protocol=5)  # pickle is much faster so at least attempt to use it at first
+        data = pickle.dumps(object, protocol=5)  # pickle is much faster so at least attempt to use it at first
     except:
-        with open(file_name, 'wb') as f:
-            dill.dump(object, f, protocol=5)
+        data = dill.dumps(object, protocol=5)
+    return data
+
+
+def fast_dill_loads(data):
+    try:
+        object = pickle.loads(data)  # pickle is much faster so at least attempt to use it at first
+    except:
+        object = dill.loads(data)
+    return object
+
+
+def save_object_to_file(object, file_name):
+    with open(file_name, 'wb') as f:
+        f.write(fast_dill_dumps(object))
 
 
 def load_object_from_file(file_name):
-    try:
-        with open(file_name, 'rb') as f:
-            return pickle.load(f)  # pickle is much faster so at least attempt to use it at first
-    except:
-        with open(file_name, 'rb') as f:
-            return dill.load(f)
+    with open(file_name, 'rb') as f:
+        return fast_dill_loads(f.read())
+
+
+def pickle_and_encode(obj):
+    """Pickles an object and URL-safe encodes it."""
+    pickled_data = fast_dill_dumps(obj)  # Serialize the object
+    encoded_data = base64.urlsafe_b64encode(pickled_data).decode()  # Base64 encode
+    return encoded_data
+
+def decode_and_unpickle(encoded_str):
+    """Decodes a URL-safe encoded string and unpickles the object."""
+    pickled_data = base64.urlsafe_b64decode(encoded_str)  # Decode from Base64
+    obj = fast_dill_loads(pickled_data)  # Deserialize
+    return obj
 
 
 def list_files_by_modified_time(directory):
