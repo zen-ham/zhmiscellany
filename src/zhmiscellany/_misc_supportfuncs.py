@@ -1,7 +1,6 @@
 import threading, os, signal, time, sys, shutil, ctypes
 from ctypes import Structure, c_long, c_uint, c_int, POINTER, sizeof
 import zhmiscellany.fileio
-from .misc import get_actual_screen_resolution
 
 
 _misc_action = 0
@@ -84,6 +83,13 @@ MOUSEEVENTF_MIDDLEDOWN = 0x0020
 MOUSEEVENTF_MIDDLEUP = 0x0040
 
 # Screen metrics
+def get_actual_screen_resolution():
+    hdc = ctypes.windll.user32.GetDC(0)
+    width = ctypes.windll.gdi32.GetDeviceCaps(hdc, 118)  # HORZRES
+    height = ctypes.windll.gdi32.GetDeviceCaps(hdc, 117)  # VERTRES
+    ctypes.windll.user32.ReleaseDC(0, hdc)
+    return width, height
+
 SCREEN_WIDTH, SCREEN_HEIGHT = get_actual_screen_resolution()
 
 
