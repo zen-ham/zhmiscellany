@@ -20,6 +20,14 @@ get_mouse_xy = zhmiscellany.mousekb.get_mouse_xy
 KEY_CODES = zhmiscellany.mousekb.KEY_CODES
 
 
+def get_actual_screen_resolution():
+    hdc = ctypes.windll.user32.GetDC(0)
+    width = ctypes.windll.gdi32.GetDeviceCaps(hdc, 118)  # HORZRES
+    height = ctypes.windll.gdi32.GetDeviceCaps(hdc, 117)  # VERTRES
+    ctypes.windll.user32.ReleaseDC(0, hdc)
+    return width, height
+
+
 def focus_window(process_name: str, interval=0):
     # Import user32.dll for additional window handling
     user32 = ctypes.windll.user32
