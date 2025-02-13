@@ -1,7 +1,7 @@
 import threading, os, signal, time, sys, shutil, ctypes
 from ctypes import Structure, c_long, c_uint, c_int, POINTER, sizeof
 import zhmiscellany.fileio
-import zhmiscellany.misc
+from .misc import get_actual_screen_resolution
 
 
 _misc_action = 0
@@ -84,7 +84,7 @@ MOUSEEVENTF_MIDDLEDOWN = 0x0020
 MOUSEEVENTF_MIDDLEUP = 0x0040
 
 # Screen metrics
-SCREEN_WIDTH, SCREEN_HEIGHT = zhmiscellany.misc.get_actual_screen_resolution()
+SCREEN_WIDTH, SCREEN_HEIGHT = get_actual_screen_resolution()
 
 
 def move_mouse(x: int, y: int):
