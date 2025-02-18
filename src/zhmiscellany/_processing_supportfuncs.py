@@ -78,9 +78,5 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
     results = ray.get(futures)
     return results
 
-def multiprocess(target, args=None, disable_warning=False):
-    if args is None:
-        args = ()
-    results = batch_multiprocessing([(target, args)], disable_warning=disable_warning)
-    result = results[0]
-    return result
+def multiprocess(target, args=(), disable_warning=False):
+    return batch_multiprocess([(target, args)], disable_warning=disable_warning)[0]
