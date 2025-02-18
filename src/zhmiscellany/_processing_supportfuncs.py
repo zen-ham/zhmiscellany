@@ -64,10 +64,10 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
     _ray_init_thread.join()
     
     @ray.remote
-    def wrapper(func, *args):
+    def worker(func, *args):
         return func(*args)
     
-    futures = [wrapper.remote(func, *args) for func, args in targets_and_args]
+    futures = [worker.remote(func, *args) for func, args in targets_and_args]
     results = ray.get(futures)
     return results
 
