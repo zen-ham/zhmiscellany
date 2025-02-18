@@ -667,3 +667,17 @@ def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='
             lines[i] = ''.join(line_char_list)
         obf = '\n'.join(lines)
     return obf
+
+def time_it(action=None):
+    global _start
+    try:
+        a = _start
+    except:
+        _start = time.time()
+    r_time_vel = time.time()-_start
+    if action is not None:
+        time_val = round(r_time_vel, 2)
+        time_string = f'{time_val} seconds.' if time_val else 'no time.'
+        print(f'{action} took {time_string}')
+    _start = time.time()
+    return r_time_vel
