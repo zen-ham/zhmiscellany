@@ -17,7 +17,7 @@ def _ray_init():
     try:
         ray.init(logging_level="ERROR")
     except RuntimeError as e:
-        if 'ray.init twice by accident' in e:
+        if 'ray.init twice by accident' in str(e):
             pass
         else:
             raise e
