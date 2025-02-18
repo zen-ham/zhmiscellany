@@ -36,8 +36,6 @@ def get_import_chain():
 
 cause_files = get_import_chain()
 
-print(cause_files)
-
 code = ''
 for file in cause_files:
     with open(file, 'r', encoding='u8', errors='ignore') as f:
@@ -55,9 +53,15 @@ def batch_multiprocessing(targets_and_args, disable_warning=False):
     if _ray_state == 'disabled':
         if not disable_warning:
             logging.warning("zhmiscellany didn't detect that you were going to be using processing.(batch_)multiprocessing functions, and ray was not initialized preemptively.\n\
-All this means is that ray will have to be initialized now and the this call to processing.(batch_)multiprocessing will have to wait a few seconds.\n\
-To avoid this in the future you can set `os.environ['zhmiscellany_init_ray'] = 'force'` BEFORE importing zhmiscellany.")
+All this means is that ray will have to be initialized now and the this call to processing.(batch_)multiprocessing will have to wait a few (around 4) seconds.\n\
+If you want to avoid this in the future you can set `os.environ['zhmiscellany_init_ray'] = 'force'` BEFORE importing zhmiscellany, or you can pass disable_warning=True to this function call.")
         ray_init()
+    if _ray_state == 'starting':
+        if not disable_warning:
+            logging.warning("You called processing.(batch_)multiprocessing early enough that ray is not fully initialized yet.\n\
+All this means is that ray is still being initialized and this call to processing.(batch_)multiprocessing will have to wait a few seconds.\n\
+If you want to avoid this in the future and wait until ray is ready you can add this line just after importing zhmiscellany: (Or you can pass disable_warning=True to this function call)\n\
+from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_thread.join()")
     _ray_init_thread.join()
     
     @ray.remote
