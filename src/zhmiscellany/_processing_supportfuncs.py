@@ -14,7 +14,14 @@ def _ray_init():
     if _ray_state == 'enabled':
         return
     _ray_state = 'starting'
-    ray.init(logging_level="ERROR")
+    try:
+        ray.init(logging_level="ERROR")
+    except RuntimeError as e:
+        if 'ray.init twice by accident' in e:
+            pass
+        else:
+            raise e
+        
     _ray_state = 'enabled'
 
 
