@@ -1,4 +1,4 @@
-import json, os, shutil, dill, sys, pickle, base64
+import json, os, shutil, dill, sys, pickle, base64, zlib
 import zhmiscellany.string
 import zhmiscellany.misc
 import hashlib
@@ -163,14 +163,14 @@ def load_object_from_file(file_name):
 
 def pickle_and_encode(obj):
     """Pickles an object and URL-safe encodes it."""
-    pickled_data = fast_dill_dumps(obj)  # Serialize the object
+    pickled_data = zlib.compress(fast_dill_dumps(obj), 9)  # Serialize the object
     encoded_data = base64.urlsafe_b64encode(pickled_data).decode()  # Base64 encode
     return encoded_data
 
 def decode_and_unpickle(encoded_str):
     """Decodes a URL-safe encoded string and unpickles the object."""
     pickled_data = base64.urlsafe_b64decode(encoded_str)  # Decode from Base64
-    obj = fast_dill_loads(pickled_data)  # Deserialize
+    obj = fast_dill_loads(zlib.decompress(pickled_data))  # Deserialize
     return obj
 
 
