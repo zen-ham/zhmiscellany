@@ -49,13 +49,13 @@ for file in cause_files:
 
 _ray_init_thread = None
 _ray_state = 'disabled'
-cause_strings = ['processing.multiprocessing(', 'processing.batch_multiprocessing(']
+cause_strings = ['processing.multiprocess(', 'processing.batch_multiprocess(']
 
 if any([i in code for i in cause_strings]) or os.environ.get('zhmiscellany_init_ray') == 'force':
     ray_init()
 
 
-def batch_multiprocessing(targets_and_args, disable_warning=False):
+def batch_multiprocess(targets_and_args, disable_warning=False):
     if _ray_state == 'disabled':
         if not disable_warning:
             logging.warning("zhmiscellany didn't detect that you were going to be using processing.(batch_)multiprocessing functions, and ray was not initialized preemptively.\n\
@@ -78,7 +78,7 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
     results = ray.get(futures)
     return results
 
-def multiprocessing(target, args=None, disable_warning=False):
+def multiprocess(target, args=None, disable_warning=False):
     if args is None:
         args = ()
     results = batch_multiprocessing([(target, args)], disable_warning=disable_warning)
