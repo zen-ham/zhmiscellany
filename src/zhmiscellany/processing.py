@@ -1,3 +1,4 @@
+from ._processing_supportfuncs import batch_multiprocessing, multiprocessing
 import threading
 import traceback
 import zhmiscellany.string
