@@ -14,7 +14,6 @@ def _ray_init():
     if _ray_state == 'enabled':
         return
     _ray_state = 'starting'
-    print('ray init')
     ray.init(logging_level="ERROR")
     _ray_state = 'enabled'
 
