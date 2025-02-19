@@ -58,7 +58,7 @@ if any([i in code for i in cause_strings]) or os.environ.get('zhmiscellany_init_
     ray_init()
 
 
-def batch_multiprocess(targets_and_args, disable_warning=False, ordered_results=True):
+def batch_multiprocess(targets_and_args, disable_warning=False):
     if _ray_state == 'disabled':
         if not disable_warning:
             logging.warning("zhmiscellany didn't detect that you were going to be using processing.(batch_)multiprocessing functions, and ray was not initialized preemptively.\n\
@@ -74,19 +74,12 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
     _ray_init_thread.join()
     
     @ray.remote
-    def worker(index, func, *args):
-        return index, func(*args)
+    def worker(func, *args):
+        return func(*args)
     
-    # enumerate tasks to keep track of their order
-    futures = [worker.remote(i, func, *args) for i, (func, args) in enumerate(targets_and_args)]
-    
-    if ordered_results:  # sort by index
-        results = sorted(ray.get(futures), key=lambda x: x[0])
-    else:
-        results = ray.get(futures)
-    
-    # return only the function outputs
-    return [result[1] for result in results]
+    futures = [worker.remote(func, *args) for func, args in targets_and_args]
+    results = ray.get(futures)
+    return results
 
 def multiprocess(target, args=(), disable_warning=False):
     return batch_multiprocess([(target, args)], disable_warning=disable_warning)[0]
