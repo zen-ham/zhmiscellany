@@ -689,12 +689,16 @@ def here(title=None, *args):
     CYAN = '\033[96m'
     RESET = '\033[0m'
     out_string = CYAN
-    out_string += f"{filename}:{lineno}"
     if title:
-        out_string += ', '+title
-    out_string += RESET
-    for arg in args:
-        out_string += ', ' + arg
+        out_string += title+', '
+    if not args:
+        out_string += f"{lineno}:{filename}"
+    else:
+        out_string += f"{lineno}, "
+        out_string += RESET
+        for arg in args:
+            out_string += str(arg) + ', '
+        out_string += f"{CYAN}{filename}{RESET}"
     out_string += '\n'
     sys.stdout.write(out_string)
 
