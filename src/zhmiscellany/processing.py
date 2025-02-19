@@ -1,3 +1,5 @@
+import os
+
 from ._processing_supportfuncs import batch_multiprocess, multiprocess
 import threading, kthread
 import traceback
@@ -73,8 +75,6 @@ import pickle
 import traceback
 func = dill.loads(zlib.decompress('''+repr(zlib.compress(dill.dumps(func), 9))+'''))
 args_list = dill.loads(zlib.decompress('''+repr(zlib.compress(dill.dumps(args), 9))+f'''))
-def wrapper_function(*args, **kwargs):
-    return func(*args, **kwargs)
 if __name__ == "__main__":
     data = [None, None]
     computed = False
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     sys.stdout.buffer.flush()
 '''
     if not fileless:
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py') as f:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
             f.write(code)
             f.flush()
             temp_path = f.name
@@ -120,6 +120,7 @@ if __name__ == "__main__":
         )
     if result is None:
         raise Exception('Critical error when trying to execute temporary file.')
+    os.unlink(temp_path)
     raw = result.stdout
     # very annoying fix for ansi code at the start and end of the output, also a fix for if the passed functions have their own console output
     try:
