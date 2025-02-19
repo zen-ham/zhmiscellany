@@ -2,6 +2,7 @@ from . import processing, misc, mousekb, discord, fileio, netio, string, math, i
 
 import importlib
 import inspect
+import sys
 
 # Explicit module list (better than parsing the file)
 _MODULES = [
@@ -12,7 +13,7 @@ _MODULES = [
 
 
 # Collect functions from all modules
-class Z:
+class z:
     """Aggregate of all package functions"""
     pass
 
@@ -32,7 +33,7 @@ def _collect_functions():
     
     # Add to class namespace
     for func in all_funcs:
-        setattr(Z, func.__name__, func)
+        setattr(z, func.__name__, func)
 
 
 _collect_functions()
@@ -41,4 +42,8 @@ _collect_functions()
 del _MODULES, _collect_functions
 
 # Package exports
-__all__ = [*_MODULES, 'Z']
+__all__ = [*_MODULES]
+
+if '__main__' in sys.modules:
+    main_globals = sys.modules['__main__'].__dict__
+    main_globals['z'] = z
