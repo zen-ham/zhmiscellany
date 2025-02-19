@@ -3,7 +3,7 @@ import threading, kthread
 import traceback
 import zhmiscellany.string
 import concurrent.futures
-import types, sys, subprocess, zlib, pickle, dill
+import types, sys, subprocess, zlib, pickle, dill, tempfile
 
 
 def start_daemon(**kwargs):
@@ -43,7 +43,7 @@ def multiprocess_threaded(target, args=(), disable_warning=False, killable=False
     return batch_multiprocess_threaded([(target, args)], disable_warning=False, killable=False, daemon=False)
 
 
-def raw_multiprocess(func, args=()):
+def raw_multiprocess(func, args=(), fileless=True):
     def reconstruct_imports():
         global_scope = globals()
         imports = []
@@ -98,11 +98,26 @@ if __name__ == "__main__":
     sys.stdout.buffer.write({repr(cap_string)} + compressed + {repr(cap_string)})
     sys.stdout.buffer.flush()
 '''
-    result = subprocess.run(
-        ["python", '-c', code],
-        capture_output=True,  # Capture stdout and stderr
-        text=False
-    )
+    if not fileless:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+            f.write(code)
+            f.flush()
+            temp_path = f.name
+            
+            try:
+                result = subprocess.run(
+                    ["python", temp_path],
+                    capture_output=True,  # Capture stdout and stderr
+                    text=False
+                )
+            except:
+                result = None
+    else:  # multiprocessing doesn't support this >:(
+        result = subprocess.run(
+            ["python", '-c', code],
+            capture_output=True,  # Capture stdout and stderr
+            text=False
+        )
     if result is None:
         raise Exception('Critical error when trying to execute temporary file.')
     raw = result.stdout
