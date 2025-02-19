@@ -1,11 +1,9 @@
-import os
-
 from ._processing_supportfuncs import batch_multiprocess, multiprocess
 import threading, kthread
 import traceback
 import zhmiscellany.string
 import concurrent.futures
-import types, sys, subprocess, zlib, pickle, dill, tempfile
+import types, sys, subprocess, zlib, pickle, dill, tempfile, os, __main__
 
 
 def start_daemon(**kwargs):
@@ -66,13 +64,9 @@ def raw_multiprocess(func, args=(), fileless=True):
         return "\n".join(imports)
     
     cap_string = b'|'+bytes(zhmiscellany.string.get_universally_unique_string(), 'u8')+b'|'
-    
     code = \
-'''import dill
-import zlib
-import sys
-import pickle
-import traceback
+'''import os, dill, zlib, sys, pickle, traceback
+os.chdir('''+repr(os.path.dirname(__main__.__file__))+''')
 func = dill.loads(zlib.decompress('''+repr(zlib.compress(dill.dumps(func), 9))+'''))
 args_list = dill.loads(zlib.decompress('''+repr(zlib.compress(dill.dumps(args), 9))+f'''))
 if __name__ == "__main__":

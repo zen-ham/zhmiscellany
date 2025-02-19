@@ -1,5 +1,5 @@
 # these lines are purposefully the first thing to run when zhmiscellany is imported
-import ray, __main__, threading, logging, os, inspect
+import ray, threading, logging, os, inspect
 
 
 def ray_init():
