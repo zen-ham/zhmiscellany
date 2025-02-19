@@ -34,7 +34,7 @@ def get_import_chain():
             chain.append(file_name)
             break
         if file_name not in chain:
-            if os.path.exists(file_name) and __file__ != file_name:
+            if __file__ != file_name:
                 chain.append(file_name)
         frame = frame.f_back
     return chain[::-1]
@@ -44,8 +44,9 @@ cause_files = get_import_chain()
 
 code = ''
 for file in cause_files:
-    with open(file, 'r', encoding='u8', errors='ignore') as f:
-        code += f.read()
+    if os.path.exists(file):
+        with open(file, 'r', encoding='u8', errors='ignore') as f:
+            code += f.read()
 
 _ray_init_thread = None
 _ray_state = 'disabled'
