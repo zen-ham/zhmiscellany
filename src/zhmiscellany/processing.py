@@ -119,7 +119,7 @@ if __name__ == "__main__":
         raise Exception('Critical error when trying to execute temporary file.')
     if not fileless:
         os.unlink(temp_path)
-    raw = result.stdout
+    raw = result.stdout + result.stderr
     # very annoying fix for ansi code at the start and end of the output, also a fix for if the passed functions have their own console output
     try:
         raw = raw.split(cap_string)[1].split(cap_string)[0]
