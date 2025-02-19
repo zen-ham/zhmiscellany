@@ -38,11 +38,11 @@ def _collect_functions():
 
 _collect_functions()
 
-# Clean up internal machinery
-del _MODULES, _collect_functions
-
 # Package exports
 __all__ = [*_MODULES]
+
+# Clean up internal machinery
+del _MODULES, _collect_functions
 
 if '__main__' in sys.modules:
     main_globals = sys.modules['__main__'].__dict__
