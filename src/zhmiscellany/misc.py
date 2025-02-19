@@ -690,13 +690,13 @@ def here(title=None, *args):
     RESET = '\033[0m'
     out_string = CYAN
     if title:
-        out_string += title+'|'
+        out_string += title+' | '
     if not args:
-        out_string += f"{lineno}|{filename}"
+        out_string += f"{lineno} | {filename}{RESET}"
     else:
-        out_string += f"{lineno}|{RESET}"
-        out_string += f'{CYAN}|{RESET}'.join([str(arg) for arg in args])
-        out_string += f"{CYAN}|{filename}{RESET}"
+        out_string += f"{lineno} | {RESET}"
+        out_string += f'{CYAN} | {RESET}'.join([str(arg) for arg in args])
+        out_string += f"{CYAN} | {filename}{RESET}"
     out_string += '\n'
     sys.stdout.write(out_string)
 
