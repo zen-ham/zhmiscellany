@@ -99,7 +99,7 @@ if __name__ == "__main__":
     sys.stdout.buffer.flush()
 '''
     if not fileless:
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py') as f:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
             f.write(code)
             f.flush()
             temp_path = f.name
