@@ -62,11 +62,13 @@ def raw_multiprocess(func, args=(), fileless=True):
                         break
         imports.pop(0)
         return "\n".join(imports)
-    
+
     cap_string = b'|'+bytes(zhmiscellany.string.get_universally_unique_string(), 'u8')+b'|'
     code = \
 '''import os, dill, zlib, sys, pickle, traceback
-os.chdir('''+repr(os.path.dirname(__main__.__file__))+''')
+md = '''+repr(__main__.__file__)+'''
+os.chdir(os.path.dirname(md))
+__file__ = md
 func = dill.loads(zlib.decompress('''+repr(zlib.compress(dill.dumps(func), 9))+'''))
 args_list = dill.loads(zlib.decompress('''+repr(zlib.compress(dill.dumps(args), 9))+f'''))
 if __name__ == "__main__":
