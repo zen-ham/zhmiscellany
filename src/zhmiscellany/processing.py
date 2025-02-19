@@ -67,7 +67,8 @@ def raw_multiprocess(func, args=(), fileless=True):
     code = \
 '''import os, dill, zlib, sys, pickle, traceback
 md = '''+repr(__main__.__file__)+'''
-os.chdir(os.path.dirname(md))
+cwd = '''+repr(os.getcwd())+'''
+os.chdir(os.path.dirname(cwd))
 __file__ = md
 func = dill.loads(zlib.decompress('''+repr(zlib.compress(dill.dumps(func), 9))+'''))
 args_list = dill.loads(zlib.decompress('''+repr(zlib.compress(dill.dumps(args), 9))+f'''))
@@ -123,7 +124,7 @@ if __name__ == "__main__":
     try:
         raw = raw.split(cap_string)[1].split(cap_string)[0]
     except:
-        raise Exception('Critical error in temporary file.')
+        raise Exception(f'Critical error in temporary file:\n{raw}')
     
     try:
         decompressed = zlib.decompress(raw)
