@@ -1,4 +1,4 @@
-import os, signal, importlib
+import os, signal, importlib, sys
 import zhmiscellany.math
 import zhmiscellany.string
 import zhmiscellany.processing
@@ -681,3 +681,21 @@ def time_it(action=None):
         print(f'{action} took {time_string}')
     _start = time.time()
     return r_time_vel
+
+def here(title=None, *args):
+    frame = inspect.currentframe().f_back
+    filename = frame.f_code.co_filename
+    lineno = frame.f_lineno
+    CYAN = '\033[96m'
+    RESET = '\033[0m'
+    out_string = CYAN
+    out_string += f"{filename}:{lineno}"
+    if title:
+        out_string += ', '+title
+    out_string += RESET
+    for arg in args:
+        out_string += ', ' + arg
+    out_string += '\n'
+    sys.stdout.write(out_string)
+
+line = here
