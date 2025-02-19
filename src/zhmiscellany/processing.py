@@ -120,7 +120,8 @@ if __name__ == "__main__":
         )
     if result is None:
         raise Exception('Critical error when trying to execute temporary file.')
-    os.unlink(temp_path)
+    if not fileless:
+        os.unlink(temp_path)
     raw = result.stdout
     # very annoying fix for ansi code at the start and end of the output, also a fix for if the passed functions have their own console output
     try:
