@@ -692,6 +692,7 @@ def here(*args):
     CYAN = '\033[96m'
     RESET = '\033[0m'
     out_string = CYAN
+    args = [arg for arg in args]
     if type(args[0]) == str:
         title = args.pop(0)
     else:
