@@ -670,17 +670,21 @@ def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='
         obf = '\n'.join(lines)
     return obf
 
+_CYAN = '\033[96m'
+_RESET = '\033[0m'
+
 def time_it(action=None):
     global _start
     try:
         a = _start
+        action = 'Timer'
     except:
         _start = time.time()
     r_time_vel = time.time()-_start
     if action is not None:
         time_val = round(r_time_vel, 2)
         time_string = f'{time_val} seconds.' if time_val else 'no time.'
-        print(f'{action} took {time_string}')
+        sys.stdout.write(f'{_CYAN}{action} took {time_string}{_RESET}')
     _start = time.time()
     return r_time_vel
 
@@ -689,9 +693,7 @@ def here(*args):
     frame = inspect.currentframe().f_back
     filename = frame.f_code.co_filename
     lineno = frame.f_lineno
-    CYAN = '\033[96m'
-    RESET = '\033[0m'
-    out_string = CYAN
+    out_string = _CYAN
     args = [arg for arg in args]
     title = None
     if args:
@@ -700,11 +702,11 @@ def here(*args):
     if title is not None:
         out_string += title+' | '
     if not args:
-        out_string += f"{lineno} | {filename}{RESET}"
+        out_string += f"{lineno} | {filename}{_RESET}"
     else:
-        out_string += f"{lineno} | {RESET}"
-        out_string += f'{CYAN} | {RESET}'.join([str(arg) for arg in args])
-        out_string += f"{CYAN} | {filename}{RESET}"
+        out_string += f"{lineno} | {_RESET}"
+        out_string += f'{_CYAN} | {_RESET}'.join([str(arg) for arg in args])
+        out_string += f"{_CYAN} | {filename}{_RESET}"
     out_string += '\n'
     sys.stdout.write(out_string)
 
