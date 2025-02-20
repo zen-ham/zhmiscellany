@@ -707,5 +707,3 @@ def l():
     pass
 
 line = here
-
-l = here
