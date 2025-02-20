@@ -13,7 +13,7 @@ _MODULES = [
 
 
 # Collect functions from all modules
-class Z:
+class z:
     """Aggregate of all package functions"""
     pass
 
@@ -33,7 +33,7 @@ def _collect_functions():
     
     # Add to class namespace
     for func in all_funcs:
-        setattr(Z, func.__name__, func)
+        setattr(z, func.__name__, func)
 
 
 _collect_functions()
