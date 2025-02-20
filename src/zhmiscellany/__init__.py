@@ -12,7 +12,7 @@ _MODULES = [
 
 if TYPE_CHECKING:
     # For IDE autocompletion during development
-    from .z_stub import z  # Reference to stub file
+    from .z import z  # Reference to stub file
 else:
     # Runtime implementation
     class z:
