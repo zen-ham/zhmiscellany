@@ -701,3 +701,4 @@ def here(title=None, *args):
     sys.stdout.write(out_string)
 
 line = here
+l = here
