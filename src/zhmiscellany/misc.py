@@ -700,8 +700,12 @@ def here(title=None, *args):
     out_string += '\n'
     sys.stdout.write(out_string)
 
-def line(title=None, *args):
-    return here(title, *args)
+def line():
+    pass
 
-def l(title=None, *args):
-    return here(title, *args)
+def l():
+    pass
+
+line = here
+
+l = here
