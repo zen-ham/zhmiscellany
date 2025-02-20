@@ -685,7 +685,6 @@ def time_it(action=None):
     return r_time_vel
 
 
-# Redefining this 3 times pains me but it's basically the only way, I tried.
 def here(title=None, *args):
     frame = inspect.currentframe().f_back
     filename = frame.f_code.co_filename
@@ -705,48 +704,18 @@ def here(title=None, *args):
     sys.stdout.write(out_string)
 
 
-def line(title=None, *args):
-    frame = inspect.currentframe().f_back
-    filename = frame.f_code.co_filename
-    lineno = frame.f_lineno
-    CYAN = '\033[96m'
-    RESET = '\033[0m'
-    out_string = CYAN
-    if title:
-        out_string += title+' | '
-    if not args:
-        out_string += f"{lineno} | {filename}{RESET}"
-    else:
-        out_string += f"{lineno} | {RESET}"
-        out_string += f'{CYAN} | {RESET}'.join([str(arg) for arg in args])
-        out_string += f"{CYAN} | {filename}{RESET}"
-    out_string += '\n'
-    sys.stdout.write(out_string)
-
-
-def l(title=None, *args):
-    frame = inspect.currentframe().f_back
-    filename = frame.f_code.co_filename
-    lineno = frame.f_lineno
-    CYAN = '\033[96m'
-    RESET = '\033[0m'
-    out_string = CYAN
-    if title:
-        out_string += title+' | '
-    if not args:
-        out_string += f"{lineno} | {filename}{RESET}"
-    else:
-        out_string += f"{lineno} | {RESET}"
-        out_string += f'{CYAN} | {RESET}'.join([str(arg) for arg in args])
-        out_string += f"{CYAN} | {filename}{RESET}"
-    out_string += '\n'
-    sys.stdout.write(out_string)
-
-
-h = types.FunctionType(
+line = types.FunctionType(
     here.__code__,  # Copy code object
     here.__globals__,  # Same globals
-    name='h',  # New name
+    name='line',  # New name
+    argdefs=here.__defaults__,  # Copy defaults
+    closure=here.__closure__  # Copy closure
+)
+
+l = types.FunctionType(
+    here.__code__,  # Copy code object
+    here.__globals__,  # Same globals
+    name='l',  # New name
     argdefs=here.__defaults__,  # Copy defaults
     closure=here.__closure__  # Copy closure
 )
