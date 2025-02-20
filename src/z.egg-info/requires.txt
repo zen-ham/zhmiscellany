@@ -1,0 +1,11 @@
+ray>=0
+pycryptodome>=0
+pywin32>=0
+discum==1.1.0
+Requests>=0
+random_header_generator>=0
+dill>=0
+numpy>=0
+keyboard>=0
+psutil>=0
+kthread>=0
