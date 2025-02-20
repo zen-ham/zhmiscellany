@@ -1,6 +1,7 @@
 from . import processing, misc, mousekb, discord, fileio, netio, string, math, image, list, dict, pipes, pastebin
 import importlib
 import inspect
+import sys
 from typing import TYPE_CHECKING
 
 _MODULES = [
