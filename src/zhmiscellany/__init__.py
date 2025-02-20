@@ -4,7 +4,6 @@ import importlib
 import inspect
 import sys
 
-# Explicit module list (better than parsing the file)
 _MODULES = [
     'processing', 'misc', 'mousekb', 'discord', 'fileio',
     'netio', 'string', 'math', 'image', 'list', 'dict',
@@ -38,7 +37,6 @@ def _collect_functions():
 
 _collect_functions()
 
-# Cleanup
 del _MODULES, _collect_functions
 
 if '__main__' in sys.modules:
