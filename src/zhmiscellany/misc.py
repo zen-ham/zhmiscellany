@@ -685,14 +685,18 @@ def time_it(action=None):
     return r_time_vel
 
 
-def here(title=None, *args):
+def here(*args):
     frame = inspect.currentframe().f_back
     filename = frame.f_code.co_filename
     lineno = frame.f_lineno
     CYAN = '\033[96m'
     RESET = '\033[0m'
     out_string = CYAN
-    if title:
+    if type(args[0]) == str:
+        title = args.pop(0)
+    else:
+        title = None
+    if title is not None:
         out_string += title+' | '
     if not args:
         out_string += f"{lineno} | {filename}{RESET}"
