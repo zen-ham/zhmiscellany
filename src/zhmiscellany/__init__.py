@@ -39,5 +39,12 @@ _collect_functions()
 
 del _MODULES, _collect_functions
 
-if '__main__' in sys.modules:
-    sys.modules['__main__'].__dict__['z'] = z
+def _inject_z():
+    frame = inspect.currentframe()
+    while frame:
+        if frame.f_globals.get('__name__') != __name__:
+            frame.f_globals['z'] = z
+            break
+        frame = frame.f_back
+
+_inject_z()  # Get the module that imported this package
