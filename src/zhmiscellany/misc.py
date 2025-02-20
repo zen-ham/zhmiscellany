@@ -682,8 +682,8 @@ def time_it(action=None):
         _start = time.time()
     r_time_vel = time.time()-_start
     if action is not None:
-        time_val = round(r_time_vel, 2)
-        time_string = f'{time_val} seconds.' if time_val else 'no time.'
+        time_val = zhmiscellany.math.round_to_min_digits(r_time_vel, 2)
+        time_string = f'{time_val} seconds.'
         sys.stdout.write(f'{_CYAN}{action} took {time_string}{_RESET}')
     _start = time.time()
     return r_time_vel

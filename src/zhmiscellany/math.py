@@ -1,4 +1,5 @@
 import numpy as np
+from decimal import Decimal, ROUND_HALF_UP
 
 
 def smart_percentage(things, total_things):
@@ -78,3 +79,9 @@ def generate_linear_points(p1, p2, num_points):
     ]
 
     return points
+
+
+def round_to_min_digits(number, min_digits=3):
+    d = Decimal(str(number))
+    exponent = min(-min_digits, d.adjusted() - (min_digits - 1))  # Ensure at least `min_digits` decimal places
+    return float(d.quantize(Decimal(f'1e{exponent}'), rounding=ROUND_HALF_UP))
