@@ -677,7 +677,7 @@ def time_it(action=False):
     global _start
     try:
         a = _start
-        if not action:
+        if action is not None and not action:
             frame = inspect.currentframe().f_back
             lineno = frame.f_lineno
             action = f'line {lineno}'
