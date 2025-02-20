@@ -693,10 +693,10 @@ def here(*args):
     RESET = '\033[0m'
     out_string = CYAN
     args = [arg for arg in args]
-    if type(args[0]) == str:
-        title = args.pop(0)
-    else:
-        title = None
+    title = None
+    if args:
+        if type(args[0]) == str:
+            title = args.pop(0)
     if title is not None:
         out_string += title+' | '
     if not args:
