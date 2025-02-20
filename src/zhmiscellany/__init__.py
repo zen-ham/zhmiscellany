@@ -11,25 +11,22 @@ _MODULES = [
 ]
 
 if TYPE_CHECKING:
-    # This import provides type info from your generated stub.
-    from .z import z as ZType
+    # For IDE autocompletion during development
+    from .z import z  # Reference to stub file
 else:
-    class _z:
-        """Runtime implementation for the z shortcut container."""
+    # Runtime implementation
+    class z:
+        """Aggregate of all package functions (runtime version)"""
         
         def __getattr__(self, name):
-            return globals()[name]
+            return globals()[name]  # Direct access to module-level functions
         
         def __dir__(self):
-            return [f for module in _MODULES
-                    for f in dir(globals()[module])
-                    if callable(globals()[module].__dict__.get(f))]
-    
-    
-    # Create an instance that will hold all the functions.
-    z = _z()
+            return [f for module in _MODULES for f in dir(globals()[module]) if
+                    callable(globals()[module].__dict__.get(f))]
 
 
+# Runtime population (for actual execution)
 def _collect_functions():
     all_funcs = {}
     for mod_name in _MODULES:
@@ -39,19 +36,17 @@ def _collect_functions():
             if inspect.isfunction(func) and func.__module__ == module.__name__
         }
         all_funcs.update(funcs)
-        globals().update(funcs)
+        globals().update(funcs)  # Also expose functions at package level
     
-    # Populate the z instance with static references.
+    # Create alias references in z class
     for name, func in all_funcs.items():
         setattr(z, name, staticmethod(func))
 
 
 _collect_functions()
 
-# Export z for IDE autocompletion.
-if TYPE_CHECKING:
-    # This reassignment tells type checkers that z has type ZType.
-    z: ZType
+# Cleanup
+del _MODULES, _collect_functions
 
-# Optionally add to __all__ so that z is explicitly exported.
-__all__ = ['z']
+if '__main__' in sys.modules:
+    sys.modules['__main__'].__dict__['z'] = z
