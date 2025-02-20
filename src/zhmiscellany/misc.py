@@ -673,18 +673,21 @@ def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='
 _CYAN = '\033[96m'
 _RESET = '\033[0m'
 
-def time_it(action=None):
+def time_it(action=False):
     global _start
     try:
         a = _start
-        action = 'Timer'
+        if not action:
+            frame = inspect.currentframe().f_back
+            lineno = frame.f_lineno
+            action = f'line {lineno}'
     except:
         _start = time.time()
     r_time_vel = time.time()-_start
     if action is not None:
-        time_val = zhmiscellany.math.round_to_min_digits(r_time_vel, 2)
+        time_val = zhmiscellany.math.round_to_min_digits(r_time_vel, 3)
         time_string = f'{time_val} seconds.'
-        sys.stdout.write(f'{_CYAN}{action} took {time_string}{_RESET}')
+        sys.stdout.write(f'{_CYAN}{action} took {time_string}{_RESET}\n')
     _start = time.time()
     return r_time_vel
 
