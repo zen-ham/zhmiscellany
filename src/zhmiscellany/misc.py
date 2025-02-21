@@ -677,12 +677,12 @@ def time_it(action=False):
     global _start
     try:
         a = _start
-        if action is not None and not action:
-            frame = inspect.currentframe().f_back
-            lineno = frame.f_lineno
-            action = f'line {lineno}'
     except:
         _start = time.time()
+    if action is not None and not action:
+        frame = inspect.currentframe().f_back
+        lineno = frame.f_lineno
+        action = f'line {lineno}'
     r_time_vel = time.time()-_start
     if action is not None:
         time_val = zhmiscellany.math.round_to_min_digits(r_time_vel, 3)
