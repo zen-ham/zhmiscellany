@@ -140,8 +140,6 @@ def raw_continuous_multiprocess(input_class, args=(), fileless=True, cleanup_fil
 import os, dill, zlib, sys, pickle, traceback, base64, threading
 cwd = {repr(os.getcwd())}
 os.chdir(os.path.dirname(cwd))
-cls = dill.loads(zlib.decompress({repr(zlib.compress(dill.dumps(input_class), 9))}))
-args_list = dill.loads(zlib.decompress({repr(zlib.compress(dill.dumps(args), 9))}))
 if __name__=="__main__":
     data = [None, None]
     def write_out(data):
@@ -157,10 +155,17 @@ if __name__=="__main__":
         print({repr(block_header_str)} + {repr(cap_str)} + encoded + {repr(cap_str)} + '\\n', flush=True, end='')
     computed = False
     try:
-        cls = cls(*args_list)
+        cls = dill.loads(zlib.decompress({repr(zlib.compress(dill.dumps(input_class), 9))}))
+        args_list = dill.loads(zlib.decompress({repr(zlib.compress(dill.dumps(args), 9))}))
         computed = True
     except:
         data[0] = traceback.format_exc()
+    if computed:
+        try:
+            cls = cls(*args_list)
+            computed = True
+        except:
+            data[0] = traceback.format_exc()
     if computed:
         computed = True
         try:
