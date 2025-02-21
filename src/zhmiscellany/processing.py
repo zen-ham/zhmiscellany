@@ -126,7 +126,7 @@ if __name__ == "__main__":
     return results
 
 
-def raw_continuous_multiprocess(input_class, args=(), fileless=True):
+def raw_continuous_multiprocess(input_class, args=(), fileless=True, cleanup_file=True):
     cap_string = b'|' + bytes(zhmiscellany.string.get_universally_unique_string(), 'u8') + b'|'
     block_header_string = b'|' + bytes(zhmiscellany.string.get_universally_unique_string(), 'u8') + b'|'
     completion_marker = b'|' + bytes(zhmiscellany.string.get_universally_unique_string(), 'u8') + b'|'
@@ -202,7 +202,8 @@ if __name__=="__main__":
     
     def cleanup():
         if not fileless:
-            os.unlink(temp_path)
+            if cleanup_file:
+                os.unlink(temp_path)
     
     # Read output line-by-line so results are yielded as soon as they're printed.
     for line in proc.stdout:
