@@ -3,7 +3,7 @@ import threading, kthread
 import traceback
 import zhmiscellany.string
 import concurrent.futures
-import types, sys, subprocess, zlib, pickle, dill, tempfile, os, __main__
+import types, sys, subprocess, zlib, pickle, dill, tempfile, os, __main__, base64
 
 
 def start_daemon(**kwargs):
@@ -44,25 +44,6 @@ def multiprocess_threaded(target, args=(), disable_warning=False, killable=False
 
 
 def raw_multiprocess(func, args=(), fileless=True):
-    def reconstruct_imports():
-        global_scope = globals()
-        imports = []
-
-        for name, obj in global_scope.items():
-            # Check if the object is a module or an alias of a module
-            if isinstance(obj, types.ModuleType):
-                # Get the original module name from sys.modules
-                for mod_name, mod_obj in sys.modules.items():
-                    if mod_obj is obj:
-                        # Detect if an alias is used
-                        if name == mod_name.split(".")[0]:
-                            imports.append(f"import {mod_name}")
-                        else:
-                            imports.append(f"import {mod_name} as {name}")
-                        break
-        imports.pop(0)
-        return "\n".join(imports)
-
     cap_string = b'|'+bytes(zhmiscellany.string.get_universally_unique_string(), 'u8')+b'|'
     code = \
 '''import os, dill, zlib, sys, pickle, traceback
@@ -114,7 +95,7 @@ if __name__ == "__main__":
             text=False
         )
     if result is None:
-        raise Exception('Critical error when trying to execute temporary file.')
+        raise Exception('Critical error when trying to execute process.')
     if not fileless:
         os.unlink(temp_path)
     raw = result.stdout + result.stderr
@@ -122,7 +103,7 @@ if __name__ == "__main__":
     try:
         raw = raw.split(cap_string)[1].split(cap_string)[0]
     except:
-        raise Exception(f'Critical error in temporary file:\n{raw}')
+        raise Exception(f'Critical error in process:\n{raw}')
     
     try:
         decompressed = zlib.decompress(raw)
@@ -143,3 +124,113 @@ if __name__ == "__main__":
         raise Exception(f'An error occurred in the function you passed:\n\n{var[0]}')
 
     return results
+
+
+def raw_continuous_multiprocess(input_class, args=(), fileless=True):
+    cap_string = b'|' + bytes(zhmiscellany.string.get_universally_unique_string(), 'u8') + b'|'
+    block_header_string = b'|' + bytes(zhmiscellany.string.get_universally_unique_string(), 'u8') + b'|'
+    completion_marker = b'|' + bytes(zhmiscellany.string.get_universally_unique_string(), 'u8') + b'|'
+    # convert markers to strings (they are ASCII-safe)
+    cap_str = cap_string.decode('utf-8')
+    block_header_str = block_header_string.decode('utf-8')
+    completion_marker_str = completion_marker.decode('utf-8')
+    marker_prefix = block_header_str + cap_str
+    
+    code = f'''
+import os, dill, zlib, sys, pickle, traceback, base64, threading
+cwd = {repr(os.getcwd())}
+os.chdir(os.path.dirname(cwd))
+cls = dill.loads(zlib.decompress({repr(zlib.compress(dill.dumps(input_class), 9))}))
+args_list = dill.loads(zlib.decompress({repr(zlib.compress(dill.dumps(args), 9))}))
+if __name__=="__main__":
+    data = [None, None]
+    def write_out(data):
+        try:
+            pickled = pickle.dumps(data, protocol=5)
+        except:
+            try:
+                pickled = dill.dumps(data, protocol=5)
+            except:
+                pickled = pickle.dumps([1, None], protocol=5)
+        compressed = zlib.compress(pickled, 9)
+        encoded = base64.b64encode(compressed).decode('utf-8')
+        print({repr(block_header_str)} + {repr(cap_str)} + encoded + {repr(cap_str)} + '\\n', flush=True, end='')
+    computed = False
+    try:
+        cls = cls(*args_list)
+        computed = True
+    except:
+        data[0] = traceback.format_exc()
+    if computed:
+        computed = True
+        try:
+            threads = []
+            for result in cls.output():
+                data[1] = result
+                t = threading.Thread(target=write_out, args=(data,))
+                threads.append(t)
+                t.start()
+            for thread in threads:
+                thread.join()
+        except:
+            data[1] = None
+            data[0] = traceback.format_exc()
+            write_out(data)
+            computed = False
+        if computed:
+            data[1] = {repr(completion_marker_str)}
+            write_out(data)
+    else:
+        write_out(data)
+'''
+    if not fileless:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+            f.write(code)
+            f.flush()
+            temp_path = f.name
+        proc = subprocess.Popen(["python", temp_path],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT,
+                                text=True,
+                                bufsize=1)
+    else:
+        proc = subprocess.Popen(["python", "-c", code],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT,
+                                text=True,
+                                bufsize=1)
+    
+    def cleanup():
+        if not fileless:
+            os.unlink(temp_path)
+    
+    # Read output line-by-line so results are yielded as soon as they're printed.
+    for line in proc.stdout:
+        line = line.strip()
+        if not (line.startswith(marker_prefix) and line.endswith(cap_str)):
+            continue
+        encoded = line[len(marker_prefix):-len(cap_str)]
+        try:
+            compressed = base64.b64decode(encoded)
+            decompressed = zlib.decompress(compressed)
+        except Exception as e:
+            raise Exception("Error decoding output") from e
+        try:
+            var = pickle.loads(decompressed)
+        except:
+            var = dill.loads(decompressed)
+        if var[0] is not None:
+            if var[0] == 1:
+                raise Exception("Result unpickable even with dill.")
+            else:
+                raise Exception(f"Error in function:\n\n{var[0]}")
+        if var[1] == completion_marker_str:
+            proc.stdout.close()
+            proc.wait()
+            cleanup()
+            return
+        else:
+            yield var[1]
+    proc.stdout.close()
+    proc.wait()
+    cleanup()
