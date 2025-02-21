@@ -66,10 +66,8 @@ def raw_multiprocess(func, args=(), fileless=True):
     cap_string = b'|'+bytes(zhmiscellany.string.get_universally_unique_string(), 'u8')+b'|'
     code = \
 '''import os, dill, zlib, sys, pickle, traceback
-md = '''+repr(__main__.__file__)+'''
 cwd = '''+repr(os.getcwd())+'''
 os.chdir(os.path.dirname(cwd))
-__file__ = md
 func = dill.loads(zlib.decompress('''+repr(zlib.compress(dill.dumps(func), 9))+'''))
 args_list = dill.loads(zlib.decompress('''+repr(zlib.compress(dill.dumps(args), 9))+f'''))
 if __name__ == "__main__":
