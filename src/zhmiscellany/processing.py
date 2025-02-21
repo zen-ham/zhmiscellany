@@ -140,6 +140,8 @@ def raw_continuous_multiprocess(input_class, args=(), fileless=True, cleanup_fil
 import os, dill, zlib, sys, pickle, traceback, base64, threading
 cwd = {repr(os.getcwd())}
 os.chdir(os.path.dirname(cwd))
+env = os.environ.copy()
+env["PYTHONPATH"] = os.getcwd() + os.pathsep + env.get("PYTHONPATH", "")
 if __name__=="__main__":
     data = [None, None]
     def write_out(data):
