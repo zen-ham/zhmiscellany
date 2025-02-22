@@ -693,23 +693,35 @@ def time_it(action=False):
 
 
 def here(*args):
-    frame = inspect.currentframe().f_back
+    frame = inspect.currentframe().f_back  # Get caller frame
     filename = frame.f_code.co_filename
     lineno = frame.f_lineno
+    local_vars = frame.f_locals  # Get caller's local variables
+
     out_string = _CYAN
-    args = [arg for arg in args]
     title = None
-    if args:
-        if type(args[0]) == str:
-            title = args.pop(0)
-    if title is not None:
-        out_string += title+' | '
+
+    # Extract title if first argument is a string
+    args = list(args)
+    if args and isinstance(args[0], str):
+        title = args.pop(0)
+
+    # Find variable names for arguments
+    arg_names = {v: k for k, v in local_vars.items() if v in args}
+
+    # Format output
+    if title:
+        out_string += title + ' | '
+
     if not args:
         out_string += f"{lineno} | {filename}{_RESET}"
     else:
         out_string += f"{lineno} | {_RESET}"
-        out_string += f'{_CYAN} | {_RESET}'.join([str(arg) for arg in args])
+        out_string += f'{_CYAN} | {_RESET}'.join(
+            [f"{_CYAN}{arg_names.get(arg, '?')}: {_RESET}{arg}" for arg in args]
+        )
         out_string += f"{_CYAN} | {filename}{_RESET}"
+
     out_string += '\n'
     sys.stdout.write(out_string)
 
