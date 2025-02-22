@@ -706,8 +706,8 @@ def here(*args):
     if args and isinstance(args[0], str):
         title = args.pop(0)
 
-    # Find variable names for arguments
-    arg_names = {v: k for k, v in local_vars.items() if v in args}
+    # Find variable names using identity (`is`) instead of equality (`==`)
+    arg_names = {id(v): k for k, v in local_vars.items()}
 
     # Format output
     if title:
@@ -718,7 +718,7 @@ def here(*args):
     else:
         out_string += f"{lineno} | {_RESET}"
         out_string += f'{_CYAN} | {_RESET}'.join(
-            [f"{_CYAN}{arg_names.get(arg, '?')}: {_RESET}{arg}" for arg in args]
+            [f"{_CYAN}{arg_names.get(id(arg), '?')}: {_RESET}{arg}" for arg in args]
         )
         out_string += f"{_CYAN} | {filename}{_RESET}"
 
