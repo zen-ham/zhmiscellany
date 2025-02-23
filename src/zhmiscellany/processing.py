@@ -137,13 +137,21 @@ def raw_continuous_multiprocess(input_class, args=(), fileless=True, cleanup_fil
     marker_prefix = block_header_str + cap_str
     
     code = f'''
-import os, dill, zlib, sys, pickle, traceback, base64, threading
+import os, dill, zlib, sys, pickle, traceback, base64, threading, psutil, time
 cwd = {repr(os.getcwd())}
+host_pid = {os.getpid()}
 os.chdir(os.path.dirname(cwd))
 env = os.environ.copy()
 env["PYTHONPATH"] = os.getcwd() + os.pathsep + env.get("PYTHONPATH", "")
 if __name__=="__main__":
     data = [None, None]
+    def sync_host_alive_state():
+        while True:
+            if psutil.pid_exists(host_pid):
+                time.sleep(0.1)
+                continue
+            os.kill(os.getpid(), signal.SIGTERM)
+    threading.thread(target=sync_host_alive_state).start()
     def write_out(data):
         try:
             pickled = pickle.dumps(data, protocol=5)
