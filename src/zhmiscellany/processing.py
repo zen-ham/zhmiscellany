@@ -151,7 +151,9 @@ if __name__=="__main__":
                 time.sleep(0.1)
                 continue
             os.kill(os.getpid(), signal.SIGTERM)
-    threading.thread(target=sync_host_alive_state).start()
+    b = threading.Thread(target=sync_host_alive_state)
+    b.daemon = True
+    b.start()
     def write_out(data):
         try:
             pickled = pickle.dumps(data, protocol=5)
