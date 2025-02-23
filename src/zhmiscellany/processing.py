@@ -137,7 +137,7 @@ def raw_continuous_multiprocess(input_class, args=(), fileless=True, cleanup_fil
     marker_prefix = block_header_str + cap_str
     
     code = f'''
-import os, dill, zlib, sys, pickle, traceback, base64, threading, psutil, time
+import os, dill, zlib, sys, pickle, traceback, base64, threading, psutil, time, signal
 cwd = {repr(os.getcwd())}
 host_pid = {os.getpid()}
 os.chdir(os.path.dirname(cwd))
