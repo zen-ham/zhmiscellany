@@ -52,7 +52,13 @@ _ray_init_thread = threading.Thread()  # initialize variable to completed thread
 _ray_init_thread.start()
 
 _ray_state = 'disabled'
-cause_strings = ['processing.multiprocess(', 'processing.batch_multiprocess(', 'processing.synchronous_class_multiprocess(']
+cause_strings = [
+    'processing.multiprocess(',
+    'processing.batch_multiprocess(',
+    'processing.synchronous_class_multiprocess(',
+    'processing.multiprocess_threaded(',
+    'processing.batch_multiprocess_threaded(',
+]
 
 if any([i in code for i in cause_strings]) or os.environ.get('zhmiscellany_init_ray') == 'force':
     ray_init()
