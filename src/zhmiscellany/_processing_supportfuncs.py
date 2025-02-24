@@ -88,6 +88,8 @@ def multiprocess(target, args=(), disable_warning=False):
 class RayActorWrapper:
     def __init__(self, actor_instance):
         self._actor = actor_instance
+        
+        ray.get(self._actor._ready.remote())
     
     def __getattr__(self, name):
         # When you access an attribute, assume it's a remote method.
@@ -119,6 +121,11 @@ def synchronous_class_multiprocess(cls, *args, disable_warning=False, **kwargs):
     If you want to avoid this in the future and wait until ray is ready you can add this line just after importing zhmiscellany: (Or you can pass disable_warning=True to this function call)\n\
     from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_thread.join()")
     _ray_init_thread.join()
+    
+    def _ready(self):
+        return True
+    
+    cls._ready = _ready
     
     remote_cls = ray.remote(cls)
     actor_instance = remote_cls.remote(*args, **kwargs)
