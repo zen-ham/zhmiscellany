@@ -84,6 +84,19 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         click_pixel(x, y, click_duration, right_click, shift, ctrl, act_start, act_end, middle_click, click_end_duration)
 
 
+def press_key(vk_code, shift=False, act_start=True, act_end=True, key_hold_time=0):
+    if shift:
+        win32api.keybd_event(win32con.VK_SHIFT, 0, 0, 0)
+    if act_start:
+        win32api.keybd_event(vk_code, 0, 0, 0)  # press
+    if key_hold_time:
+        zhmiscellany.misc.high_precision_sleep(key_hold_time)
+    if act_end:
+        win32api.keybd_event(vk_code, 0, win32con.KEYEVENTF_KEYUP, 0)  # release
+    if shift:
+        win32api.keybd_event(win32con.VK_SHIFT, 0, win32con.KEYEVENTF_KEYUP, 0)
+
+
 def type_string(text=None, delay=None, key_hold_time=None, vk_codes=None, combine=False):
     # Dictionary mapping characters to their virtual key codes and shift state
     char_to_vk = {
@@ -108,18 +121,6 @@ def type_string(text=None, delay=None, key_hold_time=None, vk_codes=None, combin
         '~': (0xC0, True)
     }
 
-    def press_key(vk_code, shift=False, act_start=True, act_end=True):
-        if shift:
-            win32api.keybd_event(win32con.VK_SHIFT, 0, 0, 0)
-        if act_start:
-            win32api.keybd_event(vk_code, 0, 0, 0)  # press
-        if key_hold_time:
-            zhmiscellany.misc.high_precision_sleep(key_hold_time)
-        if act_end:
-            win32api.keybd_event(vk_code, 0, win32con.KEYEVENTF_KEYUP, 0)  # release
-        if shift:
-            win32api.keybd_event(win32con.VK_SHIFT, 0, win32con.KEYEVENTF_KEYUP, 0)
-
     if text:
         for char in text:
             lower_char = char.lower()
@@ -127,7 +128,7 @@ def type_string(text=None, delay=None, key_hold_time=None, vk_codes=None, combin
                 vk_code, shift = char_to_vk[lower_char]
                 if char.isupper():
                     shift = True
-                press_key(vk_code, shift, act_end=not combine)
+                press_key(vk_code, shift, act_end=not combine, key_hold_time=key_hold_time)
             else:
                 print(f"Character '{char}' not supported")
             if delay:
@@ -140,18 +141,18 @@ def type_string(text=None, delay=None, key_hold_time=None, vk_codes=None, combin
                     vk_code, shift = char_to_vk[lower_char]
                     if char.isupper():
                         shift = True
-                    press_key(vk_code, shift, act_start=False, act_end=True)
+                    press_key(vk_code, shift, act_start=False, act_end=True, key_hold_time=key_hold_time)
                 else:
                     print(f"Character '{char}' not supported")
     if vk_codes:
         for vk_code in vk_codes:
-            press_key(vk_code, False, act_end=not combine)
+            press_key(vk_code, False, act_end=not combine, key_hold_time=key_hold_time)
             if delay:
                 zhmiscellany.misc.high_precision_sleep(delay)
         if combine:
             key_hold_time = 0  # release all keys at the same time
             for vk_code in vk_codes:
-                press_key(vk_code, False, act_start=False, act_end=True)
+                press_key(vk_code, False, act_start=False, act_end=True, key_hold_time=key_hold_time)
 
 
 def scroll(amount, delay=None):

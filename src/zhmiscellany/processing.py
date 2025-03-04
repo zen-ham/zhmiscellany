@@ -46,13 +46,23 @@ def multiprocess_threaded(target, args=(), disable_warning=False, killable=False
 def raw_multiprocess(func, args=(), fileless=True):
     cap_string = b'|'+bytes(zhmiscellany.string.get_universally_unique_string(), 'u8')+b'|'
     code = \
-'''import os, dill, zlib, sys, pickle, traceback
+'''import os, dill, zlib, sys, pickle, traceback, psutil, signal
 cwd = '''+repr(os.getcwd())+'''
+host_pid = {os.getpid()}
 os.chdir(os.path.dirname(cwd))
 func = dill.loads(zlib.decompress('''+repr(zlib.compress(dill.dumps(func), 9))+'''))
 args_list = dill.loads(zlib.decompress('''+repr(zlib.compress(dill.dumps(args), 9))+f'''))
 if __name__ == "__main__":
     data = [None, None]
+    def sync_host_alive_state():
+        while True:
+            if psutil.pid_exists(host_pid):
+                time.sleep(0.1)
+                continue
+            os.kill(os.getpid(), signal.SIGTERM)
+    b = threading.Thread(target=sync_host_alive_state)
+    b.daemon = True
+    b.start()
     computed = False
     try:
         result = func(*args_list)
