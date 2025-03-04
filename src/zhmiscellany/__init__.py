@@ -1,11 +1,11 @@
-from . import processing, misc, mousekb, discord, fileio, netio, string, math, image, list, dict, pipes, pastebin
+from . import processing, misc, macro, discord, fileio, netio, string, math, image, list, dict, pipes, pastebin
 
 import importlib
 import inspect
 import sys
 
 _MODULES = [
-    'processing', 'misc', 'mousekb', 'discord', 'fileio',
+    'processing', 'misc', 'macro', 'discord', 'fileio',
     'netio', 'string', 'math', 'image', 'list', 'dict',
     'pipes', 'pastebin'
 ]

@@ -2,7 +2,7 @@ import os, signal, importlib, sys
 import zhmiscellany.math
 import zhmiscellany.string
 import zhmiscellany.processing
-import zhmiscellany.mousekb
+import zhmiscellany.macro
 import zhmiscellany.fileio
 import time, hashlib, ctypes
 import keyboard
@@ -15,11 +15,11 @@ import psutil
 import types
 
 # support backwards compatibility
-click_pixel = zhmiscellany.mousekb.click_pixel
-type_string = zhmiscellany.mousekb.type_string
-scroll = zhmiscellany.mousekb.scroll
-get_mouse_xy = zhmiscellany.mousekb.get_mouse_xy
-KEY_CODES = zhmiscellany.mousekb.KEY_CODES
+click_pixel = zhmiscellany.macro.click_pixel
+type_string = zhmiscellany.macro.type_string
+scroll = zhmiscellany.macro.scroll
+get_mouse_xy = zhmiscellany.macro.get_mouse_xy
+KEY_CODES = zhmiscellany.macro.KEY_CODES
 
 
 def get_actual_screen_resolution():
