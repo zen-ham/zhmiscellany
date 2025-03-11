@@ -1,3 +1,4 @@
+from ._fileio_supportfuncs import is_junction
 import json, os, shutil, dill, sys, pickle, base64, zlib
 import zhmiscellany.string
 import zhmiscellany.misc
@@ -226,3 +227,18 @@ def load_all_cached():
             raise Exception('Nothing has been cached yet')
     else:
         raise Exception('Nothing has been cached yet')
+
+
+def list_files_recursive(folder):
+    files = []
+    try:
+        for entry in os.scandir(folder):
+            if entry.is_file():
+                files.append(entry.path)
+            if entry.is_symlink() or is_junction(entry):
+                continue
+            elif entry.is_dir():
+                files.extend(list_files_recursive(entry.path))
+    except (PermissionError, FileNotFoundError):
+        pass
+    return files

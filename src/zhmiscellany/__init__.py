@@ -7,7 +7,7 @@ import sys
 _MODULES = [
     'processing', 'misc', 'macro', 'discord', 'fileio',
     'netio', 'string', 'math', 'image', 'list', 'dict',
-    'pipes', 'pastebin'
+    'pipes', 'pastebin', 'rust'
 ]
 
 
