@@ -4,19 +4,19 @@ use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
 #[pyfunction]
-fn mean(numbers: PyReadonlyArray1<f64>) -> PyResult<f64> {
+fn np_mean(numbers: PyReadonlyArray1<f64>) -> PyResult<f64> {
     let array = numbers.as_array();
     Ok(array.sum() / array.len() as f64)
 }
 
 #[pyfunction]
-fn sum(numbers: PyReadonlyArray1<f64>) -> PyResult<f64> {
+fn np_sum(numbers: PyReadonlyArray1<f64>) -> PyResult<f64> {
     let array = numbers.as_array();
     Ok(array.sum() as f64)
 }
 
 #[pyfunction]
-fn median(numbers: PyReadonlyArray1<f64>) -> PyResult<f64> {
+fn np_median(numbers: PyReadonlyArray1<f64>) -> PyResult<f64> {
     let mut numbers = numbers.as_array().to_vec();
     let len = numbers.len();
 
