@@ -50,9 +50,9 @@ fn list_files_recursive(folder: String) -> PyResult<Vec<String>> {
 
 #[pymodule]
 fn zhmiscellanyrusteffect(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(mean, m)?)?;
-    m.add_function(wrap_pyfunction!(median, m)?)?;
+    m.add_function(wrap_pyfunction!(np_mean, m)?)?;
+    m.add_function(wrap_pyfunction!(np_median, m)?)?;
     m.add_function(wrap_pyfunction!(list_files_recursive, m)?)?;
-    m.add_function(wrap_pyfunction!(sum, m)?)?;
+    m.add_function(wrap_pyfunction!(np_sum, m)?)?;
     Ok(())
 }
