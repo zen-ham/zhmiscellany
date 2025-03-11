@@ -12,7 +12,7 @@ def mean(lst):
 
 def sum(lst):
     array = np.array(lst)
-    return sum(array)
+    return np_sum(array)
 
 def median(lst):
     array = np.array(lst)
