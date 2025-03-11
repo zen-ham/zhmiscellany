@@ -1,3 +1,6 @@
 from zhmiscellanyrusteffect import *
 
-globals().update({name: globals()[name] for name in dir() if not name.startswith("__")})
+mean = mean
+sum = sum
+median = median
+list_files_recursive = list_files_recursive
