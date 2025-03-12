@@ -11,12 +11,12 @@ def numpy_median(np_arr):
 
 def mean(lst):
     array = np.array(lst, dtype=np.float64)
-    return np_mean(array)
+    return zhmiscellanyrusteffect.np_mean(array)
 
 def sum(lst):
     array = np.array(lst, dtype=np.float64)
-    return np_sum(array)
+    return zhmiscellanyrusteffect.np_sum(array)
 
 def median(lst):
     array = np.array(lst, dtype=np.float64)
-    return np_median(array)
+    return zhmiscellanyrusteffect.np_median(array)
