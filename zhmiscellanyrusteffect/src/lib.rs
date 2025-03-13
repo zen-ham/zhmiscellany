@@ -51,7 +51,7 @@ fn list_files_recursive(folder: String) -> PyResult<Vec<String>> {
 }
 
 #[pyfunction]
-fn subtract_lists<'py>(
+fn np_list_subtract<'py>(
     py: Python<'py>,
     l1: PyReadonlyArray1<f64>,
     l2: PyReadonlyArray1<f64>,
@@ -73,5 +73,6 @@ fn zhmiscellanyrusteffect(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(np_median, m)?)?;
     m.add_function(wrap_pyfunction!(list_files_recursive, m)?)?;
     m.add_function(wrap_pyfunction!(np_sum, m)?)?;
+    m.add_function(wrap_pyfunction!(np_list_subtract, m)?)?;
     Ok(())
 }
