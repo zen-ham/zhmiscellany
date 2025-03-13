@@ -1,7 +1,9 @@
 use jwalk::WalkDir;
-use numpy::PyReadonlyArray1;
+use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1};
+use ordered_float::OrderedFloat;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
+use std::collections::HashSet;
 
 #[pyfunction]
 fn np_mean(numbers: PyReadonlyArray1<f64>) -> PyResult<f64> {
@@ -46,6 +48,23 @@ fn list_files_recursive(folder: String) -> PyResult<Vec<String>> {
         .collect();
 
     Ok(files)
+}
+
+#[pyfunction]
+fn subtract_lists<'py>(
+    py: Python<'py>,
+    l1: PyReadonlyArray1<f64>,
+    l2: PyReadonlyArray1<f64>,
+) -> PyResult<Py<PyArray1<f64>>> {
+    let arr1 = l1.as_array();
+    let arr2 = l2.as_array();
+    let remove_set: HashSet<OrderedFloat<f64>> = arr2.iter().cloned().map(OrderedFloat).collect();
+    let result: Vec<f64> = arr1
+        .iter()
+        .cloned()
+        .filter(|&x| !remove_set.contains(&OrderedFloat(x)))
+        .collect();
+    Ok(result.into_pyarray(py).to_owned().into())
 }
 
 #[pymodule]

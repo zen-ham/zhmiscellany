@@ -1,6 +1,6 @@
 [package]
 name = "zhmiscellanyrusteffect"
-version = "0.2.6"
+version = "0.2.7"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -12,4 +12,5 @@ crate-type = ["cdylib"]
 jwalk = "0.8.1"
 nalgebra = "0.33.2"
 numpy = "0.23.0"
+ordered-float = "5.0.0"
 pyo3 = "0.23.3"
