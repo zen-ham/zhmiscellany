@@ -1,6 +1,5 @@
 
 import requests
-import xml.etree.ElementTree as ET
 
 # PasteBin API Class - Developed by acidvegas in Python, modernized for use in zhmiscellany package. (https://git.acid.vegas/pastebin)
 class PasteBin:
@@ -48,6 +47,7 @@ class PasteBin:
 
     def list_pastes(self, results_limit=None):
         '''List pastes created by the user.'''
+        import xml.etree.ElementTree as ET
         params = {
             'api_dev_key': self.api_dev_key,
             'api_user_key': self.api_user_key,

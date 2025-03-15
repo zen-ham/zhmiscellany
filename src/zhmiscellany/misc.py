@@ -5,9 +5,8 @@ import zhmiscellany.processing
 import zhmiscellany.macro
 import zhmiscellany.fileio
 import time, hashlib, ctypes
-import keyboard
 import random, string, copy
-import keyword, builtins, inspect
+import builtins, inspect
 import win32gui, win32con, win32process
 
 import psutil
@@ -231,6 +230,7 @@ def is_admin():
 
 
 def die_on_key(key='f9', show_message=False):
+    import keyboard
     def _die_on_key(key):
         keyboard.wait(key)
         if show_message:
@@ -243,7 +243,8 @@ temp_folder = os.popen(r'echo %TEMP%').read().replace('\n', '')
 
 
 def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='# DNO', remove_prints=True, remove_comments=True, add_lines=True, new_line_ratio=10):
-
+    import keyword
+    
     obf = python_code_string
     dno_sig = do_not_obfuscate_indent_block_comment
     dno_char = '2LAM67M4'

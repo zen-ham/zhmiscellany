@@ -2,8 +2,7 @@ import os, requests
 import zhmiscellany.string
 import urllib.parse
 from zhmiscellany._misc_supportfuncs import patch_rhg
-patch_rhg()  # patches random_header_genoration library's missing files. this only matters if zhmiscellany has been compiled into a pyinstaller executable. zhmiscellany chooses to patch this broken package for the benefit of the user.
-from random_header_generator import HeaderGenerator
+patch_rhg()  # patches random_header_generator library's missing files. this only matters if zhmiscellany has been compiled into a pyinstaller executable. zhmiscellany chooses to patch this broken package for the benefit of the user.
 
 
 def resolve_file(url, destination_folder="."):
@@ -43,6 +42,7 @@ def download_file(url, destination_folder=".", just_return_path=False, headers=N
 
 
 def generate_headers(url):
+    from random_header_generator import HeaderGenerator
     generator = HeaderGenerator()
     headers = {
     }

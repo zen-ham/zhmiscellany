@@ -3,7 +3,7 @@ import threading, kthread
 import traceback
 import zhmiscellany.string
 import concurrent.futures
-import types, sys, subprocess, zlib, pickle, dill, tempfile, os, __main__, base64
+import subprocess, zlib, pickle, dill, tempfile, os, base64
 
 
 def start_daemon(**kwargs):

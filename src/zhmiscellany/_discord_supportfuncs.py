@@ -1,7 +1,6 @@
 import sys
 import time
 import re
-import discum
 import zhmiscellany.fileio
 import zhmiscellany.string
 import os
@@ -90,6 +89,7 @@ def get_members(guild_id, channel_id, extra_scrape=True, wait=1):  # combination
 
 def scrape_guild_internal(guild_id, channel_id, user_token, console=False, extra_scrape=True):
     global _bot, _allchars, _Queries, _scrape_guild_use_console
+    import discum
     _scrape_guild_use_console = console
     _bot = discum.Client(token=user_token, log=False)
 

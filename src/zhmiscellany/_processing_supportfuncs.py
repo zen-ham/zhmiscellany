@@ -1,5 +1,5 @@
 # these lines are purposefully the first thing to run when zhmiscellany is imported
-import ray, threading, logging, os, inspect
+import threading, logging, os, inspect
 
 
 def ray_init():
@@ -10,7 +10,8 @@ def ray_init():
 
 
 def _ray_init():
-    global _ray_state
+    global _ray_state, ray
+    import ray
     if _ray_state == 'enabled':
         return
     _ray_state = 'starting'
