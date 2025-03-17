@@ -3,6 +3,7 @@ use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1};
 use ordered_float::OrderedFloat;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
+use std::arch::x86_64::*;
 use std::collections::HashSet;
 
 #[pyfunction]
@@ -59,11 +60,38 @@ fn np_list_subtract<'py>(
     let arr1 = l1.as_array();
     let arr2 = l2.as_array();
     let remove_set: HashSet<OrderedFloat<f64>> = arr2.iter().cloned().map(OrderedFloat).collect();
-    let result: Vec<f64> = arr1
-        .iter()
-        .cloned()
-        .filter(|&x| !remove_set.contains(&OrderedFloat(x)))
-        .collect();
+
+    let mut result = Vec::with_capacity(arr1.len());
+    let mut i = 0;
+
+    unsafe {
+        if is_x86_feature_detected!("avx2") {
+            let len = arr1.len();
+            while i + 4 <= len {
+                let chunk = _mm256_loadu_pd(arr1.as_ptr().add(i)); // Load 4 doubles
+                let mask = _mm256_cmp_pd(chunk, _mm256_set1_pd(0.0), _CMP_NEQ_OQ); // Compare against 0
+                let mask_bits = _mm256_movemask_pd(mask);
+
+                if mask_bits != 0 {
+                    for j in 0..4 {
+                        let val = *arr1.get(i + j).unwrap();
+                        if !remove_set.contains(&OrderedFloat(val)) {
+                            result.push(val);
+                        }
+                    }
+                }
+                i += 4;
+            }
+        }
+    }
+
+    // Process the remainder
+    for &x in &arr1[i..] {
+        if !remove_set.contains(&OrderedFloat(x)) {
+            result.push(x);
+        }
+    }
+
     Ok(result.into_pyarray(py).to_owned().into())
 }
 
