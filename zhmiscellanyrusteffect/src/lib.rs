@@ -51,23 +51,22 @@ fn list_files_recursive(folder: String) -> PyResult<Vec<String>> {
 }
 
 #[pyfunction]
-fn np_list_subtract<'py>(
+fn np_list_subtract<'py, T>(
     py: Python<'py>,
-    l1: &PyAny,
-    l2: &PyAny,
-) -> PyResult<Py<PyArray1<PyObject>>> {
-    let arr1: Vec<PyObject> = l1
-        .extract::<PyReadonlyArray1<PyObject>>()?
-        .as_array()
-        .to_vec();
-    let arr2: HashSet<PyObject> = l2
-        .extract::<PyReadonlyArray1<PyObject>>()?
-        .as_array()
+    l1: PyReadonlyArray1<T>,
+    l2: PyReadonlyArray1<T>,
+) -> PyResult<Py<PyArray1<T>>>
+where
+    T: numpy::Element + Clone + Eq + Hash,
+{
+    let arr1 = l1.as_array();
+    let arr2 = l2.as_array();
+    let remove_set: HashSet<T> = arr2.iter().cloned().collect();
+    let result: Vec<T> = arr1
         .iter()
         .cloned()
+        .filter(|x| !remove_set.contains(x))
         .collect();
-
-    let result: Vec<PyObject> = arr1.into_iter().filter(|x| !arr2.contains(x)).collect();
     Ok(result.into_pyarray(py).to_owned().into())
 }
 
