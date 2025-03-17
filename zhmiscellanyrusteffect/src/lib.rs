@@ -3,7 +3,6 @@ use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1};
 use ordered_float::OrderedFloat;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
-use std::arch::x86_64::*;
 use std::collections::HashSet;
 
 #[pyfunction]
@@ -54,44 +53,21 @@ fn list_files_recursive(folder: String) -> PyResult<Vec<String>> {
 #[pyfunction]
 fn np_list_subtract<'py>(
     py: Python<'py>,
-    l1: PyReadonlyArray1<f64>,
-    l2: PyReadonlyArray1<f64>,
-) -> PyResult<Py<PyArray1<f64>>> {
-    let arr1 = l1.as_array();
-    let arr2 = l2.as_array();
-    let remove_set: HashSet<OrderedFloat<f64>> = arr2.iter().cloned().map(OrderedFloat).collect();
+    l1: &PyAny,
+    l2: &PyAny,
+) -> PyResult<Py<PyArray1<PyObject>>> {
+    let arr1: Vec<PyObject> = l1
+        .extract::<PyReadonlyArray1<PyObject>>()?
+        .as_array()
+        .to_vec();
+    let arr2: HashSet<PyObject> = l2
+        .extract::<PyReadonlyArray1<PyObject>>()?
+        .as_array()
+        .iter()
+        .cloned()
+        .collect();
 
-    let mut result = Vec::with_capacity(arr1.len());
-    let mut i = 0;
-
-    unsafe {
-        if is_x86_feature_detected!("avx2") {
-            let len = arr1.len();
-            while i + 4 <= len {
-                let chunk = _mm256_loadu_pd(arr1.as_ptr().add(i)); // Load 4 doubles
-                let mask = _mm256_cmp_pd(chunk, _mm256_set1_pd(0.0), _CMP_NEQ_OQ); // Compare against 0
-                let mask_bits = _mm256_movemask_pd(mask);
-
-                if mask_bits != 0 {
-                    for j in 0..4 {
-                        let val = *arr1.get(i + j).unwrap();
-                        if !remove_set.contains(&OrderedFloat(val)) {
-                            result.push(val);
-                        }
-                    }
-                }
-                i += 4;
-            }
-        }
-    }
-
-    // Process the remainder
-    for &x in &arr1[i..] {
-        if !remove_set.contains(&OrderedFloat(x)) {
-            result.push(x);
-        }
-    }
-
+    let result: Vec<PyObject> = arr1.into_iter().filter(|x| !arr2.contains(x)).collect();
     Ok(result.into_pyarray(py).to_owned().into())
 }
 
