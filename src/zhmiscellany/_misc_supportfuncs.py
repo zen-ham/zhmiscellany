@@ -65,12 +65,14 @@ def patch_cpp():
     
     fn = 'fast_array_diff.cp310-win_amd64.pyd'
     
+    tp = os.path.join(os.path.dirname(base_path), fn)
+    
     cwd = os.getcwd()
     if (not os.path.exists(os.path.join(base_path, fn))) or anyway:
         os.chdir(base_path)
         from ._py_resources import gen
         gen()
-        shutil.copy2(os.path.join(base_path, 'resources', fn), os.path.join(os.path.dirname(base_path), fn))
+        shutil.copy2(os.path.join(base_path, 'resources', fn), tp)
         os.chdir(cwd)
 patch_cpp()
 
