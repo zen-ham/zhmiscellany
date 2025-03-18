@@ -1,4 +1,4 @@
-from . import processing, misc, macro, discord, fileio, netio, string, math, image, list, dict, pipes, pastebin
+from . import processing, misc, macro, discord, fileio, netio, string, math, image, list, dict, pipes, pastebin, rust, cpp
 
 import importlib
 import inspect

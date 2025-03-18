@@ -47,6 +47,31 @@ def patch_rhg():  # patches random_header_generator library's missing files. thi
     else:
         # we are running in normal Python environment
         pass
+patch_rhg()
+
+
+def patch_cpp():
+    if getattr(sys, 'frozen', False):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.dirname(__file__)
+    
+    from ._resource_files_lookup import resource_files_lookup
+    for file in resource_files_lookup:
+        if not os.path.exists(os.path.join(base_path, file)):
+            anyway = True  # missing file detected
+            break
+    
+    fn = 'fast_array_diff.cp310-win_amd64.pyd'
+    
+    cwd = os.getcwd()
+    if (not os.path.exists(os.path.join(base_path, fn))) or anyway:
+        os.chdir(base_path)
+        from ._py_resources import gen
+        gen()
+        shutil.copy2(os.path.join(base_path, 'resources', fn), os.path.join(base_path, fn))
+        os.chdir(cwd)
+patch_cpp()
 
 
 class POINT(Structure):
