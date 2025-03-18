@@ -1,3 +1,1 @@
-import fast_array_diff
-
-subtract_lists = fast_array_diff.remove_items
+from .fast_array_dif import remove_items as subtract_lists
