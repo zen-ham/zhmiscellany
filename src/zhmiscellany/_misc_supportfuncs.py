@@ -68,7 +68,7 @@ def patch_cpp():
     tp = os.path.join(os.path.dirname(base_path), fn)
     
     cwd = os.getcwd()
-    if (not os.path.exists(os.path.join(base_path, fn))) or anyway:
+    if (not os.path.exists(tp)) or anyway:
         os.chdir(base_path)
         from ._py_resources import gen
         gen()
