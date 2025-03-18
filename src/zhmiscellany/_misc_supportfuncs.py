@@ -56,6 +56,7 @@ def patch_cpp():
     else:
         base_path = os.path.dirname(__file__)
     
+    anyway = False
     from ._resource_files_lookup import resource_files_lookup
     for file in resource_files_lookup:
         if not os.path.exists(os.path.join(base_path, file)):
