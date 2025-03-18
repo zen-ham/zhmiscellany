@@ -70,7 +70,7 @@ def patch_cpp():
         os.chdir(base_path)
         from ._py_resources import gen
         gen()
-        shutil.copy2(os.path.join(base_path, 'resources', fn), os.path.join(base_path, fn))
+        shutil.copy2(os.path.join(base_path, 'resources', fn), os.path.join(os.path.dirname(base_path), fn))
         os.chdir(cwd)
 patch_cpp()
 
