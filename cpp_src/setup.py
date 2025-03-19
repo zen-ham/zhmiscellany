@@ -5,7 +5,7 @@ ext_modules = [
     Pybind11Extension(
         "fast_array_diff",
         ["fast_array_diff.cpp"],
-        extra_compile_args=["-std=c++17"],
+        extra_compile_args=["-std=c++17", "-mavx2", "-fPIC", "-ftree-vectorize", "-ffast-math"],
     ),
 ]
 
