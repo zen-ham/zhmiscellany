@@ -102,13 +102,17 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
         results = ray.get(futures)
         return results
     else:
+        def wrap_exception(task, disable_warning, max_retries):
+            try:
+                result = multiprocess(*task, disable_warning=disable_warning, max_retries=max_retries)
+                return result
+            except ray.exceptions.WorkerCrashedError:
+                return None
         threads = []
         for task in targets_and_args:
             t = ThreadWithResult(
-                target=multiprocess,
-                args=(*task,),
-                disable_warning=disable_warning,
-                max_retries=max_retries,
+                target=wrap_exception,
+                args=(task, disable_warning, max_retries),
             )
             threads.append(t)
             t.start()
