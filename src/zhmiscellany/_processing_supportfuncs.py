@@ -107,7 +107,8 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
             t = ThreadWithResult(
                 target=multiprocess,
                 args=(*task,),
-                kwargs={'disable_warning':disable_warning, 'max_retries':max_retries},
+                disable_warning=disable_warning,
+                max_retries=max_retries,
             )
             threads.append(t)
             t.start()
