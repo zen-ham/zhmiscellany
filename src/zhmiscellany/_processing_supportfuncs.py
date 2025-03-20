@@ -66,7 +66,7 @@ if any([i in code for i in cause_strings]) or os.environ.get('zhmiscellany_init_
 
 
 class ThreadWithResult(threading.Thread):
-    def __init__(self, target, *args, **kwargs):
+    def __init__(self, target, args, **kwargs):
         super().__init__()
         self._target = target
         self._args = args
