@@ -1,4 +1,4 @@
-from ._processing_supportfuncs import batch_multiprocess, multiprocess, synchronous_class_multiprocess
+from ._processing_supportfuncs import batch_multiprocess, multiprocess, synchronous_class_multiprocess, ThreadWithResult
 import threading, kthread
 import traceback
 import zhmiscellany.string

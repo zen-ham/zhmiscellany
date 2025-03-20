@@ -65,7 +65,20 @@ if any([i in code for i in cause_strings]) or os.environ.get('zhmiscellany_init_
     ray_init()
 
 
-def batch_multiprocess(targets_and_args, disable_warning=False):
+class ThreadWithResult(threading.Thread):
+    def __init__(self, target, *args, **kwargs):
+        super().__init__()
+        self._target = target
+        self._args = args
+        self._kwargs = kwargs
+        self.result = None
+
+    def run(self):
+        if self._target:
+            self.result = self._target(*self._args, **self._kwargs)
+
+
+def batch_multiprocess(targets_and_args, max_retries=0, expect_crashes=False, disable_warning=False):
     if _ray_state == 'disabled':
         if not disable_warning:
             logging.warning("zhmiscellany didn't detect that you were going to be using multiprocessing functions, and ray was not initialized preemptively.\n\
@@ -80,16 +93,31 @@ If you want to avoid this in the future and wait until ray is ready you can add 
 from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_thread.join()")
     _ray_init_thread.join()
     
-    @ray.remote
-    def worker(func, *args):
-        return func(*args)
-    
-    futures = [worker.remote(func, *args) for func, args in targets_and_args]
-    results = ray.get(futures)
-    return results
+    if not expect_crashes:
+        @ray.remote(max_retries=max_retries)
+        def worker(func, *args):
+            return func(*args)
+        
+        futures = [worker.remote(func, *args) for func, args in targets_and_args]
+        results = ray.get(futures)
+        return results
+    else:
+        threads = []
+        for task in targets_and_args:
+            t = ThreadWithResult(
+                target=multiprocess,
+                args=(*task,),
+                kwargs={'disable_warning':disable_warning, 'max_retries':max_retries},
+            )
+            threads.append(t)
+            t.start()
+        for t in threads:
+            t.join()
+        results = [t.result for t in threads]
+        return results
 
-def multiprocess(target, args=(), disable_warning=False):
-    return batch_multiprocess([(target, args)], disable_warning=disable_warning)[0]
+def multiprocess(target, args=(), max_retries=0, disable_warning=False):
+    return batch_multiprocess([(target, args)], disable_warning=disable_warning, max_retries=max_retries)[0]
 
 
 class RayActorWrapper:
