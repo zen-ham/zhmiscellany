@@ -235,10 +235,57 @@ def list_files_recursive(folder):
         for entry in os.scandir(folder):
             if entry.is_file():
                 files.append(entry.path)
-            if entry.is_symlink() or is_junction(entry):
+            elif entry.is_symlink() or is_junction(entry):
                 continue
             elif entry.is_dir():
                 files.extend(list_files_recursive(entry.path))
     except (PermissionError, FileNotFoundError):
         pass
     return files
+
+
+def list_files_recursive_multiprocessed(dir_path, return_folders=False):
+    def is_junction(entry):
+        try:
+            st = entry.stat(follow_symlinks=False)
+            # On Windows, st_file_attributes is available.
+            # FILE_ATTRIBUTE_REPARSE_POINT (0x400) indicates a reparse point (e.g. junction).
+            return hasattr(st, "st_file_attributes") and bool(st.st_file_attributes & 0x400)
+        except Exception:
+            return False
+    
+    def traversal(dir_path, depth):
+        depth += 1
+        files = []
+        folders = []
+        tasks = []
+        try:
+            for entry in os.scandir(dir_path):
+                if entry.is_file():
+                    files.append(entry.path)
+                    pass
+                elif entry.is_symlink() or is_junction(entry):
+                    continue
+                elif entry.is_dir():
+                    folders.append(entry.path)
+                    if depth > max_python_depth:
+                        tasks.append((traversal, (entry.path, -99999)))
+                    else:
+                        new_files, new_folders, new_tasks = traversal(entry.path, depth)
+                        files.extend(new_files)
+                        folders.extend(new_folders)
+                        tasks.extend(new_tasks)
+        except (PermissionError, FileNotFoundError):
+            pass
+        return (files, folders, tasks)
+    
+    max_python_depth = 1
+    files, folders, tasks = traversal(dir_path, 0)
+    file_groups = zhmiscellany.processing.batch_multiprocess(tasks)
+    for group in file_groups:
+        files.extend(group[0])
+        folders.extend(group[1])
+    if return_folders:
+        return files, folders
+    else:
+        return files
