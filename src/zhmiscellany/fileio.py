@@ -152,14 +152,20 @@ def fast_dill_loads(data):
     return object
 
 
-def save_object_to_file(object, file_name):
+def save_object_to_file(object, file_name, compressed=False):
     with open(file_name, 'wb') as f:
-        f.write(fast_dill_dumps(object))
+        if compressed:
+            f.write(zlib.compress(fast_dill_dumps(object)))
+        else:
+            f.write(fast_dill_dumps(object))
 
 
-def load_object_from_file(file_name):
+def load_object_from_file(file_name, compressed=False):
     with open(file_name, 'rb') as f:
-        return fast_dill_loads(f.read())
+        if compressed:
+            return fast_dill_loads(zlib.decompress(f.read()))
+        else:
+            return fast_dill_loads(f.read())
 
 
 def pickle_and_encode(obj):
