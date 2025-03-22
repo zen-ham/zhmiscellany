@@ -13,7 +13,7 @@ def start_daemon(**kwargs):
     return thread
 
 
-def batch_threading(targets, max_threads, show_errors=True):
+def batch_threading(targets, max_threads=None, show_errors=True):
     def execute_target(target):
         try:
             return target[0](*target[1])  # Call function and return result
@@ -21,7 +21,9 @@ def batch_threading(targets, max_threads, show_errors=True):
             if show_errors:
                 print(traceback.format_exc())
             return None  # Return None if an exception occurs
-
+    
+    max_threads = max_threads if max_threads else len(targets)
+    
     results = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
         futures = {executor.submit(execute_target, target): i for i, target in enumerate(targets)}
