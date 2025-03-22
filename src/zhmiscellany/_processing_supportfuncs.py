@@ -2,6 +2,7 @@
 import threading, logging, os, inspect
 import ray
 
+os.environ["RAY_DISABLE_LOGGING"] = "1"
 
 def ray_init():
     global _ray_init_thread

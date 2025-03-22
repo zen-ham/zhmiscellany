@@ -263,7 +263,6 @@ def list_files_recursive_multiprocessed(dir_path, return_folders=False):
             for entry in os.scandir(dir_path):
                 if entry.is_file():
                     files.append(entry.path)
-                    pass
                 elif entry.is_symlink() or is_junction(entry):
                     continue
                 elif entry.is_dir():
