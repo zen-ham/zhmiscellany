@@ -16,15 +16,26 @@ def start_daemon(**kwargs):
 def batch_threading(targets, max_threads, show_errors=True):
     def execute_target(target):
         try:
-            target[0](*target[1])
-        except Exception as e:
+            return target[0](*target[1])  # Call function and return result
+        except Exception:
             if show_errors:
                 print(traceback.format_exc())
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
-        futures = {executor.submit(execute_target, target): target for target in targets}
+            return None  # Return None if an exception occurs
 
+    results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
+        futures = {executor.submit(execute_target, target): i for i, target in enumerate(targets)}
+
+        # Collect results in order
+        results = [None] * len(targets)
         for future in concurrent.futures.as_completed(futures):
-            del futures[future]
+            index = futures[future]
+            try:
+                results[index] = future.result()  # Get result or exception
+            except Exception:  # Catch unexpected exceptions (shouldn't happen due to execute_target)
+                results[index] = None
+
+    return results
 
 
 def batch_multiprocess_threaded(targets_and_args, disable_warning=False, killable=False, daemon=False):
