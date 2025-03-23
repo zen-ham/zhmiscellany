@@ -3,6 +3,10 @@ import json, os, shutil, dill, sys, pickle, base64, zlib
 import zhmiscellany.string
 import zhmiscellany.misc
 import hashlib
+from collections import defaultdict
+from itertools import chain
+import tempfile
+import random
 
 
 def read_json_file(file_path):
@@ -294,3 +298,183 @@ def list_files_recursive_multiprocessed(dir_path, return_folders=False):
         return files, folders
     else:
         return files
+
+
+def encode_safe_filename(s, max_length=16):
+    """Encodes a string into a short, URL-safe, and file name-safe string."""
+    encoded = base64.urlsafe_b64encode(s.encode()).decode().rstrip("=")  # URL-safe encoding
+    if len(encoded) > max_length:  # Truncate if too long
+        encoded = hashlib.md5(s.encode()).hexdigest()[:max_length]  # Use a hash
+    return encoded
+
+
+def list_files_recursive_cache_optimised_multiprocessed(dir_path, show_timings=False, cache_in_temp=True):
+    def is_junction(entry):
+        try:
+            st = entry.stat(follow_symlinks=False)
+            # On Windows, st_file_attributes is available.
+            # FILE_ATTRIBUTE_REPARSE_POINT (0x400) indicates a reparse point (e.g. junction).
+            return hasattr(st, "st_file_attributes") and bool(st.st_file_attributes & 0x400)
+        except Exception:
+            return False
+    
+    def traversal(dir_path, depth=0):
+        depth += 1
+        files = defaultdict(list)
+        folders = []
+        tasks = []
+        try:
+            for entry in os.scandir(dir_path):
+                if entry.is_file():
+                    files[dir_path].append(entry.path)
+                elif entry.is_symlink() or is_junction(entry):
+                    continue
+                elif entry.is_dir():
+                    folders.append(entry.path)
+                    if depth > max_python_depth:
+                        tasks.append((traversal, (entry.path, -99999)))
+                    else:
+                        new_files, new_folders, new_tasks = traversal(entry.path, depth)
+                        files.update(new_files)
+                        folders.extend(new_folders)
+                        tasks.extend(new_tasks)
+        except (PermissionError, FileNotFoundError):
+            pass
+        return (files, folders, tasks)
+    
+    def list_folder(folder):
+        files, folders = defaultdict(list), []
+        try:
+            for entry in os.scandir(folder):
+                if entry.is_file():
+                    files[folder].append(entry.path)
+                elif entry.is_symlink() or is_junction(entry):
+                    continue
+                elif entry.is_dir():
+                    folders.append(entry.path)
+        except (PermissionError, FileNotFoundError):
+            pass
+        return files, folders
+    
+    def split_into_n_groups(lst, n):
+        avg_size = len(lst) // n
+        remainder = len(lst) % n
+        sublists = []
+        
+        start = 0
+        for i in range(n):
+            end = start + avg_size + (1 if i < remainder else 0)  # Distribute remainder
+            sublists.append(lst[start:end])
+            start = end
+        sublists = [sublist for sublist in sublists if sublist]
+        return sublists
+    
+    def get_m_times(folders):
+        groups = split_into_n_groups(folders, scan_mtime_worker_count)
+        
+        def atom(folders):
+            mtimes = {}
+            for folder in folders:
+                try:
+                    mtimes[folder] = os.path.getmtime(folder)
+                except:
+                    pass
+            return mtimes
+        
+        tasks = [(atom, (group,)) for group in groups]
+        results = zhmiscellany.processing.batch_multiprocess(tasks)
+        mtimes = {}
+        for i in results:
+            mtimes.update(i)
+        return mtimes
+    
+    # parameters
+    scan_mtime_worker_count = 8
+    scan_changed_folders_thread_group_count = 64
+    fully_update_cache_threshold = 999999  # placeholder to update later
+    cache_compression = False
+    # end parameters
+    
+    if cache_in_temp:
+        cache_folder = tempfile.gettempdir()
+    else:
+        cache_folder = 'zhmiscellany_cache'
+        zhmiscellany.fileio.create_folder(cache_folder)
+    
+    cache_id = encode_safe_filename(dir_path)
+    cache_file = f'GFI_{cache_id}.pkl'
+    cache_file = os.path.join(cache_folder, cache_file)
+    
+    if show_timings: zhmiscellany.misc.time_it(None, 'lfrcom')
+    
+    max_python_depth = 1
+    if not os.path.exists(cache_file):
+        files, folders, tasks = traversal(dir_path)
+        if show_timings: zhmiscellany.misc.time_it('initial traversal', 'lfrcom')
+        
+        file_groups = zhmiscellany.processing.batch_multiprocess(tasks)
+        if show_timings: zhmiscellany.misc.time_it('multiprocessed deep traversal', 'lfrcom')
+        for group in file_groups:
+            files.update(group[0])
+            folders.extend(group[1])
+        if show_timings: zhmiscellany.misc.time_it('extending data', 'lfrcom')
+        
+        folders = get_m_times(folders)
+        zhmiscellany.fileio.save_object_to_file((files, folders), cache_file, compressed=cache_compression)
+        if show_timings: zhmiscellany.misc.time_it('creating cache', 'lfrcom')
+        return list(chain.from_iterable(files.values()))
+    else:
+        files, folders = zhmiscellany.fileio.load_object_from_file(cache_file, compressed=cache_compression)
+        if show_timings: zhmiscellany.misc.time_it('loading cache', 'lfrcom')
+    
+    fl_list = list(folders.keys())
+    new_folders = get_m_times(fl_list)
+    if show_timings: zhmiscellany.misc.time_it(f'getting m times of {len(fl_list)} folders', 'lfrcom')
+    changed_folders = []
+    for folder, mtime in new_folders.items():
+        if folders[folder] != mtime:
+            changed_folders.append(folder)
+    random.shuffle(changed_folders)
+    if show_timings: zhmiscellany.misc.time_it(f'creating {len(changed_folders)} changed folders', 'lfrcom')
+    
+    for i in changed_folders:  # clear files that might not exist
+        try:
+            del files[i]
+        except KeyError:  # it is possible that the only thing that changed in a folder is another folder, so in that case it would not be inside the file dict
+            pass
+    
+    if show_timings: zhmiscellany.misc.time_it(f'filtering files for changes', 'lfrcom')
+    
+    def atom(_folders):
+        atom_files, atom_folders = defaultdict(list), []
+        for _folder in _folders:
+            fil, fol = list_folder(_folder)
+            atom_files.update(fil)
+            for fold in fol:
+                if fold not in new_folders:
+                    atom_folders.append(fold)
+                    fil, fo, _ = traversal(fold, -99999)
+                    atom_files.update(fil)
+                    atom_folders.extend(fo)
+        return atom_files, atom_folders
+    
+    groups = split_into_n_groups(changed_folders, scan_changed_folders_thread_group_count)
+    tasks = [(atom, (group,)) for group in groups]
+    
+    results = zhmiscellany.processing.batch_threading(tasks)
+    if show_timings: zhmiscellany.misc.time_it('multithreading processing changed folders', 'lfrcom')
+    
+    new_new_folders = []
+    for fi, fo in results:
+        files.update(fi)
+        new_new_folders.extend(fo)
+    
+    if len(changed_folders) > fully_update_cache_threshold:
+        new_folders.update(get_m_times(new_new_folders))
+        if show_timings: zhmiscellany.misc.time_it(f'get m times of {len(new_new_folders)} new folders')
+        
+        zhmiscellany.fileio.save_object_to_file((files, new_folders), cache_file)
+        
+        if show_timings: zhmiscellany.misc.time_it(f'writing to cache')
+    
+    return list(chain.from_iterable(files.values()))
