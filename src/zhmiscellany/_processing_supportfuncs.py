@@ -1,6 +1,6 @@
 # these lines are purposefully the first thing to run when zhmiscellany is imported
 import threading, logging, os, inspect
-ray = None
+import ray
 
 os.environ["RAY_DISABLE_LOGGING"] = "1"
 
@@ -12,9 +12,7 @@ def ray_init():
 
 
 def _ray_init():
-    global _ray_state, ray
-    import ray as r
-    ray = r
+    global _ray_state
     if _ray_state == 'enabled':
         return
     _ray_state = 'starting'
