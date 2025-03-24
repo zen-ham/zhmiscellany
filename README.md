@@ -14,7 +14,7 @@ Introduction
 
 Can be installed with `pip install zhmiscellany`
 
-Currently, the package stands at 118 functions/classes/bindings across 14 modules.
+Currently, the package stands at 119 functions/classes/bindings across 14 modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
