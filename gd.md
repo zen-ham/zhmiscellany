@@ -1106,7 +1106,7 @@ Starts a new daemon thread with the given parameters.
 
 `zhmiscellany.processing.batch_multiprocess_threaded(targets_and_args, disable_warning=False, killable=False, daemon=False)`
 
-Executes multiple functions in parallel using threads instead of processes.
+Executes multiple functions in parallel using Ray multiprocessing, and inside a thread as to be non-blocking.
 
 #
 
@@ -1115,7 +1115,7 @@ Executes multiple functions in parallel using threads instead of processes.
 
 `zhmiscellany.processing.multiprocess_threaded(target, args=(), disable_warning=False, killable=False, daemon=False)`
 
-Runs a single function in a separate thread.
+Runs a single function in a separate process and inside a thread as to be non-blocking.
 
 #
 
@@ -1155,7 +1155,7 @@ Converts an integer to a base 62 number, this means all lower and upper letters,
 
 `zhmiscellany.string.get_universally_unique_string()`
 
-Returns a universally unique string.
+Returns a universally unique string, even if called directly sequentially. Strings are generated based off of time not randomness, as such it's impossible to get 2 that are the same.
 
 #
 
