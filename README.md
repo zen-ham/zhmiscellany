@@ -20,6 +20,8 @@ The git repository for this package can be found [here](https://github.com/zen-h
 
 If you wish to reach out, you may add @z_h_ on Discord, or join [the server](https://discord.gg/ThBBAuueVJ).
 
+Believe it or not this package is not a monolith, I've split off some functionality into a handful of other packages to keep zhmiscellany from becoming too bloated: [zhmiscellanygsudo](https://pypi.org/project/zhmiscellanygsudo/), [zhmiscellanyocr](https://pypi.org/project/zhmiscellanyocr/), [zhmiscellanyrusteffect](https://pypi.org/project/zhmiscellanyrusteffect/).
+
 ---
 
 Documentation:
