@@ -14,7 +14,7 @@ Introduction
 
 Can be installed with `pip install zhmiscellany`
 
-Currently, the package stands at 118 functions/classes/bindings across 14 modules.
+Currently, the package stands at <func_token> functions/classes/bindings across <module_token> modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
@@ -447,7 +447,7 @@ Converts a unix timestamp to a discord id.
 
 Gets a URL to the image someone is using as their avatar.
 
-#
+#<|<discord>|>
 
 `zhmiscellany.dict`
 ---
@@ -459,7 +459,7 @@ Gets a URL to the image someone is using as their avatar.
 
 Prints out a dict in a readable way.
 
-#
+#<|<dict>|>
 
 ---
 `zhmiscellany.fileio`
@@ -706,16 +706,7 @@ Recursively lists all files in a folder using multiprocessing for efficiency. Op
 
 Efficiently lists files recursively using a cache to improve performance. Uses multiprocessing and caching to minimize redundant filesystem access and maximise speed. In testing, it listed the C drive with 1M+ files in 2.0s.
 
-#
-
-`zhmiscellany.fileio.encode_safe_filename()`
----
-
-`zhmiscellany.fileio.encode_safe_filename(s, max_length=16)`
-
-Encodes a string into a short, URL-safe, and filename-safe string. Uses base64 encoding and falls back to an MD5 hash if the result is too long.
-
-#
+#<|<fileio>|>
 
 ---
 `zhmiscellany.image`
@@ -728,7 +719,7 @@ Encodes a string into a short, URL-safe, and filename-safe string. Uses base64 e
 
 Quantify the difference between 2 images, returns a float, lower means less difference.
 
-#
+#<|<image>|>
 
 ---
 `zhmiscellany.list`
@@ -768,7 +759,7 @@ Removes duplicate tuples from a list based on a specific element index.
 
 Splits a list of strings multiple times using a list of delimiters, applying each split sequentially.
 
-#
+#<|<list>|>
 
 ---
 `zhmiscellany.math`
@@ -844,7 +835,7 @@ Generates interpolated points between two coordinates using linear spacing.
 
 Rounds a number while ensuring a minimum number of significant digits.
 
-#
+#<|<math>|>
 
 ---
 `zhmiscellany.misc`
@@ -1028,7 +1019,7 @@ Alias for the here() function, providing debug output.
 
 Alias for the here() function, providing debug output.
 
-#
+#<|<misc>|>
 
 ---
 `zhmiscellany.netio`
@@ -1059,7 +1050,7 @@ Generates a safe file path for a downloaded file by extracting its name from a U
 
 Creates randomized HTTP headers for a given URL, including Referer and Host fields.
 
-#
+#<|<netio>|>
 
 ---
 `zhmiscellany.processing`
@@ -1144,7 +1135,7 @@ Runs a function in a separate Python subprocess, capturing output while handling
 
 Runs a class with a continuous output method in a separate subprocess, yielding results as they are produced.
 
-#
+#<|<processing>|>
 
 ---
 `zhmiscellany.string`
@@ -1247,7 +1238,7 @@ Filters chars out of one string from a string of filter chars.
 
 `.split`s a string multiple times based on a list of strings to split by.
 
-#
+#<|<string>|>
 
 ---
 `zhmiscellany.macro`
@@ -1305,7 +1296,7 @@ Retrieves the current mouse cursor position.
 
 Dictionary mapping key names to their virtual key codes for use with press_key and type_string.
 
-#
+#<|<macro>|>
 
 ---
 `zhmiscellany.cpp`
@@ -1318,7 +1309,7 @@ Dictionary mapping key names to their virtual key codes for use with press_key a
 
 Subtracts l2 from l1 and returns l1. Much faster then any list subtraction possible in python alone.
 
-#
+#<|<cpp>|>
 
 ---
 `zhmiscellany.rust`
@@ -1358,7 +1349,7 @@ Gets the sum of a numpy array, 6x faster than using numpy's built in sum.
 
 Returns a list of absolute paths to all files in the directory and all subdirectories, is 5x faster than any non multiprocessing python implementation.
 
-#
+#<|<rust>|>
 
 ---
 `zhmiscellany.pipes`
@@ -1398,4 +1389,4 @@ Reads data from a named pipe synchronously, returning None if no data is availab
 
 Sends data to a named pipe asynchronously using a background thread.
 
-#
+#<|<pipes>|>
