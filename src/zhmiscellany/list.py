@@ -29,3 +29,21 @@ def multi_split(string_list, splits):
         string = temp
 
     return string
+
+
+def split_into_n_groups(lst, n):
+    avg_size = len(lst) // n
+    remainder = len(lst) % n
+    sublists = []
+    
+    start = 0
+    for i in range(n):
+        end = start + avg_size + (1 if i < remainder else 0)  # Distribute remainder
+        sublists.append(lst[start:end])
+        start = end
+    
+    return sublists
+
+
+def split_into_sublists(lst, n):
+    return [lst[i:i + n] for i in range(0, len(lst), n)]

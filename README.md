@@ -14,7 +14,7 @@ Introduction
 
 Can be installed with `pip install zhmiscellany`
 
-Currently, the package stands at 119 functions/classes/bindings across 14 modules.
+Currently, the package stands at 121 functions/classes/bindings across 14 modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
@@ -769,6 +769,24 @@ Removes duplicate tuples from a list based on a specific element index.
 `zhmiscellany.list.multi_split(string_list, splits)`
 
 Splits a list of strings multiple times using a list of delimiters, applying each split sequentially.
+
+#
+
+`zhmiscellany.list.split_into_n_groups()`
+---
+
+`zhmiscellany.list.split_into_n_groups(lst, n)`
+
+Splits a list into n sublists, n=3 would be [1, 2, 3, 4] into [[1], [2], [3, 4]]
+
+#
+
+`zhmiscellany.list.split_into_sublists()`
+---
+
+`zhmiscellany.list.split_into_sublists(lst, n)`
+
+Splits a list into sublists of size n, n=3 would be [1, 2, 3, 4] into [[1, 2, 3], [4]]
 
 #
 
