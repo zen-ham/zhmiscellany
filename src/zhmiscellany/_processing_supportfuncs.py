@@ -1,8 +1,39 @@
 # these lines are purposefully the first thing to run when zhmiscellany is imported
-import threading, logging, os, inspect
-import ray
+import threading, logging, os, inspect, tempfile, shutil
+import zhmiscellany.fileio
+
+
+def clear_logs():
+    ray_dir = tempfile.gettempdir()
+    ray_dir = os.path.join(ray_dir, 'ray')
+    
+    if not os.path.exists(ray_dir):
+        return
+    
+    sessions = zhmiscellany.fileio.abs_listdir(ray_dir)
+    
+    for session in sessions:
+        logs = os.path.join(session, 'logs')
+        if not os.path.exists(logs):
+            continue
+        if not os.listdir(logs):
+            shutil.rmtree(session)
+    
+    for session in sessions:
+        logs = os.path.join(session, 'logs')
+        if not os.path.exists(logs):
+            continue
+        try:
+            zhmiscellany.fileio.empty_directory(logs)
+        except PermissionError:
+            pass
+
+
+clear_logs()
 
 os.environ["RAY_DISABLE_LOGGING"] = "1"
+import ray
+
 
 def ray_init():
     global _ray_init_thread
