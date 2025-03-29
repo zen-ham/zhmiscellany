@@ -406,6 +406,7 @@ def list_files_recursive_cache_optimised_multiprocessed(dir_path, show_timings=F
     cache_file = os.path.join(cache_folder, cache_file)
     
     if show_timings: zhmiscellany.misc.time_it(None, 'lfrcom')
+    if show_timings: zhmiscellany.misc.time_it(None, 'lfrcomt')
     
     max_python_depth = 1
     if not os.path.exists(cache_file):
@@ -477,4 +478,8 @@ def list_files_recursive_cache_optimised_multiprocessed(dir_path, show_timings=F
         
         if show_timings: zhmiscellany.misc.time_it(f'writing to cache')
     
-    return list(chain.from_iterable(files.values()))
+    ret = list(chain.from_iterable(files.values()))
+    
+    if show_timings: zhmiscellany.misc.time_it('Everything together', 'lfrcomt')
+    
+    return ret
