@@ -160,6 +160,7 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
             t.join()
         results = [t.result for t in threads]
         if flatten:
+            print('hiiiiiiii')
             results = list(chain.from_iterable(results))
         return results
 
