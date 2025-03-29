@@ -391,7 +391,7 @@ def list_files_recursive_cache_optimised_multiprocessed(dir_path, show_timings=F
     # parameters
     scan_mtime_worker_count = 8
     scan_changed_folders_thread_group_count = 64
-    fully_update_cache_threshold = 999999  # placeholder to update later
+    fully_update_cache_threshold = 2**11
     cache_compression = False
     # end parameters
     
