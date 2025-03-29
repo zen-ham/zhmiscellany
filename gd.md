@@ -1,8 +1,8 @@
 `zhmiscellany`,
-===
+=
 
-An organized collection of unique and useful functions/classes/modules.
----
+An organized collection of unique and useful functions/classes/modules/bindings.
+-
 
 [Introduction](https://github.com/zen-ham/zhmiscellany/tree/master#Introduction) \
 [Documentation](https://github.com/zen-ham/zhmiscellany/tree/master#Documentation)
@@ -1064,15 +1064,6 @@ Creates randomized HTTP headers for a given URL, including Referer and Host fiel
 
 Takes a list of functions and arguments, for instance [(print_numbers_up_to, 8), (print_numbers_up_to, 11)]
 It also returns the results of the functions (whatever each function returned) in a list.
-
-#
-
-`zhmiscellany.processing.batch_multiprocess()`
----
-
-`zhmiscellany.processing.batch_multiprocess(targets_and_args, max_retries=0, expect_crashes=False, disable_warning=False)`
-
-Executes multiple functions in parallel using Ray multiprocessing, with optional retries and crash handling.
 
 #
 

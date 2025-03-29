@@ -1,8 +1,8 @@
 `zhmiscellany`,
-===
+=
 
-An organized collection of unique and useful functions/classes/modules.
----
+An organized collection of unique and useful functions/classes/modules/bindings.
+-
 
 [Introduction](https://github.com/zen-ham/zhmiscellany/tree/master#Introduction) \
 [Documentation](https://github.com/zen-ham/zhmiscellany/tree/master#Documentation)
@@ -1094,15 +1094,6 @@ It also returns the results of the functions (whatever each function returned) i
 
 #
 
-`zhmiscellany.processing.batch_multiprocess()`
----
-
-`zhmiscellany.processing.batch_multiprocess(targets_and_args, max_retries=0, expect_crashes=False, disable_warning=False)`
-
-Executes multiple functions in parallel using Ray multiprocessing, with optional retries and crash handling.
-
-#
-
 `zhmiscellany.processing.multiprocess()`
 ---
 
@@ -1163,6 +1154,15 @@ Runs a function in a separate Python subprocess, capturing output while handling
 `zhmiscellany.processing.raw_continuous_multiprocess(input_class, args=(), fileless=True, cleanup_file=True)`
 
 Runs a class with a continuous output method in a separate subprocess, yielding results as they are produced.
+
+#
+
+`zhmiscellany.processing.batch_multiprocess()`
+---
+
+`zhmiscellany.processing.batch_multiprocess(targets_and_args, max_retries=0, expect_crashes=False, disable_warning=False, flatten=False)`
+
+Executes multiple functions in parallel using Ray multiprocessing, with optional retries, crash handling, and fast result list flattening.
 
 #
 
