@@ -29,12 +29,18 @@ def clear_logs():
             pass
 
 
-clear_logs()
+if 'ray_logs_cleared' not in os.environ:
+    clear_logs()
+    os.environ['ray_logs_cleared'] = '1'
 
 os.environ["RAY_DISABLE_LOGGING"] = "1"
 
 
 def ray_init():
+    if 'in_ray_matrix' in os.environ:
+        return
+    else:
+        os.environ['in_ray_matrix'] = '1'
     global _ray_init_thread, ray
     import ray as r
     ray = r
