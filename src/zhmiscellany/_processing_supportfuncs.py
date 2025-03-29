@@ -1,5 +1,6 @@
 # these lines are purposefully the first thing to run when zhmiscellany is imported
 import threading, logging, os, inspect, tempfile, shutil
+from itertools import chain
 import zhmiscellany.fileio
 
 
@@ -117,7 +118,7 @@ class ThreadWithResult(threading.Thread):
             self.result = self._target(*self._args, **self._kwargs)
 
 
-def batch_multiprocess(targets_and_args, max_retries=0, expect_crashes=False, disable_warning=False):
+def batch_multiprocess(targets_and_args, max_retries=0, expect_crashes=False, disable_warning=False, flatten=False):
     if _ray_state == 'disabled':
         if not disable_warning:
             logging.warning("zhmiscellany didn't detect that you were going to be using multiprocessing functions, and ray was not initialized preemptively.\n\
@@ -158,6 +159,8 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
         for t in threads:
             t.join()
         results = [t.result for t in threads]
+        if flatten:
+            results = list(chain.from_iterable(results.values()))
         return results
 
 def multiprocess(target, args=(), max_retries=0, disable_warning=False):
@@ -190,15 +193,15 @@ def synchronous_class_multiprocess(cls, *args, disable_warning=False, **kwargs):
     if _ray_state == 'disabled':
         if not disable_warning:
             logging.warning("zhmiscellany didn't detect that you were going to be using multiprocessing functions, and ray was not initialized preemptively.\n\
-    All this means is that ray will have to be initialized now and the this call to multiprocessing will have to wait a few (around 4) seconds.\n\
-    If you want to avoid this in the future you can set `os.environ['zhmiscellany_init_ray'] = 'force'` BEFORE importing zhmiscellany, or you can pass disable_warning=True to this function call.")
+All this means is that ray will have to be initialized now and the this call to multiprocessing will have to wait a few (around 4) seconds.\n\
+If you want to avoid this in the future you can set `os.environ['zhmiscellany_init_ray'] = 'force'` BEFORE importing zhmiscellany, or you can pass disable_warning=True to this function call.")
         ray_init()
     if _ray_state == 'starting':
         if not disable_warning:
             logging.warning("You called multiprocessing early enough that ray is not fully initialized yet.\n\
-    All this means is that ray is still being initialized and this call to multiprocessing will have to wait a few seconds.\n\
-    If you want to avoid this in the future and wait until ray is ready you can add this line just after importing zhmiscellany: (Or you can pass disable_warning=True to this function call)\n\
-    from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_thread.join()")
+All this means is that ray is still being initialized and this call to multiprocessing will have to wait a few seconds.\n\
+If you want to avoid this in the future and wait until ray is ready you can add this line just after importing zhmiscellany: (Or you can pass disable_warning=True to this function call)\n\
+from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_thread.join()")
     _ray_init_thread.join()
     
     def _ready(self):
