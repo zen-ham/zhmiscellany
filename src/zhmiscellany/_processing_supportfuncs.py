@@ -140,6 +140,8 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
         
         futures = [worker.remote(func, *args) for func, args in targets_and_args]
         results = ray.get(futures)
+        if flatten:
+            results = list(chain.from_iterable(results))
         return results
     else:
         def wrap_exception(task, disable_warning, max_retries):
@@ -160,7 +162,6 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
             t.join()
         results = [t.result for t in threads]
         if flatten:
-            print('hiiiiiiii')
             results = list(chain.from_iterable(results))
         return results
 
