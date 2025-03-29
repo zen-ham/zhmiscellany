@@ -160,7 +160,7 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
             t.join()
         results = [t.result for t in threads]
         if flatten:
-            results = list(chain.from_iterable(results.values()))
+            results = list(chain.from_iterable(results))
         return results
 
 def multiprocess(target, args=(), max_retries=0, disable_warning=False):
