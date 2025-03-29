@@ -32,11 +32,12 @@ def clear_logs():
 clear_logs()
 
 os.environ["RAY_DISABLE_LOGGING"] = "1"
-import ray
 
 
 def ray_init():
-    global _ray_init_thread
+    global _ray_init_thread, ray
+    import ray as r
+    ray = r
     _ray_init_thread = threading.Thread(target=_ray_init)
     _ray_init_thread.daemon = True
     _ray_init_thread.start()
