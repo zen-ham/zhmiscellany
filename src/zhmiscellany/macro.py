@@ -16,9 +16,6 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
     else:
         y = x[1]
         x = x[0]
-    
-    x += 1
-    y += 1
 
     if relative or animation_time:
         mxy = get_mouse_xy()
@@ -53,13 +50,15 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         keys_down.append(win32con.VK_SHIFT)
 
     if x is not None and y is not None:
+        cx = x+1
+        cy = x+1
         if ensure_movement:
-            move_mouse(x, y)
+            move_mouse(cx, cy)
             while get_mouse_xy() != (x, y):
                 print('forcing movement')
-                move_mouse(x, y)
+                move_mouse(cx, cy)
         else:
-            move_mouse(x, y)
+            move_mouse(cx, cy)
 
     if middle_click:
         if act_start:
