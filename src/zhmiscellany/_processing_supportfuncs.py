@@ -37,9 +37,12 @@ if 'ray_logs_cleared' not in os.environ:
 os.environ["RAY_DISABLE_LOGGING"] = "1"
 
 
-def ray_init():
-    if 'in_ray_matrix' in os.environ:
-        return
+def ray_init(auto=False):
+    if auto:
+        if 'in_ray_matrix' in os.environ:
+            return
+        else:
+            os.environ['in_ray_matrix'] = '1'
     else:
         os.environ['in_ray_matrix'] = '1'
     global _ray_init_thread, ray
@@ -102,7 +105,7 @@ cause_strings = [
 ]
 
 if any([i in code for i in cause_strings]) or os.environ.get('zhmiscellany_init_ray') == 'force':
-    ray_init()
+    ray_init(auto=True)
 
 
 class ThreadWithResult(threading.Thread):
