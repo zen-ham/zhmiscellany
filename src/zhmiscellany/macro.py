@@ -7,7 +7,7 @@ import zhmiscellany.processing
 import win32api, win32con, ctypes
 
 
-def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False):
+def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False, ensure_movement=True):
     if right_click and middle_click:
         raise Exception('Both right click and middle click were set to true. Make sure just one is set to true at a time, or neither.')
     if type(x) != tuple and type(x) != list:
@@ -53,7 +53,13 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         keys_down.append(win32con.VK_SHIFT)
 
     if x is not None and y is not None:
-        move_mouse(x, y)
+        if ensure_movement:
+            move_mouse(x, y)
+            while get_mouse_xy() != (x, y):
+                print('forcing movement')
+                move_mouse(x, y)
+        else:
+            move_mouse(x, y)
 
     if middle_click:
         if act_start:
