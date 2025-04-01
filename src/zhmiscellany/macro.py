@@ -55,7 +55,6 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         if ensure_movement:
             move_mouse(cx, cy)
             while get_mouse_xy() != (x, y):
-                print('forcing movement')
                 move_mouse(cx, cy)
         else:
             move_mouse(cx, cy)
