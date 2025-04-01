@@ -16,6 +16,9 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
     else:
         y = x[1]
         x = x[0]
+    
+    x += 1
+    y += 1
 
     if relative or animation_time:
         mxy = get_mouse_xy()
