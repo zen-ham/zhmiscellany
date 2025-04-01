@@ -53,9 +53,13 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         cx = x+1
         cy = y+1
         if ensure_movement:
+            limit = 2**5
             move_mouse(cx, cy)
-            while get_mouse_xy() != (x, y):
-                move_mouse(cx, cy)
+            for i in range(limit):
+                if get_mouse_xy() != (x, y):
+                    move_mouse(cx, cy)
+                else:
+                    break
         else:
             move_mouse(cx, cy)
 
