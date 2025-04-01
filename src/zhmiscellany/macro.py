@@ -51,7 +51,7 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
 
     if x is not None and y is not None:
         cx = x+1
-        cy = x+1
+        cy = y+1
         if ensure_movement:
             move_mouse(cx, cy)
             while get_mouse_xy() != (x, y):
