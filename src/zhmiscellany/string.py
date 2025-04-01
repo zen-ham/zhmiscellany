@@ -148,3 +148,14 @@ def filter_chars(input_string, filter_string):
         if c in filter_string:
             result += c
     return result
+
+
+def truncate_middle(s, length, truncation_string='...'):
+    if length >= len(s):
+        return s
+
+    left_len = (length - len(truncation_string)) // 2
+    right_len = length - len(truncation_string) - left_len
+
+    truncated = s[:left_len] + truncation_string + s[-right_len:]
+    return truncated
