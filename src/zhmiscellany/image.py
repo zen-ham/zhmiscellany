@@ -127,7 +127,7 @@ class Canvas:
         start_y = y + math.sin(angle)
         self.draw.line([(start_x, start_y), closest_point], fill=line_colour, width=line_thickness)
 
-def value_to_color(value, low, high):
+def value_to_color(value, low, high, use_black=True):
     """
     Maps a value within a range to an RGB color.
     Low end (purple), high end (red).
@@ -140,7 +140,6 @@ def value_to_color(value, low, high):
 
     # Define color stops
     colors = [
-        (0, 0, 0),  # Black
         (128, 0, 128),  # Purple
         (0, 0, 255),  # Blue
         (0, 255, 255),  # Cyan
@@ -148,6 +147,9 @@ def value_to_color(value, low, high):
         (255, 255, 0),  # Yellow
         (255, 0, 0)  # Red
     ]
+    
+    if use_black:
+        colors.insert(0, (0,0,0)) # Black
 
     # Calculate which segment of the gradient the value falls into
     segment = normalized * (len(colors) - 1)
