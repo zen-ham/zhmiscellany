@@ -126,3 +126,111 @@ class Canvas:
         start_x = x + math.cos(angle)
         start_y = y + math.sin(angle)
         self.draw.line([(start_x, start_y), closest_point], fill=line_colour, width=line_thickness)
+
+def value_to_color(value, low, high):
+    """
+    Maps a value within a range to an RGB color.
+    Low end (purple), high end (red).
+    """
+    # Ensure value is within bounds
+    value = max(low, min(value, high))
+
+    # Normalize the value to a 0-1 scale
+    normalized = (value - low) / (high - low)
+
+    # Define color stops
+    colors = [
+        (0, 0, 0),  # Black
+        (128, 0, 128),  # Purple
+        (0, 0, 255),  # Blue
+        (0, 255, 255),  # Cyan
+        (0, 255, 0),  # Green
+        (255, 255, 0),  # Yellow
+        (255, 0, 0)  # Red
+    ]
+
+    # Calculate which segment of the gradient the value falls into
+    segment = normalized * (len(colors) - 1)
+    lower_idx = int(segment)
+    upper_idx = min(lower_idx + 1, len(colors) - 1)
+    segment_fraction = segment - lower_idx
+
+    # Interpolate between the two nearest colors
+    r = int(colors[lower_idx][0] + (colors[upper_idx][0] - colors[lower_idx][0]) * segment_fraction)
+    g = int(colors[lower_idx][1] + (colors[upper_idx][1] - colors[lower_idx][1]) * segment_fraction)
+    b = int(colors[lower_idx][2] + (colors[upper_idx][2] - colors[lower_idx][2]) * segment_fraction)
+
+    return (r, g, b)
+
+
+def hilbert_curve(size):
+    """
+    Generate a Hilbert curve that fills a square of specified size.
+    Automatically determines the proper order to ensure every pixel is covered.
+
+    Args:
+        size (int): The size of the square to fill (width/height in pixels)
+
+    Returns:
+        list: A list of (x, y) tuples representing the coordinates of the Hilbert curve
+    """
+    # Determine the minimum order required to cover the image
+    # Find the smallest power of 2 that is >= size
+    min_power_of_2 = 1
+    order = 0
+    while min_power_of_2 < size:
+        min_power_of_2 *= 2
+        order += 1
+    
+    # Helper functions for Hilbert curve generation
+    def d2xy(n, d):
+        """Convert d to (x,y) coordinates of the Hilbert curve"""
+        t = d
+        x = y = 0
+        s = 1
+        while s < n:
+            rx = 1 & (t // 2)
+            ry = 1 & (t ^ rx)
+            x, y = rot(s, x, y, rx, ry)
+            x += s * rx
+            y += s * ry
+            t //= 4
+            s *= 2
+        return x, y
+    
+    def rot(n, x, y, rx, ry):
+        """Rotate/flip a quadrant appropriately"""
+        if ry == 0:
+            if rx == 1:
+                x = n - 1 - x
+                y = n - 1 - y
+            # Swap x and y
+            x, y = y, x
+        return x, y
+    
+    # Calculate the base size of the Hilbert curve
+    n = 2 ** order
+    
+    # Generate the Hilbert curve coordinates
+    coords = []
+    
+    # Create a set to track which pixels we've covered
+    covered_pixels = set()
+    
+    # Generate the full curve and crop it to the desired size
+    for i in range(n ** 2):
+        x, y = d2xy(n, i)
+        
+        # Skip if out of bounds
+        if x >= size or y >= size:
+            continue
+        
+        # Skip if this pixel was already covered
+        pixel = (x, y)
+        if pixel in covered_pixels:
+            continue
+        
+        covered_pixels.add(pixel)
+        coords.append(pixel)
+    
+    return coords
