@@ -220,6 +220,21 @@ def get_mouse_xy():
     return x, y
 
 
+def get_mouse_buttons():
+    """Returns a list of booleans [M1, M2, M3] indicating which mouse buttons are held down."""
+    VK_LBUTTON = 0x01  # Left mouse button (M1)
+    VK_RBUTTON = 0x02  # Right mouse button (M2)
+    VK_MBUTTON = 0x04  # Middle mouse button (M3)
+    
+    GetAsyncKeyState = ctypes.windll.user32.GetAsyncKeyState
+    
+    return [
+        bool(GetAsyncKeyState(VK_LBUTTON) & 0x8000),
+        bool(GetAsyncKeyState(VK_RBUTTON) & 0x8000),
+        bool(GetAsyncKeyState(VK_MBUTTON) & 0x8000)
+    ]
+
+
 KEY_CODES = {
     'None': 0,
     'LeftMouseButton': 1,
