@@ -6,7 +6,7 @@ An organized collection of unique and useful functions/classes/modules/bindings.
 
 [Introduction](https://github.com/zen-ham/zhmiscellany/tree/master#Introduction)\
 [Documentation](https://github.com/zen-ham/zhmiscellany/tree/master#Documentation)\
-![PyPI Downloads](https://img.shields.io/pypi/dm/zhmiscellany?label=PyPI%20Downloads)
+![PyPI Downloads](https://img.shields.io/pypi/dm/zhmiscellany?label=PyPI%20Downloads) ![lastcommitbadge](https://img.shields.io/github/last-commit/zen-ham/zhmiscellany)
 
 ---
 
