@@ -15,7 +15,7 @@ Introduction
 
 Can be installed with `pip install zhmiscellany`
 
-Currently, the package stands at 121 functions/classes/bindings across 14 modules.
+Currently, the package stands at 129 functions/classes/bindings across 14 modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
@@ -730,6 +730,78 @@ Encodes a string into a short, URL-safe, and filename-safe string. Uses base64 e
 `zhmiscellany.image.image_diff(img1, img2)`
 
 Quantify the difference between 2 images, returns a float, lower means less difference.
+
+#
+
+`zhmiscellany.image.Canvas()`
+---
+
+`zhmiscellany.image.Canvas(width, height, colour=(0, 0, 0, 255))`
+
+Creates an RGBA image canvas for drawing shapes and text. Uses direct pixel manipulation for precise control.
+
+#
+
+`zhmiscellany.image.Canvas.draw_circle()`
+---
+
+`zhmiscellany.image.Canvas.draw_circle(xy, radius, colour)`
+
+Draws a filled circle at the specified coordinates with the given radius and color.
+
+#
+
+`zhmiscellany.image.Canvas.draw_line()`
+---
+
+`zhmiscellany.image.Canvas.draw_line(xy, vector, colour)`
+
+Draws a line from the starting point in the direction of the vector.
+
+#
+
+`zhmiscellany.image.Canvas.draw_rectangle()`
+---
+
+`zhmiscellany.image.Canvas.draw_rectangle(xy, width, height, colour)`
+
+Draws a rectangle with alpha blending. Supports per-pixel color blending for smooth transparency effects.
+
+#
+
+`zhmiscellany.image.Canvas.draw_pixel()`
+---
+
+`zhmiscellany.image.Canvas.draw_pixel(xy, colour)`
+
+Sets the color of a single pixel, ensuring it remains within canvas bounds.
+
+#
+
+`zhmiscellany.image.Canvas.annotate()`
+---
+
+`zhmiscellany.image.Canvas.annotate(pixel_xy, text, text_scale=1.0, line_thickness=1, ...)`
+
+Draws text near a specified pixel with an optional connecting line and background. Supports auto-contrast for visibility.
+
+#
+
+`zhmiscellany.image.value_to_color()`
+---
+
+`zhmiscellany.image.value_to_color(value, low, high, use_black=True)`
+
+Maps a value within a range to an RGB color gradient from purple to red. Optionally includes black at the low end.
+
+#
+
+`zhmiscellany.image.hilbert_curve()`
+---
+
+`zhmiscellany.image.hilbert_curve(size)`
+
+Generates a Hilbert curve covering a square of given size, returning a list of coordinate tuples.
 
 #
 
