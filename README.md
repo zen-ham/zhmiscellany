@@ -15,7 +15,7 @@ Introduction
 
 Can be installed with `pip install zhmiscellany`
 
-Currently, the package stands at 129 functions/classes/bindings across 14 modules.
+Currently, the package stands at 132 functions/classes/bindings across 14 modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
@@ -720,6 +720,24 @@ Encodes a string into a short, URL-safe, and filename-safe string. Uses base64 e
 
 #
 
+`zhmiscellany.fileio.save_chunk()`
+---
+
+`zhmiscellany.fileio.save_chunk(name, data)`
+
+Saves arbitrary data into a chunk inside a folder defined by the name. Very handy for saving and reloading progress if aggregating large amounts of data.
+
+#
+
+`zhmiscellany.fileio.load_chunks()`
+---
+
+`zhmiscellany.fileio.load_chunks(name)`
+
+Loads all the chunks as a list from the folder defined by the name.
+
+#
+
 ---
 `zhmiscellany.image`
 ---
@@ -860,6 +878,15 @@ Splits a list into n sublists, n=3 would be [1, 2, 3, 4] into [[1], [2], [3, 4]]
 `zhmiscellany.list.split_into_sublists(lst, n)`
 
 Splits a list into sublists of size n, n=3 would be [1, 2, 3, 4] into [[1, 2, 3], [4]]
+
+#
+
+`zhmiscellany.list.flatten()`
+---
+
+`zhmiscellany.list.flatten(an_iterable)`
+
+Flattens a 2d iterable into a 1d list.
 
 #
 
