@@ -483,3 +483,18 @@ def list_files_recursive_cache_optimised_multiprocessed(dir_path, show_timings=F
     if show_timings: zhmiscellany.misc.time_it('Everything together', 'lfrcomt')
     
     return ret
+
+
+def save_chunk(name, data):
+    create_folder(name)
+    chunk_path = f'{name}/chunk_{zhmiscellany.string.get_universally_unique_string()}.pkl'
+    save_object_to_file(data, chunk_path)
+
+
+def load_chunks(name):
+    create_folder(name)
+    chunks = abs_listdir(name)
+    datas = []
+    for chunk_file in chunks:
+        datas.append(load_object_from_file(chunk_file))
+    return datas
