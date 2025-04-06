@@ -99,13 +99,15 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         click_pixel(x, y, click_duration, right_click, shift, ctrl, act_start, act_end, middle_click, click_end_duration)
 
 
-def press_key_directinput(key, key_hold_time):
+def press_key_directinput(key, shift=False, act_start=True, act_end=True, key_hold_time=0):
     import pydirectinput
-    pydirectinput.PAUSE = 0  # Adjust this value if needed
+    pydirectinput.PAUSE = 0
     pydirectinput.FAILSAFE = False
-    pydirectinput.keyDown(key)
-    zhmiscellany.misc.high_precision_sleep(key_hold_time)
-    pydirectinput.keyUp(key)
+    if shift: pydirectinput.keyDown('shift')
+    if act_start: pydirectinput.keyDown(key)
+    if key_hold_time: zhmiscellany.misc.high_precision_sleep(key_hold_time)
+    if act_end: pydirectinput.keyUp(key)
+    if shift: pydirectinput.keyUp('shift')
 
 
 def press_key(vk_code, shift=False, act_start=True, act_end=True, key_hold_time=0):
