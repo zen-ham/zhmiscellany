@@ -15,7 +15,7 @@ Introduction
 
 Can be installed with `pip install zhmiscellany`
 
-Currently, the package stands at 132 functions/classes/bindings across 14 modules.
+Currently, the package stands at 133 functions/classes/bindings across 14 modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
@@ -1424,6 +1424,15 @@ Retrieves the current mouse cursor position.
 `zhmiscellany.macro.KEY_CODES`
 
 Dictionary mapping key names to their virtual key codes for use with press_key and type_string.
+
+#
+
+`zhmiscellany.macro.toggle_function()`
+---
+
+`zhmiscellany.macro.toggle_function(func, key='f8', blocking=True)`
+
+Takes a function, like a small looping keyboard macro for a game for example, and puts it on a toggle for the key you set. For example f8 will toggle the macro on and it will start looping, and pressing f8 again will instantly stop the macro until you toggle it on again.
 
 #
 
