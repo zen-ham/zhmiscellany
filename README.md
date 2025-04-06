@@ -1184,15 +1184,6 @@ Creates randomized HTTP headers for a given URL, including Referer and Host fiel
 ---
 `zhmiscellany.processing`
 ---
-`zhmiscellany.processing.batch_threading()`
----
-
-`zhmiscellany.processing.batch_threading(targets, threads)`
-
-Takes a list of functions and arguments, for instance [(print_numbers_up_to, 8), (print_numbers_up_to, 11)]
-It also returns the results of the functions (whatever each function returned) in a list.
-
-#
 
 `zhmiscellany.processing.multiprocess()`
 ---
@@ -1263,6 +1254,17 @@ Runs a class with a continuous output method in a separate subprocess, yielding 
 `zhmiscellany.processing.batch_multiprocess(targets_and_args, max_retries=0, expect_crashes=False, disable_warning=False, flatten=False)`
 
 Executes multiple functions in parallel using Ray multiprocessing, with optional retries, crash handling, and fast result list flattening.
+
+#
+
+`zhmiscellany.processing.batch_threading()`
+---
+
+`zhmiscellany.processing.batch_threading(targets, max_threads=None, show_errors=True, generator=False)`
+
+Takes a list of functions and arguments, for instance [(print_numbers_up_to, 8), (print_numbers_up_to, 11)]
+It also returns the results of the functions (whatever each function returned) in a list.
+Can also be used as a generator, yielding each result as it comes in no strict order.
 
 #
 

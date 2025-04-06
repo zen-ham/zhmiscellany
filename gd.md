@@ -1058,15 +1058,6 @@ Creates randomized HTTP headers for a given URL, including Referer and Host fiel
 ---
 `zhmiscellany.processing`
 ---
-`zhmiscellany.processing.batch_threading()`
----
-
-`zhmiscellany.processing.batch_threading(targets, threads)`
-
-Takes a list of functions and arguments, for instance [(print_numbers_up_to, 8), (print_numbers_up_to, 11)]
-It also returns the results of the functions (whatever each function returned) in a list.
-
-#
 
 `zhmiscellany.processing.multiprocess()`
 ---

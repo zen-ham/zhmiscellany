@@ -13,7 +13,7 @@ def start_daemon(**kwargs):
     return thread
 
 
-def batch_threading(targets, max_threads=None, show_errors=True):
+def batch_threading(targets, max_threads=None, show_errors=True, generator=False):
     def execute_target(target):
         try:
             return target[0](*target[1])  # Call function and return result
@@ -33,11 +33,15 @@ def batch_threading(targets, max_threads=None, show_errors=True):
         for future in concurrent.futures.as_completed(futures):
             index = futures[future]
             try:
-                results[index] = future.result()  # Get result or exception
+                if not generator:
+                    results[index] = future.result()  # Get result or exception
+                else:
+                    yield future.result()
             except Exception:  # Catch unexpected exceptions (shouldn't happen due to execute_target)
                 results[index] = None
-
-    return results
+    
+    if not generator:
+        return results
 
 
 def batch_multiprocess_threaded(targets_and_args, disable_warning=False, killable=False, daemon=False):
