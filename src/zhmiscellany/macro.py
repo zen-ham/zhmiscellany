@@ -1,10 +1,14 @@
 import math
+import threading
+
 from ._misc_supportfuncs import move_mouse, mouse_down, mouse_up
 import zhmiscellany.misc
 import zhmiscellany.math
 import zhmiscellany.string
 import zhmiscellany.processing
 import win32api, win32con, ctypes
+
+import keyboard, kthread
 
 
 def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False, ensure_movement=True):
@@ -233,6 +237,22 @@ def get_mouse_buttons():
         bool(GetAsyncKeyState(VK_RBUTTON) & 0x8000),
         bool(GetAsyncKeyState(VK_MBUTTON) & 0x8000)
     ]
+
+
+def toggle_function(func, key='f8', blocking=True):
+    def atom():
+        while True:
+            keyboard.wait(key)
+            t = kthread.KThread(target=func)
+            t.start()
+            keyboard.wait(key)
+            t.kill()
+    if blocking:
+        atom()
+    else:
+        t = threading.Thread(target=atom)
+        t.start()
+        return t
 
 
 KEY_CODES = {
