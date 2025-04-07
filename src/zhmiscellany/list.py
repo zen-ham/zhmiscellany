@@ -55,5 +55,5 @@ def flatten(an_iterable):
     return list(chain.from_iterable(an_iterable))
 
 
-def dedupe_iterable_to_list(an_iterable):
+def dedupe(an_iterable):
     return list(dict.fromkeys(an_iterable))

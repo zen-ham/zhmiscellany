@@ -1268,10 +1268,10 @@ Can also be used as a generator, yielding each result as it comes in no strict o
 
 #
 
-`zhmiscellany.processing.dedupe_iterable_to_list()`
+`zhmiscellany.processing.dedupe()`
 ---
 
-`zhmiscellany.processing.dedupe_iterable_to_list(an_iterable)`
+`zhmiscellany.processing.dedupe(an_iterable)`
 
 Very efficiently deduplicates an iterable such as a list and returns a list.
 
