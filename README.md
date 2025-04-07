@@ -15,7 +15,7 @@ Introduction
 
 Can be installed with `pip install zhmiscellany`
 
-Currently, the package stands at 133 functions/classes/bindings across 14 modules.
+Currently, the package stands at 134 functions/classes/bindings across 14 modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
@@ -1265,6 +1265,15 @@ Executes multiple functions in parallel using Ray multiprocessing, with optional
 Takes a list of functions and arguments, for instance [(print_numbers_up_to, 8), (print_numbers_up_to, 11)]
 It also returns the results of the functions (whatever each function returned) in a list.
 Can also be used as a generator, yielding each result as it comes in no strict order.
+
+#
+
+`zhmiscellany.processing.dedupe_iterable_to_list()`
+---
+
+`zhmiscellany.processing.dedupe_iterable_to_list(an_iterable)`
+
+Very efficiently deduplicates an iterable such as a list and returns a list.
 
 #
 
