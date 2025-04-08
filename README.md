@@ -15,7 +15,7 @@ Introduction
 
 Can be installed with `pip install zhmiscellany`
 
-Currently, the package stands at 134 functions/classes/bindings across 14 modules.
+Currently, the package stands at 135 functions/classes/bindings across 14 modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
@@ -735,6 +735,15 @@ Saves arbitrary data into a chunk inside a folder defined by the name. Very hand
 `zhmiscellany.fileio.load_chunks(name)`
 
 Loads all the chunks as a list from the folder defined by the name.
+
+#
+
+`zhmiscellany.fileio.clear_chunks()`
+---
+
+`zhmiscellany.fileio.clear_chunks(name)`
+
+Deletes all the chunks from the folder defined by the name.
 
 #
 
