@@ -498,3 +498,8 @@ def load_chunks(name):
     for chunk_file in chunks:
         datas.append(load_object_from_file(chunk_file))
     return datas
+
+
+def clear_chunks(name):
+    if os.path.exists(name):
+        empty_directory(name)
