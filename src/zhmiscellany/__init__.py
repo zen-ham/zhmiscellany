@@ -1,4 +1,4 @@
-from . import processing, misc, macro, discord, fileio, netio, string, math, image, list, dict, pipes, pastebin, rust, cpp
+from . import processing, misc, macro, discord, fileio, netio, string, math, image, list, dict, pipes, pastebin, cpp
 
 import importlib
 import inspect
@@ -7,7 +7,7 @@ import sys
 _MODULES = [
     'processing', 'misc', 'macro', 'discord', 'fileio',
     'netio', 'string', 'math', 'image', 'list', 'dict',
-    'pipes', 'pastebin', 'rust', 'cpp'
+    'pipes', 'pastebin', 'cpp'
 ]
 
 
