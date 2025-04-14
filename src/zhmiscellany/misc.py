@@ -744,3 +744,7 @@ l = types.FunctionType(
     argdefs=here.__defaults__,  # Copy defaults
     closure=here.__closure__  # Copy closure
 )
+
+
+def wait_for_vsync(self):
+    ctypes.windll.dwmapi.DwmFlush()
