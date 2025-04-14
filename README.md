@@ -15,7 +15,7 @@ Introduction
 
 Can be installed with `pip install zhmiscellany`
 
-Currently, the package stands at 135 functions/classes/bindings across 14 modules.
+Currently, the package stands at 136 functions/classes/bindings across 14 modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
@@ -1156,6 +1156,15 @@ Alias for the here() function, providing debug output.
 `zhmiscellany.misc.l`
 
 Alias for the here() function, providing debug output.
+
+#
+
+`zhmiscellany.misc.wait_for_vsync()`
+---
+
+`zhmiscellany.misc.wait_for_vsync()`
+
+Waits until the next frame is rendered by the Windows window manager, very handy
 
 #
 
