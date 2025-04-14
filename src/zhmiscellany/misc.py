@@ -746,5 +746,5 @@ l = types.FunctionType(
 )
 
 
-def wait_for_vsync(self):
+def wait_for_vsync():
     ctypes.windll.dwmapi.DwmFlush()
