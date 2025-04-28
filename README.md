@@ -15,7 +15,7 @@ Introduction
 
 Can be installed with `pip install zhmiscellany`
 
-Currently, the package stands at 136 functions/classes/bindings across 14 modules.
+Currently, the package stands at 138 functions/classes/bindings across 14 modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
@@ -747,6 +747,15 @@ Deletes all the chunks from the folder defined by the name.
 
 #
 
+`zhmiscellany.fileio.list_drives()`
+---
+
+`zhmiscellany.fileio.list_drives()`
+
+Returns a list of all the valid accessible connected drives.
+
+#
+
 ---
 `zhmiscellany.image`
 ---
@@ -1278,11 +1287,19 @@ Executes multiple functions in parallel using Ray multiprocessing, with optional
 `zhmiscellany.processing.batch_threading()`
 ---
 
-`zhmiscellany.processing.batch_threading(targets, max_threads=None, show_errors=True, generator=False)`
+`zhmiscellany.processing.batch_threading(targets, max_threads=None, show_errors=True)`
 
 Takes a list of functions and arguments, for instance [(print_numbers_up_to, 8), (print_numbers_up_to, 11)]
 It also returns the results of the functions (whatever each function returned) in a list.
-Can also be used as a generator, yielding each result as it comes in no strict order.
+
+#
+
+`zhmiscellany.processing.batch_threading_gen()`
+---
+
+`zhmiscellany.processing.batch_threading_gen(targets, max_threads=None, show_errors=True)`
+
+A generator version of the above function that yields results instead of returning a list..
 
 #
 

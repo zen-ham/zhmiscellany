@@ -13,35 +13,36 @@ def start_daemon(**kwargs):
     return thread
 
 
-def batch_threading(targets, max_threads=None, show_errors=True, generator=False):
+def batch_threading(targets, max_threads=None, show_errors=True):
     def execute_target(target):
-        try:
-            return target[0](*target[1])  # Call function and return result
+        try: return target[0](*target[1])
         except Exception:
-            if show_errors:
-                print(traceback.format_exc())
-            return None  # Return None if an exception occurs
-    
-    max_threads = max_threads if max_threads else len(targets)
-    
-    results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
-        futures = {executor.submit(execute_target, target): i for i, target in enumerate(targets)}
+            if show_errors: print(traceback.format_exc())
+            return None
 
-        # Collect results in order
-        results = [None] * len(targets)
-        for future in concurrent.futures.as_completed(futures):
-            index = futures[future]
-            try:
-                if not generator:
-                    results[index] = future.result()  # Get result or exception
-                else:
-                    yield future.result()
-            except Exception:  # Catch unexpected exceptions (shouldn't happen due to execute_target)
-                results[index] = None
-    
-    if not generator:
-        return results
+    max_threads = max_threads or len(targets)
+    results = [None] * len(targets)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
+        futures = {executor.submit(execute_target, t): i for i, t in enumerate(targets)}
+        for f in concurrent.futures.as_completed(futures):
+            try: results[futures[f]] = f.result()
+            except Exception: results[futures[f]] = None
+    return results
+
+
+def batch_threading_gen(targets, max_threads=None, show_errors=True):
+    def execute_target(target):
+        try: return target[0](*target[1])
+        except Exception:
+            if show_errors: print(traceback.format_exc())
+            return None
+
+    max_threads = max_threads or len(targets)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
+        futures = [executor.submit(execute_target, t) for t in targets]
+        for f in concurrent.futures.as_completed(futures):
+            try: yield f.result()
+            except Exception: yield None
 
 
 def batch_multiprocess_threaded(targets_and_args, disable_warning=False, killable=False, daemon=False):

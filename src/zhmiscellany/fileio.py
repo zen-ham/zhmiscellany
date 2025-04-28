@@ -7,6 +7,7 @@ from collections import defaultdict
 from itertools import chain
 import tempfile
 import random
+import string
 
 
 def read_json_file(file_path):
@@ -503,3 +504,6 @@ def load_chunks(name):
 def clear_chunks(name):
     if os.path.exists(name):
         empty_directory(name)
+
+def list_drives():
+    return [f"{d}:\\" for d in string.ascii_uppercase if os.path.exists(f"{d}:\\")]
