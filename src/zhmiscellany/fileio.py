@@ -462,8 +462,11 @@ def list_files_recursive_cache_optimised_multiprocessed(dir_path, show_timings=F
     
     groups = split_into_n_groups(changed_folders, scan_changed_folders_thread_group_count)
     tasks = [(atom, (group,)) for group in groups]
-    
-    results = zhmiscellany.processing.batch_threading(tasks)
+
+    if not tasks:
+        results = []
+    else:
+        results = zhmiscellany.processing.batch_threading(tasks)
     if show_timings: zhmiscellany.misc.time_it('multithreading processing changed folders', 'lfrcom')
     
     new_new_folders = []
