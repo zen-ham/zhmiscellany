@@ -665,8 +665,9 @@ def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='
             if line.endswith(dno_char):
                 lines[i] = line.replace(dno_char, '')
             line_char_list = list(lines[i])
-            while line_char_list[-1] == ' ':
-                line_char_list.pop()
+            if line_char_list:
+                while line_char_list[-1] == ' ':
+                    line_char_list.pop()
             lines[i] = ''.join(line_char_list)
         obf = '\n'.join(lines)
     return obf
