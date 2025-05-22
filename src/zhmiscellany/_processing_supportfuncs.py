@@ -83,28 +83,34 @@ def get_import_chain():
         frame = frame.f_back
     return chain[::-1]
 
-
-cause_files = get_import_chain()
-
-code = ''
-for file in cause_files:
-    if os.path.exists(file):
-        with open(file, 'r', encoding='u8', errors='ignore') as f:
-            code += f.read()
-
-_ray_init_thread = threading.Thread()  # initialize variable to completed thread
-_ray_init_thread.start()
-
-_ray_state = 'disabled'
 cause_strings = [
     'processing.multiprocess(',
     'processing.batch_multiprocess(',
     'processing.synchronous_class_multiprocess(',
     'processing.multiprocess_threaded(',
     'processing.batch_multiprocess_threaded(',
+    'fileio.list_files_recursive_multiprocessed(',
+    'fileio.list_files_recursive_cache_optimised_multiprocessed(',
 ]
 
-if any([i in code for i in cause_strings]) or os.environ.get('zhmiscellany_init_ray') == 'force':
+cause_files = get_import_chain()
+
+cause = False
+
+for file in cause_files:
+    if os.path.exists(file):
+        with open(file, 'r', encoding='u8', errors='ignore') as f:
+            code = f.read()
+        if any([i in code for i in cause_strings]):
+            cause = True
+            break
+
+_ray_init_thread = threading.Thread()  # initialize variable to completed thread
+_ray_init_thread.start()
+
+_ray_state = 'disabled'
+
+if cause or os.environ.get('zhmiscellany_init_ray') == 'force':
     ray_init(auto=True)
 
 
