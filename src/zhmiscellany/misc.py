@@ -668,6 +668,8 @@ def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='
             if line_char_list:
                 while line_char_list[-1] == ' ':
                     line_char_list.pop()
+                    if not line_char_list:
+                        break
             lines[i] = ''.join(line_char_list)
         obf = '\n'.join(lines)
     return obf
