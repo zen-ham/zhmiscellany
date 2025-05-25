@@ -59,7 +59,7 @@ def _ray_init():
         return
     _ray_state = 'starting'
     try:
-        ray.init(logging_level="ERROR")
+        ray.init(include_dashboard=False, logging_level="ERROR")
     except RuntimeError as e:
         if 'ray.init twice by accident' in str(e):
             pass
