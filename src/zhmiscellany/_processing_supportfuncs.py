@@ -71,8 +71,8 @@ def _ray_init():
             os.environ["RAY_LOG_TO_STDERR"] = "1"
 
             # Ensure valid temp directory
-            # temp_dir = tempfile.mkdtemp()
-            os.environ["RAY_TMPDIR"] = os.environ["TEMP"]# = temp_dir
+            temp_dir = os.environ["TEMP"]#tempfile.mkdtemp()
+            os.environ["RAY_TMPDIR"] = temp_dir
 
             # Handle stdout/stderr for embedded environments
             if not hasattr(sys.stdout, 'fileno'):
