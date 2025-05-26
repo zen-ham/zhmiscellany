@@ -2,6 +2,8 @@
 import threading, logging, os, inspect, tempfile, shutil
 from itertools import chain
 import zhmiscellany.fileio
+from io import StringIO
+import sys
 
 
 def clear_logs():
@@ -34,10 +36,6 @@ if 'ray_logs_cleared' not in os.environ:
     clear_logs()
     os.environ['ray_logs_cleared'] = '1'
 
-os.environ["RAY_DISABLE_LOGGING"] = "1"
-os.environ["RAY_DISABLE_DASHBOARD"] = "1"
-os.environ["RAY_DASHBOARD_ENABLED"] = "0"
-
 
 def ray_init(auto=False):
     if auto:
@@ -60,8 +58,40 @@ def _ray_init():
     if _ray_state == 'enabled':
         return
     _ray_state = 'starting'
+
     try:
-        ray.init(include_dashboard=False, logging_level="ERROR")
+        def safe_ray_init():
+            # Environment setup
+            os.environ["RAY_DISABLE_LOGGING"] = "1"
+            os.environ["RAY_DISABLE_DASHBOARD"] = "1"
+            os.environ["RAY_DASHBOARD_ENABLED"] = "0"
+            os.environ["RAY_DISABLE_IMPORT_WARNING"] = "1"
+            os.environ["RAY_LOG_TO_STDERR"] = "1"
+            os.environ["RAY_DISABLE_IMPORT_WARNING"] = "1"
+            os.environ["RAY_LOG_TO_STDERR"] = "1"
+
+            # Ensure valid temp directory
+            # temp_dir = tempfile.mkdtemp()
+            os.environ["RAY_TMPDIR"] = os.environ["TEMP"]# = temp_dir
+
+            # Handle stdout/stderr for embedded environments
+            if not hasattr(sys.stdout, 'fileno'):
+                sys.stdout = StringIO()
+            if not hasattr(sys.stderr, 'fileno'):
+                sys.stderr = StringIO()
+
+            # Initialize Ray with minimal configuration
+            ray.init(
+                include_dashboard=False,
+                logging_level="ERROR",
+                configure_logging=False,
+                log_to_driver=False,
+                temp_dir=temp_dir,
+                ignore_reinit_error=True
+            )
+            return True
+
+        safe_ray_init()
     except RuntimeError as e:
         if 'ray.init twice by accident' in str(e):
             pass
