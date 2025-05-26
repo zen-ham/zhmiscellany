@@ -61,33 +61,14 @@ def _ray_init():
 
     try:
         def safe_ray_init():
-            # Environment setup
-            os.environ["RAY_DISABLE_LOGGING"] = "1"
-            os.environ["RAY_DISABLE_DASHBOARD"] = "1"
-            os.environ["RAY_DASHBOARD_ENABLED"] = "0"
+            # The key is to prevent Ray from redirecting stdout/stderr
             os.environ["RAY_DISABLE_IMPORT_WARNING"] = "1"
-            os.environ["RAY_LOG_TO_STDERR"] = "1"
-            os.environ["RAY_DISABLE_IMPORT_WARNING"] = "1"
-            os.environ["RAY_LOG_TO_STDERR"] = "1"
 
-            # Ensure valid temp directory
-            temp_dir = os.environ["TEMP"]#tempfile.mkdtemp()
-            os.environ["RAY_TMPDIR"] = temp_dir
-
-            # Handle stdout/stderr for embedded environments
-            if not hasattr(sys.stdout, 'fileno'):
-                sys.stdout = StringIO()
-            if not hasattr(sys.stderr, 'fileno'):
-                sys.stderr = StringIO()
-
-            # Initialize Ray with minimal configuration
             ray.init(
                 include_dashboard=False,
                 logging_level="ERROR",
-                configure_logging=False,
+                configure_logging=False,  # This prevents the stdout/stderr redirection
                 log_to_driver=False,
-                temp_dir=temp_dir,
-                ignore_reinit_error=True
             )
             return True
 
