@@ -5,6 +5,7 @@ import zhmiscellany.fileio
 from io import StringIO
 import sys
 import io
+from unittest.mock import patch
 
 
 def clear_logs():
@@ -62,22 +63,55 @@ def _ray_init():
 
     try:
         def safe_ray_init():
-            os.environ["RAY_DISABLE_IMPORT_WARNING"] = "1"
-            os.environ["RAY_DISABLE_DASHBOARD"] = "1"
-            os.environ["RAY_DISABLE_RUNTIME_ENV_LOGGING"] = "1"
+            """
+            Initialize Ray safely in embedded Python environments on Windows.
+            This addresses the invalid handle error that occurs when Ray tries to
+            redirect stdout/stderr in embedded environments.
+            """
 
-            if not hasattr(sys.stdout, 'fileno') or sys.stdout.closed:
-                sys.stdout = io.TextIOWrapper(io.BufferedWriter(io.BytesIO()), encoding='utf-8')
-            if not hasattr(sys.stderr, 'fileno') or sys.stderr.closed:
-                sys.stderr = io.TextIOWrapper(io.BufferedWriter(io.BytesIO()), encoding='utf-8')
-            
-            ray.init(
-                include_dashboard=False,
-                logging_level="ERROR",
-                configure_logging=False,
-                log_to_driver=False,
-                _enable_object_reconstruction=False,
-            )
+            # Method 1: Monkey patch the problematic function
+            def mock_redirect_stdout_stderr(*args, **kwargs):
+                """Mock function that does nothing instead of redirecting stdout/stderr"""
+                pass
+
+            # Method 2: Ensure we have valid stdout/stderr handles
+            def ensure_valid_handles():
+                """Ensure stdout and stderr are valid file-like objects"""
+                if not hasattr(sys.stdout, 'write') or sys.stdout.closed:
+                    sys.stdout = io.StringIO()
+                if not hasattr(sys.stderr, 'write') or sys.stderr.closed:
+                    sys.stderr = io.StringIO()
+
+            # Method 3: Override the open_log function that's causing issues
+            def mock_open_log(path, **kwargs):
+                """Mock open_log that returns a safe file handle"""
+                return io.StringIO()
+
+            # Ensure handles are valid first
+            ensure_valid_handles()
+
+            # Set environment variables to disable dashboard
+            os.environ.update({
+                "RAY_DISABLE_IMPORT_WARNING": "1",
+                "RAY_DISABLE_DASHBOARD": "1",
+                "RAY_DISABLE_RUNTIME_ENV_LOGGING": "1",
+                "RAY_ENABLE_DASHBOARD": "0",
+            })
+
+            # Import the modules we need to patch
+            import ray._private.logging_utils as logging_utils
+            import ray._private.utils as ray_utils
+
+            # Apply patches before Ray init
+            with patch.object(logging_utils, 'redirect_stdout_stderr_if_needed', mock_redirect_stdout_stderr), \
+                    patch.object(ray_utils, 'open_log', mock_open_log):
+                ray.init(
+                    include_dashboard=False,
+                    logging_level="ERROR",
+                    configure_logging=False,
+                    log_to_driver=False,
+                )
+
             return True
 
         safe_ray_init()
