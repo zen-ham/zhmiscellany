@@ -4,6 +4,7 @@ from itertools import chain
 import zhmiscellany.fileio
 from io import StringIO
 import sys
+import io
 
 
 def clear_logs():
@@ -61,14 +62,21 @@ def _ray_init():
 
     try:
         def safe_ray_init():
-            # The key is to prevent Ray from redirecting stdout/stderr
             os.environ["RAY_DISABLE_IMPORT_WARNING"] = "1"
+            os.environ["RAY_DISABLE_DASHBOARD"] = "1"
+            os.environ["RAY_DISABLE_RUNTIME_ENV_LOGGING"] = "1"
 
+            if not hasattr(sys.stdout, 'fileno') or sys.stdout.closed:
+                sys.stdout = io.TextIOWrapper(io.BufferedWriter(io.BytesIO()), encoding='utf-8')
+            if not hasattr(sys.stderr, 'fileno') or sys.stderr.closed:
+                sys.stderr = io.TextIOWrapper(io.BufferedWriter(io.BytesIO()), encoding='utf-8')
+            
             ray.init(
                 include_dashboard=False,
                 logging_level="ERROR",
-                configure_logging=False,  # This prevents the stdout/stderr redirection
+                configure_logging=False,
                 log_to_driver=False,
+                _enable_object_reconstruction=False,
             )
             return True
 
