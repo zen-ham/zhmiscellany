@@ -35,6 +35,8 @@ if 'ray_logs_cleared' not in os.environ:
     os.environ['ray_logs_cleared'] = '1'
 
 os.environ["RAY_DISABLE_LOGGING"] = "1"
+os.environ["RAY_DISABLE_DASHBOARD"] = "1"
+os.environ["RAY_DASHBOARD_ENABLED"] = "0"
 
 
 def ray_init(auto=False):
