@@ -102,12 +102,14 @@ def _ray_init():
                 "RAY_DISABLE_DASHBOARD": "1",
                 "RAY_DISABLE_RUNTIME_ENV_LOGGING": "1",
                 "RAY_ENABLE_DASHBOARD": "0",
+                "RAY_DASHBOARD_ENABLED": "0",
             })
 
             ray.init(
                 include_dashboard=False,
                 logging_level="ERROR",
                 configure_logging=False,
+                address="auto",
                 #log_to_driver=False,
             )
 
