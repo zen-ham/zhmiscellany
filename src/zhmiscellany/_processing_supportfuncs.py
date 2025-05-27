@@ -39,6 +39,25 @@ if 'ray_logs_cleared' not in os.environ:
     os.environ['ray_logs_cleared'] = '1'
 
 
+def safe_open_log(path, unbuffered=False, **kwargs):
+    try:
+        kwargs.setdefault("buffering", 1)
+        kwargs.setdefault("mode", "a")
+        kwargs.setdefault("encoding", "utf-8")
+        stream = open(path, **kwargs)
+    except OSError:
+        # fallback if handle is invalid
+        stream = open(os.devnull, "w", encoding="utf-8")
+    if unbuffered:
+        class Unbuffered:
+            def __init__(self, f): self.f = f
+            def write(self, x): self.f.write(x); self.f.flush()
+            def flush(self): self.f.flush()
+            def fileno(self): return self.f.fileno()
+        return Unbuffered(stream)
+    return stream
+
+
 def ray_init(auto=False):
     if auto:
         if 'in_ray_matrix' in os.environ:
@@ -48,6 +67,10 @@ def ray_init(auto=False):
     else:
         os.environ['in_ray_matrix'] = '1'
     global _ray_init_thread, ray
+
+    import ray._private.utils
+    ray._private.utils.open_log = safe_open_log
+
     import ray as r
     ray = r
     _ray_init_thread = threading.Thread(target=_ray_init)
