@@ -94,22 +94,22 @@ def _ray_init():
                     sys.stderr = io.StringIO()
 
             # Ensure handles are valid first
-            ensure_valid_handles()
+            # ensure_valid_handles()
 
             # Set environment variables to disable dashboard
-            os.environ.update({
-                "RAY_DISABLE_IMPORT_WARNING": "1",
-                "RAY_DISABLE_DASHBOARD": "1",
-                "RAY_DISABLE_RUNTIME_ENV_LOGGING": "1",
-                "RAY_ENABLE_DASHBOARD": "0",
-                "RAY_DASHBOARD_ENABLED": "0",
-            })
+            # os.environ.update({
+            #     "RAY_DISABLE_IMPORT_WARNING": "1",
+            #     "RAY_DISABLE_DASHBOARD": "1",
+            #     "RAY_DISABLE_RUNTIME_ENV_LOGGING": "1",
+            #     "RAY_ENABLE_DASHBOARD": "0",
+            #     "RAY_DASHBOARD_ENABLED": "0",
+            # })
 
             ray.init(
                 include_dashboard=False,
                 logging_level="ERROR",
-                configure_logging=False,
-                address="auto",
+                #configure_logging=False,
+                #address="auto",
                 #log_to_driver=False,
             )
 
