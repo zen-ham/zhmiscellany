@@ -84,7 +84,7 @@ def _ray_init():
             ray.init(
                 include_dashboard=False,
                 logging_level="ERROR",
-                configure_logging=False,
+                #configure_logging=False,
                 log_to_driver=False,
             )
 
