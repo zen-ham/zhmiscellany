@@ -109,7 +109,7 @@ def _ray_init():
                 include_dashboard=False,
                 logging_level="ERROR",
                 configure_logging=False,
-                address="auto",
+                #address="auto",
                 #log_to_driver=False,
             )
 
