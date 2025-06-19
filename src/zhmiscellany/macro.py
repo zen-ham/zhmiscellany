@@ -70,7 +70,7 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
 
     if pre_click_duration:
         if pre_click_wiggle:
-            num_wiggle = animation_fps * pre_click_duration
+            num_wiggle = round(animation_fps * pre_click_duration)
             for i in range(num_wiggle):
                 click_pixel(cx+((random.randint(0, 1)*2)-1), cy+((random.randint(0, 1)*2)-1), act_start=False, act_end=False, click_end_duration=1 / animation_fps)
         else:
