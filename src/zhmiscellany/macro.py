@@ -11,7 +11,7 @@ import win32api, win32con, ctypes
 import keyboard, kthread
 
 
-def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False, ensure_movement=True):
+def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False, ensure_movement=True, pre_click_duration=None):
     if right_click and middle_click:
         raise Exception('Both right click and middle click were set to true. Make sure just one is set to true at a time, or neither.')
     if type(x) != tuple and type(x) != list:
@@ -67,6 +67,9 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         else:
             move_mouse(cx, cy)
 
+    if pre_click_duration:
+        zhmiscellany.misc.high_precision_sleep(pre_click_duration)
+
     if middle_click:
         if act_start:
             mouse_down(3)
@@ -96,7 +99,7 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         zhmiscellany.misc.high_precision_sleep(click_end_duration)
 
     if double_click:
-        click_pixel(x, y, click_duration, right_click, shift, ctrl, act_start, act_end, middle_click, click_end_duration)
+        click_pixel(x, y, click_duration, right_click, shift, ctrl, act_start, act_end, middle_click, click_end_duration, pre_click_duration=pre_click_duration)
 
 
 def press_key_directinput(key, shift=False, act_start=True, act_end=True, key_hold_time=0):
