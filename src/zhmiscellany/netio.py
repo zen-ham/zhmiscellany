@@ -2,6 +2,10 @@ import os, requests
 import zhmiscellany.string
 import urllib.parse
 from zhmiscellany._misc_supportfuncs import patch_rhg
+from urllib3.exceptions import InsecureRequestWarning
+import urllib3
+
+urllib3.disable_warnings(InsecureRequestWarning)
 
 
 def resolve_file(url, destination_folder="."):
@@ -53,3 +57,19 @@ def generate_headers(url):
     headers['Host'] = urllib.parse.urlparse(url).netloc
 
     return headers
+
+
+def is_internet():
+    urls = [
+        "http://1.1.1.1",
+        "https://www.google.com",
+        "https://yandex.com/",
+    ]
+    for url in urls:
+        try:
+            res = requests.get(url, timeout=5, verify=False)
+            if 200 <= res.status_code < 300:
+                return True
+        except:
+            pass
+    return False
