@@ -1232,7 +1232,7 @@ Filters chars out of one string from a string of filter chars.
 `zhmiscellany.macro.click_pixel()`
 ---
 
-`zhmiscellany.macro.click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False)`
+`def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False, ensure_movement=True, pre_click_duration=None, pre_click_wiggle=False):`
 
 Simulates a mouse click at a given position using the raw SendInput method for better compatibility across applications. Supports right and middle clicks, modifier keys, and smooth animated movement with easing.
 
