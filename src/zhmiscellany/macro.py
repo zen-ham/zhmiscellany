@@ -260,19 +260,19 @@ def get_mouse_buttons():
 
 
 def toggle_function(func, key='f8', blocking=True):
-    def atom():
-        while True:
-            keyboard.wait(key)
-            t = kthread.KThread(target=func)
-            t.start()
-            keyboard.wait(key)
-            t.kill()
+    def handler():
+        if not hasattr(handler, "t") or not handler.t.is_alive():
+            handler.t = kthread.KThread(target=func)
+            handler.t.start()
+        else:
+            handler.t.kill()
+
+    keyboard.add_hotkey(key, handler)
+
     if blocking:
-        atom()
+        keyboard.wait()
     else:
-        t = threading.Thread(target=atom)
-        t.start()
-        return t
+        return handler
 
 
 KEY_CODES = {
