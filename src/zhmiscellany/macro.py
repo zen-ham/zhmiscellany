@@ -11,6 +11,8 @@ import win32api, win32con, ctypes
 
 import keyboard, kthread
 
+import time
+
 
 def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False, ensure_movement=True, pre_click_duration=None, pre_click_wiggle=False):
     if right_click and middle_click:
@@ -259,20 +261,46 @@ def get_mouse_buttons():
     ]
 
 
+_last_press_time_map = {} # Stores the last press timestamp for each key
+_DEBOUNCE_TIME_SECONDS = 0.0 # Time in seconds to ignore subsequent rapid presses
+
+def better_wait_for(key):
+    key_name = key.lower()
+    press_event = threading.Event() # Event to signal when the key is pressed
+    _last_press_time_map.setdefault(key_name, 0) # Initialize last press time for this key
+
+    def _on_key_event(e):
+        if e.name == key_name and e.event_type == keyboard.KEY_DOWN:
+            current_time = time.time()
+            if current_time - _last_press_time_map[key_name] < _DEBOUNCE_TIME_SECONDS:
+                return # Debounce: Ignore if pressed too soon after last detection
+
+            # Ignore if any modifier key is currently held down
+            if keyboard.is_pressed('ctrl') or keyboard.is_pressed('alt') or keyboard.is_pressed('shift'):
+                return
+
+            _last_press_time_map[key_name] = current_time # Update last press time
+            press_event.set() # Signal that the key was pressed
+
+    hook_id = keyboard.on_press(_on_key_event) # Register the raw key press listener
+    press_event.wait() # Block execution until the press_event is set
+    keyboard.unhook(hook_id) # Clean up the listener after key is detected
+
+
 def toggle_function(func, key='f8', blocking=True):
-    def handler():
-        if not hasattr(handler, "t") or not handler.t.is_alive():
-            handler.t = kthread.KThread(target=func)
-            handler.t.start()
-        else:
-            handler.t.kill()
-
-    keyboard.add_hotkey(key, handler)
-
+    def atom():
+        while True:
+            better_wait_for(key)
+            t = kthread.KThread(target=func)
+            t.start()
+            better_wait_for(key)
+            t.kill()
     if blocking:
-        keyboard.wait()
+        atom()
     else:
-        return handler
+        t = threading.Thread(target=atom)
+        t.start()
+        return t
 
 
 KEY_CODES = {

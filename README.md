@@ -15,7 +15,7 @@ Introduction
 
 Can be installed with `pip install zhmiscellany`
 
-Currently, the package stands at 139 functions/classes/bindings across 14 modules.
+Currently, the package stands at 140 functions/classes/bindings across 14 modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
@@ -1488,6 +1488,15 @@ Dictionary mapping key names to their virtual key codes for use with press_key a
 `zhmiscellany.macro.toggle_function(func, key='f8', blocking=True)`
 
 Takes a function, like a small looping keyboard macro for a game for example, and puts it on a toggle for the key you set. For example f8 will toggle the macro on and it will start looping, and pressing f8 again will instantly stop the macro until you toggle it on again.
+
+#
+
+`zhmiscellany.macro.better_wait_for()`
+---
+
+`zhmiscellany.macro.better_wait_for(key)`
+
+keyboard.wait() requries a clean press of the specified key, and concurrent key states can interfere with this interpretation. This function waits for a debounced press of the specified key, *ignoring concurrent modifier keys*, then unblocks execution.
 
 #
 

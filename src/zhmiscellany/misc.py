@@ -230,9 +230,8 @@ def is_admin():
 
 
 def die_on_key(key='f9', show_message=False):
-    import keyboard
     def _die_on_key(key):
-        keyboard.wait(key)
+        zhmiscellany.macro.better_wait_for(key)
         if show_message:
             print("Stopping the process because exit key was pressed.")
         die()
@@ -250,7 +249,7 @@ def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='
     dno_char = '2LAM67M4'
 
     if add_lines:
-        remove_comments = True  # Sorry, I'm too lazy to implement this in a better way. Why would you not wanna remove comments anyway...
+        remove_comments = True  # Sorry, right now it has to be like this, and I'm too lazy to implement this in a better way. Why would you not want to remove comments anyway...
 
     if remove_prints or remove_comments:
         lines = obf.split('\n')
