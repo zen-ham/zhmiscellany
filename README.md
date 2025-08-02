@@ -1594,7 +1594,7 @@ Sends data to a named pipe asynchronously using a background thread.
 #
 
 ---
-`zhmiscellany.pipes`
+`zhmiscellany.gui`
 ---
 
 #

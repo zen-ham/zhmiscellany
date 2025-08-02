@@ -1377,7 +1377,7 @@ Sends data to a named pipe asynchronously using a background thread.
 #<|<pipes>|>
 
 ---
-`zhmiscellany.pipes`
+`zhmiscellany.gui`
 ---
 
 #<|<gui>|>
