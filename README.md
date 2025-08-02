@@ -15,7 +15,7 @@ Introduction
 
 Can be installed with `pip install zhmiscellany`
 
-Currently, the package stands at 140 functions/classes/bindings across 14 modules.
+Currently, the package stands at 141 functions/classes/bindings across 15 modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
@@ -1496,7 +1496,7 @@ Takes a function, like a small looping keyboard macro for a game for example, an
 
 `zhmiscellany.macro.better_wait_for(key)`
 
-keyboard.wait() requries a clean press of the specified key, and concurrent key states can interfere with this interpretation. This function waits for a debounced press of the specified key, *ignoring concurrent modifier keys*, then unblocks execution.
+keyboard.wait() requires a clean press of the specified key, and concurrent key states can interfere with this interpretation. This function waits for a debounced press of the specified key, *ignoring concurrent modifier keys*, then unblocks execution.
 
 #
 
@@ -1590,5 +1590,20 @@ Reads data from a named pipe synchronously, returning None if no data is availab
 `zhmiscellany.pipes.raw_send_data(data, pipe_name)`
 
 Sends data to a named pipe asynchronously using a background thread.
+
+#
+
+---
+`zhmiscellany.pipes`
+---
+
+#
+
+`zhmiscellany.gui.StateIndicator()`
+---
+
+`zhmiscellany.gui.StateIndicator(colour=(255, 0, 0), opacity=0.8, corner='topright', offset=(10, 10), size=_DEFAULT_SIZE)`
+
+A lightweight Python class that displays a customizable, semi-transparent, click-through colored rectangle overlay on the screen for visual status indication, such as if you had a complex macro/automation script and wanted to be able to see what step it's currently on.
 
 #

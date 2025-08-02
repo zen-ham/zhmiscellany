@@ -1375,3 +1375,9 @@ Reads data from a named pipe synchronously, returning None if no data is availab
 Sends data to a named pipe asynchronously using a background thread.
 
 #<|<pipes>|>
+
+---
+`zhmiscellany.pipes`
+---
+
+#<|<gui>|>
