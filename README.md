@@ -42,7 +42,8 @@ Documentation:
 [zhmiscellany.dict](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanydict) Functions for working with dicts.\
 [zhmiscellany.processing](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyprocessing) Functions for processing/multiprocessing using flexible high level ray wrappers, homebrew high level multiprocessing implementations, or in threads in a more straight forward way.\
 [zhmiscellany.misc](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanymisc) Miscellaneous functions that didn't fit anywhere else. There's alot of useful stuff here.\
-[zhmiscellany.pipes](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanypipes) Classes and functions for effectively using pipes for IPC (Inter-Process Communication)
+[zhmiscellany.pipes](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanypipes) Classes and functions for effectively using pipes for IPC (Inter-Process Communication)\
+[zhmiscellany.pipes](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanygui) GUI related utilities for quickly adding visual components where it's needed.
 
 
 Usage examples
