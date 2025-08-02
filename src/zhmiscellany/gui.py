@@ -6,7 +6,7 @@ from ctypes import wintypes
 
 class StateIndicator:
     _TRANSPARENT_COLOR = "#cfbbb7"  # Pure magenta, used for transparency on Windows
-    _DEFAULT_SIZE = (20, 20)  # Default width and height tuple
+    _DEFAULT_SIZE = (64, 64)  # Default width and height tuple
 
     # Windows API constants
     GWL_EXSTYLE = -20
