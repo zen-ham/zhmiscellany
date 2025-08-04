@@ -70,8 +70,12 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         keys_down.append(win32con.VK_SHIFT)
 
     if x is not None and y is not None:
-        cx = x+1
-        cy = y+1
+        if not relative:
+            cx = x+1
+            cy = y+1
+        else:
+            cx = x
+            cy = y
         if ensure_movement:
             limit = 2**5
             move_mouse(cx, cy, relative=relative)
