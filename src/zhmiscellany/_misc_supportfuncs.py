@@ -123,8 +123,12 @@ SCREEN_WIDTH, SCREEN_HEIGHT = get_actual_screen_resolution()
 def move_mouse(x: int, y: int, relative=False):
     """Move mouse to specified coordinates."""
     # Convert coordinates to normalized coordinates (0-65535)
-    normalized_x = int(x * (65535 / SCREEN_WIDTH))
-    normalized_y = int(y * (65535 / SCREEN_HEIGHT))
+    if not relative:
+        normalized_x = int(x * (65535 / SCREEN_WIDTH))
+        normalized_y = int(y * (65535 / SCREEN_HEIGHT))
+    else:
+        normalized_x = x
+        normalized_y = y
     if not relative:
         dwflags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE
     else:
