@@ -24,16 +24,20 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         y = x[1]
         x = x[0]
 
-    if animation_time:
-        mxy = get_mouse_xy()
+    def stochastic_round(x):
+        floor = int(x)
+        return floor + (random.random() < (x - floor))
 
-    # if relative:
-    #     cx, cy = mxy
-    #     x += cx
-    #     y += cy
+    if type(x) == float:
+        x = stochastic_round(x)
+
+    if type(y) == float:
+        y = stochastic_round(y)
+
     keys_down = []
 
     if animation_time:
+        mxy = get_mouse_xy()
         start = mxy
         end = (x, y)
         num_points = animation_fps*animation_time  # 60 fps animation
