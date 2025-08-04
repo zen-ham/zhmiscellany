@@ -120,13 +120,15 @@ def get_actual_screen_resolution():
 
 SCREEN_WIDTH, SCREEN_HEIGHT = get_actual_screen_resolution()
 
-
-def move_mouse(x: int, y: int):
+def move_mouse(x: int, y: int, relative=False):
     """Move mouse to specified coordinates."""
     # Convert coordinates to normalized coordinates (0-65535)
     normalized_x = int(x * (65535 / SCREEN_WIDTH))
     normalized_y = int(y * (65535 / SCREEN_HEIGHT))
-
+    if not relative:
+        dwflags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE
+    else:
+        dwflags = MOUSEEVENTF_MOVE
     input_struct = INPUT(
         type=0,  # INPUT_MOUSE
         union=INPUT_UNION(
@@ -134,12 +136,13 @@ def move_mouse(x: int, y: int):
                 dx=normalized_x,
                 dy=normalized_y,
                 mouseData=0,
-                dwFlags=MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE,
+                dwFlags=dwflags,
                 time=0,
                 dwExtraInfo=None
             )
         )
     )
+
 
     ctypes.windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
 

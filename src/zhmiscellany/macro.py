@@ -24,7 +24,7 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         y = x[1]
         x = x[0]
 
-    if relative or animation_time:
+    if animation_time:
         mxy = get_mouse_xy()
 
     if relative:
@@ -43,10 +43,23 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
             animation_points = zhmiscellany.math.generate_eased_points(start, end, num_points)
         else:
             animation_points = zhmiscellany.math.generate_linear_points(start, end, num_points)
+
+        if relative:
+            temp = []
+            for i, point in enumerate(animation_points):
+                if i == 0:
+                    temp.append(tuple(a - b for a, b in zip(animation_points[i], start)))
+                    continue
+
+                relative_point = tuple(a - b for a, b in zip(animation_points[i], animation_points[i-1]))
+
+                temp.append(relative_point)
+            animation_points = temp
+
         animation_points.pop()  # remove start and end
         animation_points.pop(0)
         for point in animation_points:
-            click_pixel((round(point[0]), round(point[1])), act_start=False, act_end=False, click_end_duration=1/animation_fps)
+            click_pixel((round(point[0]), round(point[1])), act_start=False, act_end=False, click_end_duration=1/animation_fps, relative=relative)
 
     if ctrl:
         win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
@@ -61,14 +74,14 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         cy = y+1
         if ensure_movement:
             limit = 2**5
-            move_mouse(cx, cy)
+            move_mouse(cx, cy, relative=relative)
             for i in range(limit):
                 if get_mouse_xy() != (x, y):
-                    move_mouse(cx, cy)
+                    move_mouse(cx, cy, relative=relative)
                 else:
                     break
         else:
-            move_mouse(cx, cy)
+            move_mouse(cx, cy, relative=relative)
 
     if pre_click_duration:
         if pre_click_wiggle:
@@ -262,7 +275,6 @@ def get_mouse_buttons():
 
 
 _last_press_time_map = {} # Stores the last press timestamp for each key
-_DEBOUNCE_TIME_SECONDS = 0.0 # Time in seconds to ignore subsequent rapid presses
 
 def better_wait_for(key):
     key_name = key.lower()
@@ -272,13 +284,6 @@ def better_wait_for(key):
     def _on_key_event(e):
         if e.name == key_name and e.event_type == keyboard.KEY_DOWN:
             current_time = time.time()
-            if current_time - _last_press_time_map[key_name] < _DEBOUNCE_TIME_SECONDS:
-                return # Debounce: Ignore if pressed too soon after last detection
-
-            # Ignore if any modifier key is currently held down
-            if keyboard.is_pressed('ctrl') or keyboard.is_pressed('alt') or keyboard.is_pressed('shift'):
-                return
-
             _last_press_time_map[key_name] = current_time # Update last press time
             press_event.set() # Signal that the key was pressed
 
