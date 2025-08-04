@@ -27,10 +27,10 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
     if animation_time:
         mxy = get_mouse_xy()
 
-    if relative:
-        cx, cy = mxy
-        x += cx
-        y += cy
+    # if relative:
+    #     cx, cy = mxy
+    #     x += cx
+    #     y += cy
     keys_down = []
 
     if animation_time:
