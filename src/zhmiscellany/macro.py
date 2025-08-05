@@ -2,7 +2,7 @@ import math
 import random
 import threading
 
-from ._misc_supportfuncs import move_mouse, mouse_down, mouse_up
+from ._misc_supportfuncs import move_mouse, mouse_down, mouse_up, get_mouse_xy
 import zhmiscellany.misc
 import zhmiscellany.math
 import zhmiscellany.string
@@ -12,6 +12,8 @@ import win32api, win32con, ctypes
 import keyboard, kthread
 
 import time
+
+get_mouse_xy = get_mouse_xy
 
 
 def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False, ensure_movement=True, pre_click_duration=None, pre_click_wiggle=False):
@@ -262,11 +264,6 @@ def scroll(amount, delay=None):
         for _ in range(amount):
             raw_scroll(amount)
             zhmiscellany.misc.high_precision_sleep(delay/amount)
-
-
-def get_mouse_xy():
-    x, y = win32api.GetCursorPos()
-    return x, y
 
 
 def get_mouse_buttons():

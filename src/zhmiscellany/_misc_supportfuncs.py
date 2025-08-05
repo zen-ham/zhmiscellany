@@ -1,6 +1,7 @@
 import threading, os, signal, time, sys, shutil, ctypes
 from ctypes import Structure, c_long, c_uint, c_int, POINTER, sizeof
 import zhmiscellany.fileio
+import win32api, math
 
 
 _misc_action = 0
@@ -120,14 +121,21 @@ def get_actual_screen_resolution():
 
 SCREEN_WIDTH, SCREEN_HEIGHT = get_actual_screen_resolution()
 
+calibrated = False
+
 def move_mouse(x: int, y: int, relative=False):
     if not relative:
         # Convert coordinates to normalized coordinates (0-65535)
         normalized_x = int(x * (65535 / SCREEN_WIDTH))
         normalized_y = int(y * (65535 / SCREEN_HEIGHT))
     else:
-        normalized_x = x
-        normalized_y = y
+        if calibrated:
+            normalized_x = math.ceil(x * calibration_multiplier_x)
+            normalized_y = math.ceil(y * calibration_multiplier_y)
+        else:
+            normalized_x = x
+            normalized_y = y
+
     if not relative:
         dwflags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE
     else:
@@ -147,8 +155,22 @@ def move_mouse(x: int, y: int, relative=False):
         )
     )
 
-
     ctypes.windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
+
+def get_mouse_xy():
+    x, y = win32api.GetCursorPos()
+    return x, y
+
+# calibrate relative movement, required because windows is weird
+original_mouse_point = get_mouse_xy()
+calibration_distance = 128
+move_mouse(0,0)
+move_mouse(calibration_distance, calibration_distance, relative=True)
+moved_pos = get_mouse_xy()
+calibration_multiplier_x = calibration_distance/moved_pos[0]
+calibration_multiplier_y = calibration_distance/moved_pos[1]
+calibrated = True
+move_mouse(original_mouse_point[0]+1, original_mouse_point[1]+1)
 
 
 def mouse_down(button: int):
