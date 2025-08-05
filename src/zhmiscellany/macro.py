@@ -45,7 +45,10 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
     if animation_time:
         mxy = get_mouse_xy()
         start = mxy
-        end = (x, y)
+        if not relative:
+            end = (x, y)
+        else:
+            end = tuple(a + b for a, b in zip(start, (x,y)))
         num_points = animation_fps*animation_time  # 60 fps animation
         num_points += 2  # don't need start and end points
         num_points = math.ceil(num_points)
@@ -66,8 +69,10 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
                 temp.append(relative_point)
             animation_points = temp
 
-        animation_points.pop()  # remove start and end
+        # remove start and end
         animation_points.pop(0)
+        if not relative:
+            animation_points.pop()
         for point in animation_points:
             click_pixel((round(point[0]), round(point[1])), act_start=False, act_end=False, click_end_duration=1/animation_fps, relative=relative)
 
@@ -95,7 +100,8 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
                 else:
                     break
         else:
-            move_mouse(cx, cy, relative=relative)
+            if not (animation_time and relative):
+                move_mouse(cx, cy, relative=relative)
 
     if pre_click_duration:
         if pre_click_wiggle:
