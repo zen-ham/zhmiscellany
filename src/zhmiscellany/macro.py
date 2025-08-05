@@ -43,35 +43,60 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
     keys_down = []
 
     if animation_time:
+        def ease_in_out_sine(t: float) -> float:
+            return 0.5 * (1 - math.cos(math.pi * t))
+
+        def generate_movement_offsets(total_dx: int, total_dy: int, n_steps: int, ease: bool = True) -> list[tuple[int, int]]:
+            if n_steps <= 0:
+                return []
+
+            offsets = []
+
+            current_actual_x = 0
+            current_actual_y = 0
+
+            for i in range(n_steps):
+                t = (i + 1) / n_steps
+
+                if ease:
+                    fraction_of_total_movement = ease_in_out_sine(t)
+                else:
+                    fraction_of_total_movement = t
+
+                target_x = round(total_dx * fraction_of_total_movement)
+                target_y = round(total_dy * fraction_of_total_movement)
+
+                dx = int(target_x - current_actual_x)
+                dy = int(target_y - current_actual_y)
+
+                offsets.append((dx, dy))
+
+                current_actual_x += dx
+                current_actual_y += dy
+
+            return offsets
+
         mxy = get_mouse_xy()
         start = mxy
-        if not relative:
-            end = (x, y)
-        else:
-            end = tuple(a + b for a, b in zip(start, (x,y)))
+        end = (x, y)
         num_points = animation_fps*animation_time  # 60 fps animation
-        num_points += 2  # don't need start and end points
+        if not relative:
+            num_points += 2  # don't need start and end points
         num_points = math.ceil(num_points)
         if animation_easing:
-            animation_points = zhmiscellany.math.generate_eased_points(start, end, num_points)
+            if not relative:
+                animation_points = zhmiscellany.math.generate_eased_points(start, end, num_points)
+            else:
+                animation_points = generate_movement_offsets(end[0], end[1], num_points)
         else:
-            animation_points = zhmiscellany.math.generate_linear_points(start, end, num_points)
-
-        if relative:
-            temp = []
-            for i, point in enumerate(animation_points):
-                if i == 0:
-                    temp.append(tuple(a - b for a, b in zip(animation_points[i], start)))
-                    continue
-
-                relative_point = tuple(a - b for a, b in zip(animation_points[i], animation_points[i-1]))
-
-                temp.append(relative_point)
-            animation_points = temp
+            if not relative:
+                animation_points = zhmiscellany.math.generate_linear_points(start, end, num_points)
+            else:
+                animation_points = generate_movement_offsets(end[0], end[1], num_points, ease=False)
 
         # remove start and end
-        animation_points.pop(0)
         if not relative:
+            animation_points.pop(0)
             animation_points.pop()
         for point in animation_points:
             click_pixel((round(point[0]), round(point[1])), act_start=False, act_end=False, click_end_duration=1/animation_fps, relative=relative)
