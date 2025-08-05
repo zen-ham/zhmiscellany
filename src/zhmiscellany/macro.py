@@ -21,8 +21,8 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         if (x is None and y is not None) or (x is not None and y is None):
             raise Exception('x and y need to be either both defined or neither defined, or x needs to be a tuple or list, with 2 elements. you passed one and not the other and x was not such a tuple.')
     else:
-        x = x[0]
         y = x[1]
+        x = x[0]
 
     def stochastic_round(x):
         floor = int(x)
