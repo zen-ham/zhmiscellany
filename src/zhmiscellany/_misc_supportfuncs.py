@@ -130,8 +130,8 @@ def move_mouse(x: int, y: int, relative=False):
         normalized_y = int(y * (65535 / SCREEN_HEIGHT))
     else:
         if calibrated:
-            normalized_x = math.ceil(x * calibration_multiplier_x)
-            normalized_y = math.ceil(y * calibration_multiplier_y)
+            normalized_x = x * calibration_multiplier_x
+            normalized_y = y * calibration_multiplier_y
         else:
             normalized_x = x
             normalized_y = y
