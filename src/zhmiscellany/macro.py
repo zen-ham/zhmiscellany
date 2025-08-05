@@ -15,6 +15,8 @@ import time
 
 
 def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False, ensure_movement=True, pre_click_duration=None, pre_click_wiggle=False):
+    if relative:
+        ensure_movement = False
     if right_click and middle_click:
         raise Exception('Both right click and middle click were set to true. Make sure just one is set to true at a time, or neither.')
     if type(x) != tuple and type(x) != list:
