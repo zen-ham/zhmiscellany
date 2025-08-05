@@ -121,6 +121,7 @@ def get_actual_screen_resolution():
 SCREEN_WIDTH, SCREEN_HEIGHT = get_actual_screen_resolution()
 
 def move_mouse(x: int, y: int, relative=False):
+    print(x, y, relative)
     if not relative:
         # Convert coordinates to normalized coordinates (0-65535)
         normalized_x = int(x * (65535 / SCREEN_WIDTH))
