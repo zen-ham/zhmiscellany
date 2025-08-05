@@ -19,8 +19,6 @@ get_mouse_xy = get_mouse_xy
 def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False, ensure_movement=True, pre_click_duration=None, pre_click_wiggle=False, click=True):
     if not click:
         act_start=False;act_end=False
-    if relative:
-        ensure_movement = False
     if right_click and middle_click:
         raise Exception('Both right click and middle click were set to true. Make sure just one is set to true at a time, or neither.')
     if type(x) != tuple and type(x) != list:
@@ -116,8 +114,8 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         else:
             cx = x
             cy = y
-        if ensure_movement:
-            limit = 2**5
+        limit = 2 ** 5
+        if ensure_movement and (not relative):
             move_mouse(cx, cy, relative=relative)
             for i in range(limit):
                 if get_mouse_xy() != (x, y):
@@ -125,8 +123,18 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
                 else:
                     break
         else:
-            if not (animation_time and relative):
+            if not relative:
                 move_mouse(cx, cy, relative=relative)
+            else:
+                if not (animation_time and relative):
+                    targ = tuple(a + b for a, b in zip(get_mouse_xy(), (cx, cy)))
+                    move_mouse(cx, cy, relative=relative)
+                    for i in range(limit):
+                        cur_pos = get_mouse_xy()
+                        if cur_pos != targ:
+                            move_mouse(max(-1, min(1, (targ[0]-cur_pos[0]))), max(-1, min(1, (targ[1]-cur_pos[1]))), relative=relative)
+                        else:
+                            break
 
     if pre_click_duration:
         if pre_click_wiggle:
