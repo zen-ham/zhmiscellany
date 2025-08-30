@@ -290,7 +290,7 @@ def ids_to_message_url(channel_id, message_id, guild_id=None):
     if guild_id:
         return f'https://discord.com/channels/{guild_id}/{channel_id}/{message_id}'
     else:
-        return f'https://discord.com/channels/{channel_id}/{message_id}'
+        return f'https://discord.com/channels/@me/{channel_id}/{message_id}'
 
 
 def message_url_to_ids(message_url):
