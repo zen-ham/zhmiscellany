@@ -124,6 +124,7 @@ SCREEN_WIDTH, SCREEN_HEIGHT = get_actual_screen_resolution()
 calibrated = False
 
 def move_mouse(x: int, y: int, relative=False):
+    calibrate()
     if not relative:
         # Convert coordinates to normalized coordinates (0-65535)
         normalized_x = int(x * (65535 / SCREEN_WIDTH))
@@ -161,16 +162,20 @@ def get_mouse_xy():
     x, y = win32api.GetCursorPos()
     return x, y
 
-# calibrate relative movement, required because windows is weird
-original_mouse_point = get_mouse_xy()
-calibration_distance = 128
-move_mouse(0,0)
-move_mouse(calibration_distance, calibration_distance, relative=True)
-moved_pos = get_mouse_xy()
-calibration_multiplier_x = calibration_distance/moved_pos[0]
-calibration_multiplier_y = calibration_distance/moved_pos[1]
-calibrated = True
-move_mouse(original_mouse_point[0]+1, original_mouse_point[1]+1)
+def calibrate():
+    global calibration_multiplier_x, calibration_multiplier_y, calibrated
+    if calibrated:
+        return
+    # calibrate relative movement, required because windows is weird
+    original_mouse_point = get_mouse_xy()
+    calibration_distance = 128
+    move_mouse(0,0)
+    move_mouse(calibration_distance, calibration_distance, relative=True)
+    moved_pos = get_mouse_xy()
+    calibration_multiplier_x = calibration_distance/moved_pos[0]
+    calibration_multiplier_y = calibration_distance/moved_pos[1]
+    calibrated = True
+    move_mouse(original_mouse_point[0]+1, original_mouse_point[1]+1)
 
 
 def mouse_down(button: int):
