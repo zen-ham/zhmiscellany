@@ -122,14 +122,15 @@ def get_actual_screen_resolution():
 SCREEN_WIDTH, SCREEN_HEIGHT = get_actual_screen_resolution()
 
 calibrated = False
+calipass = False
 
 def move_mouse(x: int, y: int, relative=False):
-    calibrate()
     if not relative:
         # Convert coordinates to normalized coordinates (0-65535)
         normalized_x = int(x * (65535 / SCREEN_WIDTH))
         normalized_y = int(y * (65535 / SCREEN_HEIGHT))
     else:
+        calibrate()
         if calibrated:
             normalized_x = math.ceil(x * calibration_multiplier_x)
             normalized_y = math.ceil(y * calibration_multiplier_y)
@@ -163,9 +164,12 @@ def get_mouse_xy():
     return x, y
 
 def calibrate():
-    global calibration_multiplier_x, calibration_multiplier_y, calibrated
+    global calibration_multiplier_x, calibration_multiplier_y, calibrated, calipass
     if calibrated:
         return
+    if calipass:
+        return
+    calipass = True
     # calibrate relative movement, required because windows is weird
     original_mouse_point = get_mouse_xy()
     calibration_distance = 128
