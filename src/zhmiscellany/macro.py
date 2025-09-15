@@ -16,7 +16,7 @@ import time
 get_mouse_xy = get_mouse_xy
 
 
-def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False, ensure_movement=True, pre_click_duration=None, pre_click_wiggle=False, click=True):
+def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False, ensure_movement=True, pre_click_duration=None, pre_click_wiggle=True, post_click_duration=None, post_click_wiggle=True, click=True):
     if not click:
         act_start=False;act_end=False
     if right_click and middle_click:
@@ -168,6 +168,14 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
 
     for key in keys_down:
         win32api.keybd_event(key, 0, win32con.KEYEVENTF_KEYUP, 0)
+
+    if post_click_duration:
+        if post_click_wiggle:
+            num_wiggle = round(animation_fps * post_click_duration)
+            for i in range(num_wiggle):
+                click_pixel(cx+((random.randint(0, 1)*2)-1), cy+((random.randint(0, 1)*2)-1), act_start=False, act_end=False, click_end_duration=1 / animation_fps)
+        else:
+            zhmiscellany.misc.high_precision_sleep(post_click_duration)
 
     if click_end_duration:
         zhmiscellany.misc.high_precision_sleep(click_end_duration)
