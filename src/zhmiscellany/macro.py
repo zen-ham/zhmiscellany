@@ -401,11 +401,10 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
         # If it's some other type of key object (less common)
         return str(key)
 
-    def generate_code():
+    def generate_code(events, start_time):
         """
         Generates the Python script from the recorded events and copies it to the clipboard.
         """
-        global events, start_time
 
         if not events:
             print("No actions were recorded.")
@@ -566,7 +565,7 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
     mouse_listener.stop()
 
     # Generate the replay script
-    return generate_code()
+    return generate_code(events, start_time)
 
 
 KEY_CODES = {
