@@ -16,7 +16,7 @@ import time
 get_mouse_xy = get_mouse_xy
 
 
-def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False, ensure_movement=True, pre_click_duration=None, pre_click_wiggle=True, post_click_duration=None, post_click_wiggle=True, click=True):
+def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False, ensure_movement=True, pre_click_duration=None, pre_click_wiggle=True, click=True):
     if not click:
         act_start=False;act_end=False
     if right_click and middle_click:
@@ -168,14 +168,6 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
 
     for key in keys_down:
         win32api.keybd_event(key, 0, win32con.KEYEVENTF_KEYUP, 0)
-
-    if post_click_duration:
-        if post_click_wiggle:
-            num_wiggle = round(animation_fps * post_click_duration)
-            for i in range(num_wiggle):
-                click_pixel(cx+((random.randint(0, 1)*2)-1), cy+((random.randint(0, 1)*2)-1), act_start=False, act_end=False, click_end_duration=1 / animation_fps)
-        else:
-            zhmiscellany.misc.high_precision_sleep(post_click_duration)
 
     if click_end_duration:
         zhmiscellany.misc.high_precision_sleep(click_end_duration)
@@ -362,6 +354,219 @@ def toggle_function(func, key='f8', blocking=True):
         t = threading.Thread(target=atom)
         t.start()
         return t
+
+
+def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
+    import time
+    import pynput
+    import pyperclip
+
+    # --- Configuration ---
+    # Set to True to record every single mouse movement.
+    # Set to False to only record mouse position on clicks and drags.
+
+    # --- Global State ---
+    events = []
+    start_time = None
+
+    # --- Helper Functions ---
+    def format_key(key):
+        """
+        Formats the pynput key object into a string for the generated script.
+        Handles cases where modifier keys (like Ctrl) are held down, which can
+        prevent the `key.char` attribute from being populated correctly.
+        """
+        if isinstance(key, pynput.keyboard.Key):
+            # Special keys (e.g., Key.shift, Key.ctrl)
+            return f"Key.{key.name}"
+
+        if isinstance(key, pynput.keyboard.KeyCode):
+            # This is the robust way to handle alphanumeric keys, especially with modifiers.
+            # key.char can be None or a control character when Ctrl/Alt are held.
+            # key.vk is the virtual key code, which is more reliable.
+
+            # Heuristic for A-Z keys (VK codes on Windows/Linux are often in this range)
+            if 65 <= getattr(key, 'vk', 0) <= 90:
+                return f"'{chr(key.vk).lower()}'"
+
+            # For other keys, try to use the char if it exists
+            if key.char:
+                bs = '\\'
+                return f"'{key.char.replace(bs, bs + bs + bs)}'"
+
+            # As a fallback for other keys without a char, use the vk
+            if hasattr(key, 'vk'):
+                return f"pynput.keyboard.KeyCode.from_vk({key.vk})"
+
+        # If it's some other type of key object (less common)
+        return str(key)
+
+    def generate_code():
+        """
+        Generates the Python script from the recorded events and copies it to the clipboard.
+        """
+        global events, start_time
+
+        if not events:
+            print("No actions were recorded.")
+            return
+
+        # Code preamble
+        code_lines = [
+            "import zhmiscellany",
+            "",
+            "zhmiscellany.misc.die_on_key('f9')",
+            "",
+            "m = zhmiscellany.macro.click_pixel",
+            "k = zhmiscellany.macro.press_key_directinput",
+            "s = zhmiscellany.macro.scroll",
+            "",
+            "click_down_time = 1/30",
+            "click_release_time = 1/30",
+            "mouse_move_dly = 1/60",
+            "key_down_time = 1/30",
+            "scroll_dly = 1/30",
+            "",
+            "pre_click_wiggle = True",
+            "",
+            "animation_time = 1",
+            "",
+            'print("Replaying actions in 3 seconds...")',
+            "zhmiscellany.misc.high_precision_sleep(3)",
+            ""
+        ]
+
+        last_time = start_time
+        for event in events:
+            current_time = event['time']
+            delay = current_time - last_time
+
+            action = event['action']
+
+            if action == 'click':
+                x, y, button, pressed = event['x'], event['y'], event['button'], event['pressed']
+                button_str = f"Button.{button.name}"
+                action_str = "press" if pressed else "release"
+
+                replacements = {
+                    'right': 'right_click=True, ',
+                    'middle': 'middle_click=True, ',
+                    'left': '',
+                }
+                for key, value in replacements.items():
+                    if key in button_str:
+                        button_str = value
+                        break
+
+                replacements = {
+                    'press': 'act_end=False, ',
+                    'release': 'act_start=False, ',
+                }
+                for key, value in replacements.items():
+                    if key in action_str:
+                        action_str = value
+                        break
+
+                code_lines.append(f"m(({x}, {y}), {button_str}{action_str}click_duration=click_down_time, click_end_duration=click_release_time, pre_click_wiggle=pre_click_wiggle, animation_time=animation_time)")
+
+            elif action == 'move':
+                x, y = event['x'], event['y']
+                code_lines.append(f"m(({x}, {y}), click_end_duration=mouse_move_dly)")
+
+            elif action == 'scroll':
+                dx, dy = event['dx'], event['dy']
+                code_lines.append(f"s({dy}, scroll_dly)")
+
+            elif action in ('key_press', 'key_release'):
+                key = event['key']
+                key_str = format_key(key)
+                if '.' in key_str:
+                    key_str = key_str.split('.')[1]
+                replacements = {
+                    'ctrl': 'ctrl',
+                    'shift': 'shift',
+                    'alt': 'alt',
+                }
+                for key, value in replacements.items():
+                    if key in key_str:
+                        key_str = value
+                        break
+                action_str = "press" if action == 'key_press' else "release"
+
+                replacements = {
+                    'press': 'act_end=False, ',
+                    'release': 'act_start=False, ',
+                }
+                for key, value in replacements.items():
+                    if key in action_str:
+                        action_str = value
+                        break
+
+                code_lines.append(f"k('{key_str}', {action_str}key_hold_time=key_down_time)")
+
+            last_time = current_time
+
+        code_lines.append("\nprint('Replay finished.')")
+
+        # Join all lines into a single script
+        final_script = "\n".join(code_lines)
+
+        # Print and copy to clipboard
+        print("\n" + "=" * 50)
+        print("      RECORDING FINISHED - SCRIPT GENERATED")
+        print("=" * 50 + "\n")
+        print(final_script)
+        print("\n" + "=" * 50)
+
+        try:
+            pyperclip.copy(final_script)
+            print("Script has been copied to your clipboard!")
+        except pyperclip.PyperclipException:
+            print("Could not copy to clipboard. Please install xclip or xsel on Linux.")
+        return final_script
+
+    # --- Pynput Listener Callbacks ---
+
+    def on_move(x, y):
+        if RECORD_MOUSE_MOVEMENT:
+            events.append({'action': 'move', 'x': x, 'y': y, 'time': time.time()})
+
+    def on_click(x, y, button, pressed):
+        events.append({'action': 'click', 'x': x, 'y': y, 'button': button, 'pressed': pressed, 'time': time.time()})
+
+    def on_scroll(x, y, dx, dy):
+        # pynput scroll listener reports the mouse position at time of scroll, which we don't need for replay
+        events.append({'action': 'scroll', 'dx': dx, 'dy': dy, 'time': time.time()})
+
+    def on_press(key):
+        events.append({'action': 'key_press', 'key': key, 'time': time.time()})
+
+    def on_release(key):
+        if key == STOP_KEY:
+            # Stop listeners
+            return False
+        events.append({'action': 'key_release', 'key': key, 'time': time.time()})
+
+    print(f"Press '{STOP_KEY.name.upper()}' to stop recording and generate the script.")
+    print("...")
+
+    start_time = time.time()
+
+    # Create and start listeners
+    mouse_listener = pynput.mouse.Listener(on_move=on_move, on_click=on_click, on_scroll=on_scroll)
+    keyboard_listener = pynput.keyboard.Listener(on_press=on_press, on_release=on_release)
+
+    mouse_listener.start()
+    keyboard_listener.start()
+
+    # Wait for the keyboard listener to stop (on F9 press)
+    keyboard_listener.join()
+
+    # Stop the mouse listener explicitly once the keyboard one has finished
+    mouse_listener.stop()
+
+    # Generate the replay script
+    return generate_code()
 
 
 KEY_CODES = {
