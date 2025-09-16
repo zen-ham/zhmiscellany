@@ -303,7 +303,7 @@ def scroll(amount, delay=None):
         direction = 1 if amount > 0 else -1
         amount = amount*direction
         for _ in range(amount):
-            raw_scroll(amount)
+            raw_scroll(direction)
             zhmiscellany.misc.high_precision_sleep(delay/amount)
 
 
