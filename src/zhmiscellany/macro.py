@@ -258,7 +258,7 @@ def type_string(text=None, delay=None, key_hold_time=None, vk_codes=None, combin
                 press_key(vk_code, False, act_start=False, act_end=True, key_hold_time=key_hold_time)
 
 
-def scroll(amount, delay=None):
+def scroll(amount, delay=None, post_scroll_delay=None):
     def raw_scroll(amount):
         # Constants for mouse input
         INPUT_MOUSE = 0
@@ -305,6 +305,8 @@ def scroll(amount, delay=None):
         for _ in range(amount):
             raw_scroll(direction)
             zhmiscellany.misc.high_precision_sleep(delay/amount)
+    if post_scroll_delay:
+        zhmiscellany.misc.high_precision_sleep(post_scroll_delay)
 
 
 def get_mouse_buttons():
@@ -425,6 +427,7 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
             "mouse_move_dly = 1/60",
             "key_down_time = 1/30",
             "scroll_dly = 1/30",
+            "post_scroll_dly = 1/10",
             "",
             "pre_click_wiggle = True",
             "",
@@ -436,10 +439,10 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
         ]
 
         last_time = start_time
-        skip_next = False
+        skip_next = 0
         for i, event in enumerate(events):
             if skip_next:
-                skip_next = False
+                skip_next -= 1
                 continue
             current_time = event['time']
             try:
@@ -476,7 +479,7 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
 
                 if next_event and next_event['action'] == 'click' and (next_event['x'], next_event['y']) == (x, y):
                     action_str = ''
-                    skip_next = True
+                    skip_next = 1
 
                 code_lines.append(f"m(({x}, {y}), {button_str}{action_str}click_duration=click_down_time, click_end_duration=click_release_time, pre_click_wiggle=pre_click_wiggle, animation_time=animation_time)")
 
@@ -486,7 +489,19 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
 
             elif action == 'scroll':
                 dx, dy = event['dx'], event['dy']
-                code_lines.append(f"s({dy}, scroll_dly)")
+                j = i
+                count = 0
+                while True:
+                    count += 1
+                    try:
+                        t_event = events[j+1]
+                    except:
+                        t_event = None
+                    if t_event and t_event['action'] == 'scroll' and t_event['dy'] == dy:
+                        skip_next += 1
+                    else:
+                        break
+                code_lines.append(f"s({dy*count}, scroll_dly, post_scroll_dly)")
 
             elif action in ('key_press', 'key_release'):
                 key = event['key']
