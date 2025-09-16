@@ -512,6 +512,9 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
                     if key in action_str:
                         action_str = value
                         break
+                
+                if key_str == STOP_KEY:
+                    break
 
                 code_lines.append(f"k('{key_str}', {action_str}key_hold_time=key_down_time)")
 
