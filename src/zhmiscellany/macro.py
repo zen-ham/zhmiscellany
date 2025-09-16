@@ -419,7 +419,7 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
             "m = zhmiscellany.macro.click_pixel",
             "k = zhmiscellany.macro.press_key_directinput",
             "s = zhmiscellany.macro.scroll",
-            "",
+            "sleep = zhmiscellany.misc.high_precision_sleep",
             "click_down_time = 1/30",
             "click_release_time = 1/30",
             "mouse_move_dly = 1/60",
@@ -431,7 +431,7 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
             "animation_time = 0.1",
             "",
             'print("Replaying actions in 3 seconds...")',
-            "zhmiscellany.misc.high_precision_sleep(3)",
+            "sleep(3)",
             ""
         ]
 
@@ -486,7 +486,7 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
 
             elif action == 'scroll':
                 dx, dy = event['dx'], event['dy']
-                code_lines.append(f"s({dy}, scroll_dly)")
+                code_lines.append(f"s({dy*-1}, scroll_dly)")
 
             elif action in ('key_press', 'key_release'):
                 key = event['key']
@@ -512,7 +512,7 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
                     if key in action_str:
                         action_str = value
                         break
-                
+
                 if key_str == STOP_KEY:
                     break
 
