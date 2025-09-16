@@ -428,7 +428,7 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
             "",
             "pre_click_wiggle = True",
             "",
-            "animation_time = 1",
+            "animation_time = 0.1",
             "",
             'print("Replaying actions in 3 seconds...")',
             "zhmiscellany.misc.high_precision_sleep(3)",
