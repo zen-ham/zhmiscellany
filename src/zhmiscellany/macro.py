@@ -436,8 +436,12 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
         ]
 
         last_time = start_time
-        for event in events:
+        for i, event in enumerate(events):
             current_time = event['time']
+            try:
+                next_event = events[i+1]
+            except:
+                next_event = None
             delay = current_time - last_time
 
             action = event['action']
@@ -465,6 +469,9 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
                     if key in action_str:
                         action_str = value
                         break
+                
+                if next_event and next_event['action'] == 'click' and (next_event['x'], next_event['y']) == (x, y):
+                    action_str = ''
 
                 code_lines.append(f"m(({x}, {y}), {button_str}{action_str}click_duration=click_down_time, click_end_duration=click_release_time, pre_click_wiggle=pre_click_wiggle, animation_time=animation_time)")
 
