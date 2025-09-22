@@ -15,7 +15,7 @@ Introduction
 
 Can be installed with `pip install zhmiscellany`
 
-Currently, the package stands at 141 functions/classes/bindings across 15 modules.
+Currently, the package stands at 143 functions/classes/bindings across 15 modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
@@ -1322,6 +1322,15 @@ Very efficiently deduplicates an iterable such as a list and returns a list.
 
 #
 
+`zhmiscellany.processing.thread_join_return()`
+---
+
+`zhmiscellany.processing.thread_join_return()`
+
+Just a thread, but it returns whatever value was returned by the function inside it when .join() is called so you can use the data.
+
+#
+
 ---
 `zhmiscellany.string`
 ---
@@ -1498,6 +1507,15 @@ Takes a function, like a small looping keyboard macro for a game for example, an
 `zhmiscellany.macro.better_wait_for(key)`
 
 keyboard.wait() requires a clean press of the specified key, and concurrent key states can interfere with this interpretation. This function waits for a debounced press of the specified key, *ignoring concurrent modifier keys*, then unblocks execution.
+
+#
+
+`zhmiscellany.macro.record_actions_to_code()`
+---
+
+`zhmiscellany.macro.record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9')`
+
+Records keyboard and mouse events and generates zhmiscellany.macro code to emulate them, I'm so tired..
 
 #
 
