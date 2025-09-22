@@ -488,19 +488,21 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
                 code_lines.append(f"m(({x}, {y}), click_end_duration=mouse_move_dly)")
 
             elif action == 'scroll':
-                dx, dy = event['dx'], event['dy']
+                x, y, dx, dy = event['x'], event['y'], event['dx'], event['dy']
                 j = i
                 count = 0
                 while True:
                     count += 1
+                    j += 1
                     try:
-                        t_event = events[j+1]
+                        t_event = events[j]
                     except:
                         t_event = None
-                    if t_event and t_event['action'] == 'scroll' and t_event['dy'] == dy:
+                    if t_event and t_event['action'] == 'scroll' and t_event['dy'] == dy and (t_event['x'], t_event['y']) == (x, y):
                         skip_next += 1
                     else:
                         break
+                code_lines.append(f"m(({x}, {y}), click_end_duration=mouse_move_dly)")
                 code_lines.append(f"s({dy*count}, scroll_dly, post_scroll_dly)")
 
             elif action in ('key_press', 'key_release'):
@@ -564,8 +566,7 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
         events.append({'action': 'click', 'x': x, 'y': y, 'button': button, 'pressed': pressed, 'time': time.time()})
 
     def on_scroll(x, y, dx, dy):
-        # pynput scroll listener reports the mouse position at time of scroll, which we don't need for replay
-        events.append({'action': 'scroll', 'dx': dx, 'dy': dy, 'time': time.time()})
+        events.append({'action': 'scroll', 'x': x, 'y': y, 'dx': dx, 'dy': dy, 'time': time.time()})
 
     def on_press(key):
         events.append({'action': 'key_press', 'key': key, 'time': time.time()})
