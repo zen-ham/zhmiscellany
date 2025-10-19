@@ -177,3 +177,24 @@ class StateIndicator:
             self._size = xy_tuple
             if self._root and self._root.winfo_exists():
                 self._root.after(0, self._update_size_internal)
+
+import ctypes
+from ctypes import wintypes
+user32 = ctypes.windll.user32
+
+def get_focused_window():
+    """Return the window that currently has the keyboard focus."""
+    return user32.GetForegroundWindow()
+
+def get_window_rect(hwnd):
+    """Return the bounding rectangle of a window."""
+    HWND = wintypes.HWND
+    RECT = wintypes.RECT
+    rect = RECT()
+    user32.GetWindowRect(hwnd, ctypes.byref(rect))
+    return rect
+
+def set_window_pos(hwnd, x: int, y: int, w: int, h: int):
+    """Move (and optionally resize) a window."""
+    # 0x0040 == SWP_NOACTIVATE | 0x0020 == SWP_SHOWWINDOW
+    user32.SetWindowPos(hwnd, 0, x, y, w, h, 0x0040 | 0x0020)
