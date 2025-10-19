@@ -2,6 +2,7 @@ import tkinter as tk
 import threading
 import ctypes
 from ctypes import wintypes
+import win32gui
 
 
 class StateIndicator:
@@ -198,3 +199,30 @@ def set_window_pos(hwnd, x: int, y: int, w: int, h: int):
     """Move (and optionally resize) a window."""
     # 0x0040 == SWP_NOACTIVATE | 0x0020 == SWP_SHOWWINDOW
     user32.SetWindowPos(hwnd, 0, x, y, w, h, 0x0040 | 0x0020)
+
+
+def find_window_by_title_fuzzy(title_query, threshold=70):
+    from fuzzywuzzy import process
+    from fuzzywuzzy import fuzz
+    def enum_windows_callback(hwnd, windows):
+        if win32gui.IsWindowVisible(hwnd):
+            window_title = win32gui.GetWindowText(hwnd)
+            if window_title:
+                windows.append((hwnd, window_title))
+        return True
+
+    windows = []
+    win32gui.EnumWindows(enum_windows_callback, windows)
+
+    if not windows:
+        return None
+
+    titles = [title for hwnd, title in windows]
+    best_match = process.extractOne(title_query, titles, scorer=fuzz.token_set_ratio)
+
+    if best_match[1] >= threshold:
+        matched_title = best_match[0]
+        for hwnd, title in windows:
+            if title == matched_title:
+                return hwnd
+    return None
