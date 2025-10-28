@@ -428,6 +428,7 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
             "key_down_time = 1/30",
             "scroll_dly = 1/30",
             "post_scroll_dly = 1/10",
+            "pre_click_duration = 1/30",
             "",
             "pre_click_wiggle = True",
             "",
@@ -481,7 +482,7 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
                     action_str = ''
                     skip_next = 1
 
-                code_lines.append(f"m(({x}, {y}), {button_str}{action_str}click_duration=click_down_time, click_end_duration=click_release_time, pre_click_wiggle=pre_click_wiggle, animation_time=animation_time)")
+                code_lines.append(f"m(({x}, {y}), {button_str}{action_str}click_duration=click_down_time, click_end_duration=click_release_time, pre_click_duration=pre_click_duration, animation_time=animation_time)")
 
             elif action == 'move':
                 x, y = event['x'], event['y']
