@@ -15,7 +15,7 @@ Introduction
 
 Can be installed with `pip install zhmiscellany`
 
-Currently, the package stands at 147 functions/classes/bindings across 15 modules.
+Currently, the package stands at 148 functions/classes/bindings across 15 modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
@@ -1516,6 +1516,15 @@ keyboard.wait() requires a clean press of the specified key, and concurrent key 
 `zhmiscellany.macro.record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9')`
 
 Records keyboard and mouse events and generates zhmiscellany.macro code to emulate them, I'm so tired..
+
+#
+
+`zhmiscellany.macro.is_key_pressed_async()`
+---
+
+`zhmiscellany.macro.is_key_pressed_async(vk_code)`
+
+See if a key is pressed.
 
 #
 

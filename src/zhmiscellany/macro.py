@@ -259,6 +259,15 @@ def type_string(text=None, delay=None, key_hold_time=None, vk_codes=None, combin
                 press_key(vk_code, False, act_start=False, act_end=True, key_hold_time=key_hold_time)
 
 
+def is_key_pressed_async(vk_code):
+    """
+    Async check if a key is currently pressed
+    vk_code: Virtual Key code (e.g., 0x41 for 'A', 0x1B for ESC)
+    Returns: True if pressed, False otherwise
+    """
+    return win32api.GetAsyncKeyState(vk_code) & 0x8000 != 0
+
+
 def scroll(amount, delay=None, post_scroll_delay=None):
     def raw_scroll(amount):
         # Constants for mouse input
