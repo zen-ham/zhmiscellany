@@ -740,5 +740,7 @@ KEY_CODES = {
     'StartMailKey': 180,
     'SelectMedia': 181,
     'StartApplication1': 182,
-    'StartApplication2': 183
+    'StartApplication2': 183,
+    'Equals': 187,
+    'Minus': 189,
 }
