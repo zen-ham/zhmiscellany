@@ -129,12 +129,13 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
                 if not (animation_time and relative):
                     targ = tuple(a + b for a, b in zip(get_mouse_xy(), (cx, cy)))
                     move_mouse(cx, cy, relative=relative)
-                    for i in range(limit):
-                        cur_pos = get_mouse_xy()
-                        if cur_pos != targ:
-                            move_mouse(max(-1, min(1, (targ[0]-cur_pos[0]))), max(-1, min(1, (targ[1]-cur_pos[1]))), relative=relative)
-                        else:
-                            break
+                    if ensure_movement:
+                        for i in range(limit):
+                            cur_pos = get_mouse_xy()
+                            if cur_pos != targ:
+                                move_mouse(max(-1, min(1, (targ[0]-cur_pos[0]))), max(-1, min(1, (targ[1]-cur_pos[1]))), relative=relative)
+                            else:
+                                break
 
     if pre_click_duration:
         if pre_click_wiggle:
