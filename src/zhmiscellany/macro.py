@@ -583,7 +583,13 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
         events.append({'action': 'key_press', 'key': key, 'time': time.time()})
 
     def on_release(key):
-        pass
+        try:
+            print(key.name)
+            if key.name == STOP_KEY:
+                # Stop listeners
+                return False
+        except:
+            pass
         events.append({'action': 'key_release', 'key': key, 'time': time.time()})
 
     print(f"Press '{STOP_KEY}' to stop recording and generate the script.")
