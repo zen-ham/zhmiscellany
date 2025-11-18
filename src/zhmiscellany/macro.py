@@ -28,12 +28,12 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         y = x[1]
         x = x[0]
 
-    def stochastic_round(x):
-        negative = x < 0
+    def stochastic_round(val):
+        negative = val < 0
         if negative:
-            x = x * -1
-        floor = int(x)
-        out = floor + (random.random() < (x - floor))
+            val = val * -1
+        floor = int(val)
+        out = floor + (random.random() < (val - floor))
         if negative:
             out = out * -1
         return out
