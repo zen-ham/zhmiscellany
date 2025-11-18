@@ -173,9 +173,16 @@ def calibrate():
     # calibrate relative movement, required because windows is weird
     original_mouse_point = get_mouse_xy()
     calibration_distance = 128
-    move_mouse(0,0)
-    move_mouse(calibration_distance, calibration_distance, relative=True)
-    moved_pos = get_mouse_xy()
+    moved_pos = (0, 0)
+    lim = 64
+    i = 0
+    while ((not moved_pos[0]) or (not moved_pos[1])) and i < lim:
+        i += 1
+        move_mouse(0,0)
+        move_mouse(calibration_distance, calibration_distance, relative=True)
+        moved_pos = get_mouse_xy()
+    if not i < lim:
+        raise Exception('Relative mouse movement could not be calibrated, maybe you were tabbed into an application that was controlling your mouse?')
     calibration_multiplier_x = calibration_distance/moved_pos[0]
     calibration_multiplier_y = calibration_distance/moved_pos[1]
     calibrated = True
