@@ -29,8 +29,14 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         x = x[0]
 
     def stochastic_round(x):
+        negative = x < 0
+        if negative:
+            x = x * -1
         floor = int(x)
-        return floor + (random.random() < (x - floor))
+        out = floor + (random.random() < (x - floor))
+        if negative:
+            out = out * -1
+        return out
 
     if type(x) == float:
         x = stochastic_round(x)
