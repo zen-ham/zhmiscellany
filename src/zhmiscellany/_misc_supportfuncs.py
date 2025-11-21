@@ -92,114 +92,192 @@ def patch_cpp():
 if WIN32_AVAILABLE:
     patch_cpp()
 
+import ctypes
+import os
+import math
+import sys
+from ctypes import c_int, c_uint, c_long, POINTER, Structure, sizeof, byref, c_ulong, c_void_p
 
-class POINT(Structure):
-    _fields_ = [("x", c_long),
-                ("y", c_long)]
+# --- OS Detection ---
+IS_LINUX = not WIN32_AVAILABLE
 
+# --- Windows Imports & Structures ---
+if WIN32_AVAILABLE:
+    windll = ctypes.windll
 
-class MOUSEINPUT(Structure):
-    _fields_ = [("dx", c_long),
-                ("dy", c_long),
-                ("mouseData", c_uint),
-                ("dwFlags", c_uint),
-                ("time", c_uint),
-                ("dwExtraInfo", POINTER(c_uint))]
-
-
-class INPUT_UNION(ctypes.Union):
-    _fields_ = [("mi", MOUSEINPUT)]
-
-
-class INPUT(Structure):
-    _fields_ = [("type", c_int),
-                ("union", INPUT_UNION)]
+if WIN32_AVAILABLE:
+    class POINT(Structure):
+        _fields_ = [("x", c_long),
+                    ("y", c_long)]
 
 
-# Constants
-MOUSEEVENTF_ABSOLUTE = 0x8000
-MOUSEEVENTF_MOVE = 0x0001
-MOUSEEVENTF_LEFTDOWN = 0x0002
-MOUSEEVENTF_LEFTUP = 0x0004
-MOUSEEVENTF_RIGHTDOWN = 0x0008
-MOUSEEVENTF_RIGHTUP = 0x0010
-MOUSEEVENTF_MIDDLEDOWN = 0x0020
-MOUSEEVENTF_MIDDLEUP = 0x0040
+    class MOUSEINPUT(Structure):
+        _fields_ = [("dx", c_long),
+                    ("dy", c_long),
+                    ("mouseData", c_uint),
+                    ("dwFlags", c_uint),
+                    ("time", c_uint),
+                    ("dwExtraInfo", POINTER(c_uint))]
 
-# Screen metrics
+
+    class INPUT_UNION(ctypes.Union):
+        _fields_ = [("mi", MOUSEINPUT)]
+
+
+    class INPUT(Structure):
+        _fields_ = [("type", c_int),
+                    ("union", INPUT_UNION)]
+
+
+    # Windows Constants
+    MOUSEEVENTF_ABSOLUTE = 0x8000
+    MOUSEEVENTF_MOVE = 0x0001
+    MOUSEEVENTF_LEFTDOWN = 0x0002
+    MOUSEEVENTF_LEFTUP = 0x0004
+    MOUSEEVENTF_RIGHTDOWN = 0x0008
+    MOUSEEVENTF_RIGHTUP = 0x0010
+    MOUSEEVENTF_MIDDLEDOWN = 0x0020
+    MOUSEEVENTF_MIDDLEUP = 0x0040
+
+# --- Linux / X11 Setup ---
+if IS_LINUX:
+    try:
+        # Load X11 and XTest (required for fake inputs)
+        x11 = ctypes.cdll.LoadLibrary("libX11.so.6")
+        xtst = ctypes.cdll.LoadLibrary("libXtst.so.6")
+
+        # Setup Display
+        display = x11.XOpenDisplay(None)
+        root_window = x11.XDefaultRootWindow(display)
+
+    except OSError:
+        print("Error: Could not load X11 or Xtst libraries. Ensure libx11-6 and libxtst6 are installed.")
+        x11 = None
+        xtst = None
+
+
+# --- Screen Metrics ---
 def get_actual_screen_resolution():
     if WIN32_AVAILABLE:
-        hdc = windll.user32.GetDC(0)
-        width = windll.gdi32.GetDeviceCaps(hdc, 118)  # HORZRES
-        height = windll.gdi32.GetDeviceCaps(hdc, 117)  # VERTRES
-        windll.user32.ReleaseDC(0, hdc)
+        if WIN32_AVAILABLE:
+            hdc = windll.user32.GetDC(0)
+            width = windll.gdi32.GetDeviceCaps(hdc, 118)  # HORZRES
+            height = windll.gdi32.GetDeviceCaps(hdc, 117)  # VERTRES
+            windll.user32.ReleaseDC(0, hdc)
+            return width, height
+        return 1920, 1080
+    elif IS_LINUX and x11:
+        screen_num = 0
+        width = x11.XDisplayWidth(display, screen_num)
+        height = x11.XDisplayHeight(display, screen_num)
         return width, height
     else:
-        print("get_actual_screen_resolution() only supports Windows! Returning (1920, 1080)")
         return 1920, 1080
 
-SCREEN_WIDTH, SCREEN_HEIGHT = (1920, 1080) if not WIN32_AVAILABLE else get_actual_screen_resolution()
 
+SCREEN_WIDTH, SCREEN_HEIGHT = get_actual_screen_resolution()
+
+# --- Globals ---
 calibrated = False
 calipass = False
+calibration_multiplier_x = 1.0
+calibration_multiplier_y = 1.0
+
+
+# --- Functions ---
 
 def move_mouse(x: int, y: int, relative=False):
-    if not WIN32_AVAILABLE:
-        print("move_mouse() only supports Windows! Functionality disabled")
-        return
-    
-    if not relative:
-        # Convert coordinates to normalized coordinates (0-65535)
-        normalized_x = int(x * (65535 / SCREEN_WIDTH))
-        normalized_y = int(y * (65535 / SCREEN_HEIGHT))
-    else:
-        calibrate()
-        if calibrated:
-            normalized_x = math.ceil(x * calibration_multiplier_x)
-            normalized_y = math.ceil(y * calibration_multiplier_y)
+    if WIN32_AVAILABLE:
+        if not relative:
+            # Convert coordinates to normalized coordinates (0-65535)
+            normalized_x = int(x * (65535 / SCREEN_WIDTH))
+            normalized_y = int(y * (65535 / SCREEN_HEIGHT))
+            dwflags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE
         else:
-            normalized_x = x
-            normalized_y = y
+            calibrate()
+            if calibrated:
+                normalized_x = math.ceil(x * calibration_multiplier_x)
+                normalized_y = math.ceil(y * calibration_multiplier_y)
+            else:
+                normalized_x = x
+                normalized_y = y
+            dwflags = MOUSEEVENTF_MOVE
 
-    if not relative:
-        dwflags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE
-    else:
-        dwflags = MOUSEEVENTF_MOVE
-
-    input_struct = INPUT(
-        type=0,  # INPUT_MOUSE
-        union=INPUT_UNION(
-            mi=MOUSEINPUT(
-                dx=normalized_x,
-                dy=normalized_y,
-                mouseData=0,
-                dwFlags=dwflags,
-                time=0,
-                dwExtraInfo=None
+        input_struct = INPUT(
+            type=0,
+            union=INPUT_UNION(
+                mi=MOUSEINPUT(
+                    dx=normalized_x,
+                    dy=normalized_y,
+                    mouseData=0,
+                    dwFlags=dwflags,
+                    time=0,
+                    dwExtraInfo=None
+                )
             )
         )
-    )
+        windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
 
-    windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
+    elif IS_LINUX and x11:
+        # XWarpPointer(display, src_w, dest_w, src_x, src_y, src_width, src_height, dest_x, dest_y)
+        if relative:
+            # Move relative to current position (None as dest_window usually means relative move,
+            # but standard practice is None src, None dest = move relative to current position)
+            x11.XWarpPointer(display, None, None, 0, 0, 0, 0, int(x), int(y))
+        else:
+            # Absolute move relative to Root Window
+            x11.XWarpPointer(display, None, root_window, 0, 0, 0, 0, int(x), int(y))
+
+        x11.XFlush(display)
+
 
 def get_mouse_xy():
     if WIN32_AVAILABLE:
-        x, y = win32api.GetCursorPos()
-        return x, y
+        if WIN32_AVAILABLE:
+            return win32api.GetCursorPos()
+        return 0, 0
+    elif IS_LINUX and x11:
+        root_id = c_ulong()
+        child_id = c_ulong()
+        root_x = c_int()
+        root_y = c_int()
+        win_x = c_int()
+        win_y = c_int()
+        mask = c_uint()
+
+        # XQueryPointer returns True if pointer is on the same screen
+        result = x11.XQueryPointer(display, root_window,
+                                   byref(root_id), byref(child_id),
+                                   byref(root_x), byref(root_y),
+                                   byref(win_x), byref(win_y),
+                                   byref(mask))
+        if result:
+            return root_x.value, root_y.value
+        return 0, 0
     else:
-        print("get_mouse_xy() only supports Windows! Returning (0, 0)")
         return 0, 0
 
+
 def calibrate():
-    if not WIN32_AVAILABLE:
-        print("calibrate() only supports Windows! Functionality disabled")
-        return
-    
     global calibration_multiplier_x, calibration_multiplier_y, calibrated, calipass
+
+    # Linux (X11) relative movement is usually 1:1 pixel accurate via XWarpPointer
+    # so we skip the calibration routine.
+    if IS_LINUX:
+        calibrated = True
+        calipass = True
+        calibration_multiplier_x = 1.0
+        calibration_multiplier_y = 1.0
+        return
+
+    if not WIN32_AVAILABLE:
+        return
+
     if calibrated:
         return
     if calipass:
         return
+
     calipass = True
     # calibrate relative movement, required because windows is weird
     original_mouse_point = get_mouse_xy()
@@ -209,76 +287,74 @@ def calibrate():
     i = 0
     while ((not moved_pos[0]) or (not moved_pos[1])) and i < lim:
         i += 1
-        move_mouse(0,0)
+        move_mouse(0, 0)
         move_mouse(calibration_distance, calibration_distance, relative=True)
         moved_pos = get_mouse_xy()
     if not i < lim:
-        raise Exception('Relative mouse movement could not be calibrated, maybe you were tabbed into an application that was controlling your mouse?')
-    calibration_multiplier_x = calibration_distance/moved_pos[0]
-    calibration_multiplier_y = calibration_distance/moved_pos[1]
+        raise Exception('Relative mouse movement could not be calibrated.')
+
+    # Avoid division by zero
+    if moved_pos[0] != 0:
+        calibration_multiplier_x = calibration_distance / moved_pos[0]
+    if moved_pos[1] != 0:
+        calibration_multiplier_y = calibration_distance / moved_pos[1]
+
     calibrated = True
-    move_mouse(original_mouse_point[0]+1, original_mouse_point[1]+1)
+    move_mouse(original_mouse_point[0], original_mouse_point[1])
 
 
 def mouse_down(button: int):
     """Press mouse button down. button: 1=left, 2=right, 3=middle"""
-    if not WIN32_AVAILABLE:
-        print("mouse_down() only supports Windows! Functionality disabled")
-        return
-    
     if button not in [1, 2, 3]:
         raise ValueError("Button must be 1 (left), 2 (right), or 3 (middle)")
 
-    flags = {
-        1: MOUSEEVENTF_LEFTDOWN,
-        2: MOUSEEVENTF_RIGHTDOWN,
-        3: MOUSEEVENTF_MIDDLEDOWN
-    }
-
-    input_struct = INPUT(
-        type=0,  # INPUT_MOUSE
-        union=INPUT_UNION(
-            mi=MOUSEINPUT(
-                dx=0,
-                dy=0,
-                mouseData=0,
-                dwFlags=flags[button],
-                time=0,
-                dwExtraInfo=None
+    if WIN32_AVAILABLE:
+        flags = {
+            1: MOUSEEVENTF_LEFTDOWN,
+            2: MOUSEEVENTF_RIGHTDOWN,
+            3: MOUSEEVENTF_MIDDLEDOWN
+        }
+        input_struct = INPUT(
+            type=0,
+            union=INPUT_UNION(
+                mi=MOUSEINPUT(dx=0, dy=0, mouseData=0, dwFlags=flags[button], time=0, dwExtraInfo=None)
             )
         )
-    )
+        windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
 
-    windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
+    elif IS_LINUX and xtst:
+        # Linux X11 Button Mapping: 1=Left, 2=Middle, 3=Right
+        # Input Mapping: 1=Left, 2=Right, 3=Middle
+        linux_button_map = {1: 1, 2: 3, 3: 2}
+
+        # XTestFakeButtonEvent(display, button, is_press, delay)
+        xtst.XTestFakeButtonEvent(display, linux_button_map[button], True, 0)
+        x11.XFlush(display)
 
 
 def mouse_up(button: int):
     """Release mouse button. button: 1=left, 2=right, 3=middle"""
-    if not WIN32_AVAILABLE:
-        print("mouse_up() only supports Windows! Functionality disabled")
-        return
-    
     if button not in [1, 2, 3]:
         raise ValueError("Button must be 1 (left), 2 (right), or 3 (middle)")
 
-    flags = {
-        1: MOUSEEVENTF_LEFTUP,
-        2: MOUSEEVENTF_RIGHTUP,
-        3: MOUSEEVENTF_MIDDLEUP
-    }
-
-    input_struct = INPUT(
-        type=0,  # INPUT_MOUSE
-        union=INPUT_UNION(
-            mi=MOUSEINPUT(
-                dx=0,
-                dy=0,
-                mouseData=0,
-                dwFlags=flags[button],
-                time=0,
-                dwExtraInfo=None
+    if WIN32_AVAILABLE:
+        flags = {
+            1: MOUSEEVENTF_LEFTUP,
+            2: MOUSEEVENTF_RIGHTUP,
+            3: MOUSEEVENTF_MIDDLEUP
+        }
+        input_struct = INPUT(
+            type=0,
+            union=INPUT_UNION(
+                mi=MOUSEINPUT(dx=0, dy=0, mouseData=0, dwFlags=flags[button], time=0, dwExtraInfo=None)
             )
         )
-    )
+        windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
 
-    windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
+    elif IS_LINUX and xtst:
+        # Linux X11 Button Mapping: 1=Left, 2=Middle, 3=Right
+        linux_button_map = {1: 1, 2: 3, 3: 2}
+
+        # XTestFakeButtonEvent(display, button, is_press, delay)
+        xtst.XTestFakeButtonEvent(display, linux_button_map[button], False, 0)
+        x11.XFlush(display)

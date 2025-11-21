@@ -14,10 +14,8 @@ if sys.platform == "win32":
         RAY_AVAILABLE = True
     except ImportError:
         RAY_AVAILABLE = False
-        print("Warning: Ray not available - multiprocessing functionality disabled")
 else:
     RAY_AVAILABLE = False
-    print("Ray is only supported on Windows - multiprocessing functionality disabled")
 
 
 def clear_logs():
