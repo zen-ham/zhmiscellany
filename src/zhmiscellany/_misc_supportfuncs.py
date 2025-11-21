@@ -92,19 +92,19 @@ def patch_cpp():
 if WIN32_AVAILABLE:
     patch_cpp()
 
-import ctypes
-import os
-import math
-import sys
-from ctypes import c_int, c_uint, c_long, POINTER, Structure, sizeof, byref, c_ulong, c_void_p
+# Linux specific imports
+if not WIN32_AVAILABLE:
+    try:
+        import pyautogui
 
-# --- OS Detection ---
-IS_LINUX = not WIN32_AVAILABLE
+        # Optimize PyAutoGUI for speed to match ctypes performance
+        pyautogui.FAILSAFE = False
+        pyautogui.PAUSE = 0
+        pyautogui.MINIMUM_DURATION = 0
+    except ImportError:
+        raise ImportError("Linux support requires pyautogui. Install it via: pip install pyautogui")
 
-# --- Windows Imports & Structures ---
-if WIN32_AVAILABLE:
-    windll = ctypes.windll
-
+# Windows specific imports and Structs
 if WIN32_AVAILABLE:
     class POINT(Structure):
         _fields_ = [("x", c_long),
@@ -129,7 +129,7 @@ if WIN32_AVAILABLE:
                     ("union", INPUT_UNION)]
 
 
-    # Windows Constants
+    # Constants
     MOUSEEVENTF_ABSOLUTE = 0x8000
     MOUSEEVENTF_MOVE = 0x0001
     MOUSEEVENTF_LEFTDOWN = 0x0002
@@ -139,167 +139,125 @@ if WIN32_AVAILABLE:
     MOUSEEVENTF_MIDDLEDOWN = 0x0020
     MOUSEEVENTF_MIDDLEUP = 0x0040
 
-# --- Linux / X11 Setup ---
-if IS_LINUX:
-    try:
-        # Load X11 and XTest (required for fake inputs)
-        x11 = ctypes.cdll.LoadLibrary("libX11.so.6")
-        xtst = ctypes.cdll.LoadLibrary("libXtst.so.6")
 
-        # Setup Display
-        display = x11.XOpenDisplay(None)
-        root_window = x11.XDefaultRootWindow(display)
-
-    except OSError:
-        print("Error: Could not load X11 or Xtst libraries. Ensure libx11-6 and libxtst6 are installed.")
-        x11 = None
-        xtst = None
-
-
-# --- Screen Metrics ---
 def get_actual_screen_resolution():
     if WIN32_AVAILABLE:
-        if WIN32_AVAILABLE:
-            hdc = windll.user32.GetDC(0)
-            width = windll.gdi32.GetDeviceCaps(hdc, 118)  # HORZRES
-            height = windll.gdi32.GetDeviceCaps(hdc, 117)  # VERTRES
-            windll.user32.ReleaseDC(0, hdc)
-            return width, height
-        return 1920, 1080
-    elif IS_LINUX and x11:
-        screen_num = 0
-        width = x11.XDisplayWidth(display, screen_num)
-        height = x11.XDisplayHeight(display, screen_num)
+        hdc = windll.user32.GetDC(0)
+        width = windll.gdi32.GetDeviceCaps(hdc, 118)  # HORZRES
+        height = windll.gdi32.GetDeviceCaps(hdc, 117)  # VERTRES
+        windll.user32.ReleaseDC(0, hdc)
         return width, height
     else:
-        return 1920, 1080
+        # Linux implementation using pyautogui
+        try:
+            return pyautogui.size()
+        except Exception:
+            print("Could not determine screen resolution on Linux, defaulting to 1920x1080")
+            return 1920, 1080
 
 
+# Initialize Globals
 SCREEN_WIDTH, SCREEN_HEIGHT = get_actual_screen_resolution()
-
-# --- Globals ---
 calibrated = False
 calipass = False
 calibration_multiplier_x = 1.0
 calibration_multiplier_y = 1.0
 
 
-# --- Functions ---
-
 def move_mouse(x: int, y: int, relative=False):
-    if WIN32_AVAILABLE:
-        if not relative:
-            # Convert coordinates to normalized coordinates (0-65535)
-            normalized_x = int(x * (65535 / SCREEN_WIDTH))
-            normalized_y = int(y * (65535 / SCREEN_HEIGHT))
-            dwflags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE
+    # --- LINUX IMPLEMENTATION ---
+    if not WIN32_AVAILABLE:
+        # PyAutoGUI handles relative/absolute logic natively
+        if relative:
+            pyautogui.move(x, y)
         else:
-            calibrate()
-            if calibrated:
-                normalized_x = math.ceil(x * calibration_multiplier_x)
-                normalized_y = math.ceil(y * calibration_multiplier_y)
-            else:
-                normalized_x = x
-                normalized_y = y
-            dwflags = MOUSEEVENTF_MOVE
+            pyautogui.moveTo(x, y)
+        return
 
-        input_struct = INPUT(
-            type=0,
-            union=INPUT_UNION(
-                mi=MOUSEINPUT(
-                    dx=normalized_x,
-                    dy=normalized_y,
-                    mouseData=0,
-                    dwFlags=dwflags,
-                    time=0,
-                    dwExtraInfo=None
-                )
+    # --- WINDOWS IMPLEMENTATION ---
+    if not relative:
+        # Convert coordinates to normalized coordinates (0-65535)
+        normalized_x = int(x * (65535 / SCREEN_WIDTH))
+        normalized_y = int(y * (65535 / SCREEN_HEIGHT))
+    else:
+        calibrate()
+        if calibrated:
+            normalized_x = math.ceil(x * calibration_multiplier_x)
+            normalized_y = math.ceil(y * calibration_multiplier_y)
+        else:
+            normalized_x = x
+            normalized_y = y
+
+    if not relative:
+        dwflags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE
+    else:
+        dwflags = MOUSEEVENTF_MOVE
+
+    input_struct = INPUT(
+        type=0,  # INPUT_MOUSE
+        union=INPUT_UNION(
+            mi=MOUSEINPUT(
+                dx=normalized_x,
+                dy=normalized_y,
+                mouseData=0,
+                dwFlags=dwflags,
+                time=0,
+                dwExtraInfo=None
             )
         )
-        windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
+    )
 
-    elif IS_LINUX and x11:
-        # XWarpPointer(display, src_w, dest_w, src_x, src_y, src_width, src_height, dest_x, dest_y)
-        if relative:
-            # Move relative to current position (None as dest_window usually means relative move,
-            # but standard practice is None src, None dest = move relative to current position)
-            x11.XWarpPointer(display, None, None, 0, 0, 0, 0, int(x), int(y))
-        else:
-            # Absolute move relative to Root Window
-            x11.XWarpPointer(display, None, root_window, 0, 0, 0, 0, int(x), int(y))
-
-        x11.XFlush(display)
+    windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
 
 
 def get_mouse_xy():
-    if WIN32_AVAILABLE:
-        if WIN32_AVAILABLE:
-            return win32api.GetCursorPos()
-        return 0, 0
-    elif IS_LINUX and x11:
-        root_id = c_ulong()
-        child_id = c_ulong()
-        root_x = c_int()
-        root_y = c_int()
-        win_x = c_int()
-        win_y = c_int()
-        mask = c_uint()
+    # --- LINUX IMPLEMENTATION ---
+    if not WIN32_AVAILABLE:
+        return pyautogui.position()
 
-        # XQueryPointer returns True if pointer is on the same screen
-        result = x11.XQueryPointer(display, root_window,
-                                   byref(root_id), byref(child_id),
-                                   byref(root_x), byref(root_y),
-                                   byref(win_x), byref(win_y),
-                                   byref(mask))
-        if result:
-            return root_x.value, root_y.value
-        return 0, 0
-    else:
-        return 0, 0
+    # --- WINDOWS IMPLEMENTATION ---
+    x, y = win32api.GetCursorPos()
+    return x, y
 
 
 def calibrate():
-    global calibration_multiplier_x, calibration_multiplier_y, calibrated, calipass
-
-    # Linux (X11) relative movement is usually 1:1 pixel accurate via XWarpPointer
-    # so we skip the calibration routine.
-    if IS_LINUX:
-        calibrated = True
-        calipass = True
-        calibration_multiplier_x = 1.0
-        calibration_multiplier_y = 1.0
-        return
-
+    """
+    Windows-specific calibration for relative movement scaling.
+    On Linux, libraries handle this abstraction automatically, so we skip it.
+    """
     if not WIN32_AVAILABLE:
         return
 
+    global calibration_multiplier_x, calibration_multiplier_y, calibrated, calipass
     if calibrated:
         return
     if calipass:
         return
-
     calipass = True
+
     # calibrate relative movement, required because windows is weird
     original_mouse_point = get_mouse_xy()
     calibration_distance = 128
     moved_pos = (0, 0)
     lim = 64
     i = 0
+
+    # Note: logic below calls move_mouse, which calls calibrate,
+    # but calipass=True prevents recursion loop
     while ((not moved_pos[0]) or (not moved_pos[1])) and i < lim:
         i += 1
-        move_mouse(0, 0)
+        move_mouse(0, 0)  # Reset to 0,0
         move_mouse(calibration_distance, calibration_distance, relative=True)
         moved_pos = get_mouse_xy()
+
     if not i < lim:
         raise Exception('Relative mouse movement could not be calibrated.')
 
-    # Avoid division by zero
-    if moved_pos[0] != 0:
-        calibration_multiplier_x = calibration_distance / moved_pos[0]
-    if moved_pos[1] != 0:
-        calibration_multiplier_y = calibration_distance / moved_pos[1]
-
+    calibration_multiplier_x = calibration_distance / moved_pos[0]
+    calibration_multiplier_y = calibration_distance / moved_pos[1]
     calibrated = True
+
+    # Return mouse to original position
     move_mouse(original_mouse_point[0], original_mouse_point[1])
 
 
@@ -308,28 +266,34 @@ def mouse_down(button: int):
     if button not in [1, 2, 3]:
         raise ValueError("Button must be 1 (left), 2 (right), or 3 (middle)")
 
-    if WIN32_AVAILABLE:
-        flags = {
-            1: MOUSEEVENTF_LEFTDOWN,
-            2: MOUSEEVENTF_RIGHTDOWN,
-            3: MOUSEEVENTF_MIDDLEDOWN
-        }
-        input_struct = INPUT(
-            type=0,
-            union=INPUT_UNION(
-                mi=MOUSEINPUT(dx=0, dy=0, mouseData=0, dwFlags=flags[button], time=0, dwExtraInfo=None)
+    # --- LINUX IMPLEMENTATION ---
+    if not WIN32_AVAILABLE:
+        btn_map = {1: 'left', 2: 'right', 3: 'middle'}
+        pyautogui.mouseDown(button=btn_map[button])
+        return
+
+    # --- WINDOWS IMPLEMENTATION ---
+    flags = {
+        1: MOUSEEVENTF_LEFTDOWN,
+        2: MOUSEEVENTF_RIGHTDOWN,
+        3: MOUSEEVENTF_MIDDLEDOWN
+    }
+
+    input_struct = INPUT(
+        type=0,  # INPUT_MOUSE
+        union=INPUT_UNION(
+            mi=MOUSEINPUT(
+                dx=0,
+                dy=0,
+                mouseData=0,
+                dwFlags=flags[button],
+                time=0,
+                dwExtraInfo=None
             )
         )
-        windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
+    )
 
-    elif IS_LINUX and xtst:
-        # Linux X11 Button Mapping: 1=Left, 2=Middle, 3=Right
-        # Input Mapping: 1=Left, 2=Right, 3=Middle
-        linux_button_map = {1: 1, 2: 3, 3: 2}
-
-        # XTestFakeButtonEvent(display, button, is_press, delay)
-        xtst.XTestFakeButtonEvent(display, linux_button_map[button], True, 0)
-        x11.XFlush(display)
+    windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
 
 
 def mouse_up(button: int):
@@ -337,24 +301,31 @@ def mouse_up(button: int):
     if button not in [1, 2, 3]:
         raise ValueError("Button must be 1 (left), 2 (right), or 3 (middle)")
 
-    if WIN32_AVAILABLE:
-        flags = {
-            1: MOUSEEVENTF_LEFTUP,
-            2: MOUSEEVENTF_RIGHTUP,
-            3: MOUSEEVENTF_MIDDLEUP
-        }
-        input_struct = INPUT(
-            type=0,
-            union=INPUT_UNION(
-                mi=MOUSEINPUT(dx=0, dy=0, mouseData=0, dwFlags=flags[button], time=0, dwExtraInfo=None)
+    # --- LINUX IMPLEMENTATION ---
+    if not WIN32_AVAILABLE:
+        btn_map = {1: 'left', 2: 'right', 3: 'middle'}
+        pyautogui.mouseUp(button=btn_map[button])
+        return
+
+    # --- WINDOWS IMPLEMENTATION ---
+    flags = {
+        1: MOUSEEVENTF_LEFTUP,
+        2: MOUSEEVENTF_RIGHTUP,
+        3: MOUSEEVENTF_MIDDLEUP
+    }
+
+    input_struct = INPUT(
+        type=0,  # INPUT_MOUSE
+        union=INPUT_UNION(
+            mi=MOUSEINPUT(
+                dx=0,
+                dy=0,
+                mouseData=0,
+                dwFlags=flags[button],
+                time=0,
+                dwExtraInfo=None
             )
         )
-        windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
+    )
 
-    elif IS_LINUX and xtst:
-        # Linux X11 Button Mapping: 1=Left, 2=Middle, 3=Right
-        linux_button_map = {1: 1, 2: 3, 3: 2}
-
-        # XTestFakeButtonEvent(display, button, is_press, delay)
-        xtst.XTestFakeButtonEvent(display, linux_button_map[button], False, 0)
-        x11.XFlush(display)
+    windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
