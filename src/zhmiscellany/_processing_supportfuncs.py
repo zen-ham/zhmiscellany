@@ -7,6 +7,18 @@ import sys
 import io
 from unittest.mock import patch
 
+# Ray availability check
+if sys.platform == "win32":
+    try:
+        import ray
+        RAY_AVAILABLE = True
+    except ImportError:
+        RAY_AVAILABLE = False
+        print("Warning: Ray not available - multiprocessing functionality disabled")
+else:
+    RAY_AVAILABLE = False
+    print("Ray is only supported on Windows - multiprocessing functionality disabled")
+
 
 def clear_logs():
     ray_dir = tempfile.gettempdir()
@@ -59,6 +71,10 @@ def safe_open_log(path, unbuffered=False, **kwargs):
 
 
 def ray_init(auto=False):
+    if not RAY_AVAILABLE:
+        print("ray_init() only supports Windows! Functionality disabled")
+        return
+    
     if auto:
         if 'in_ray_matrix' in os.environ:
             return
@@ -184,6 +200,10 @@ class ThreadWithResult(threading.Thread):
 
 
 def batch_multiprocess(targets_and_args, max_retries=0, expect_crashes=False, disable_warning=False, flatten=False):
+    if not RAY_AVAILABLE:
+        print("batch_multiprocess() only supports Windows! Returning empty list")
+        return []
+    
     if _ray_state == 'disabled':
         if not disable_warning:
             logging.warning("zhmiscellany didn't detect that you were going to be using multiprocessing functions, and ray was not initialized preemptively.\n\
@@ -231,6 +251,9 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
         return results
 
 def multiprocess(target, args=(), max_retries=0, disable_warning=False):
+    if not RAY_AVAILABLE:
+        print("multiprocess() only supports Windows! Returning None")
+        return None
     return batch_multiprocess([(target, args)], disable_warning=disable_warning, max_retries=max_retries)[0]
 
 
@@ -257,6 +280,10 @@ class RayActorWrapper:
 
 
 def synchronous_class_multiprocess(cls, *args, disable_warning=False, **kwargs):
+    if not RAY_AVAILABLE:
+        print("synchronous_class_multiprocess() only supports Windows! Returning None")
+        return None
+    
     if _ray_state == 'disabled':
         if not disable_warning:
             logging.warning("zhmiscellany didn't detect that you were going to be using multiprocessing functions, and ray was not initialized preemptively.\n\

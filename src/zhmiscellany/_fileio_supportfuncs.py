@@ -1,4 +1,8 @@
+import sys
+
 def is_junction(entry):
+    if sys.platform != "win32":
+        return False
     try:
         st = entry.stat(follow_symlinks=False)
         # On Windows, st_file_attributes is available.

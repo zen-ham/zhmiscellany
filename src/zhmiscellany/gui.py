@@ -1,8 +1,19 @@
 import tkinter as tk
 import threading
-import ctypes
-from ctypes import wintypes
-import win32gui
+import sys
+
+# Windows-specific imports
+if sys.platform == "win32":
+    try:
+        import ctypes
+        from ctypes import wintypes
+        import win32gui
+        WIN32_AVAILABLE = True
+    except ImportError:
+        WIN32_AVAILABLE = False
+        print("Warning: Windows modules not available - GUI functionality disabled")
+else:
+    WIN32_AVAILABLE = False
 
 
 class StateIndicator:
@@ -65,6 +76,10 @@ class StateIndicator:
 
     def _make_click_through(self):
         """Make the window click-through using Windows API"""
+        if not WIN32_AVAILABLE:
+            print("Click-through only supported on Windows")
+            return
+            
         try:
             # Get the window handle
             hwnd = ctypes.windll.user32.GetParent(self._root.winfo_id())
@@ -126,6 +141,9 @@ class StateIndicator:
 
     def _update_layered_attributes(self):
         """Update the layered window attributes for proper transparency with click-through"""
+        if not WIN32_AVAILABLE:
+            return
+            
         try:
             hwnd = ctypes.windll.user32.GetParent(self._root.winfo_id())
             if hwnd == 0:
@@ -179,50 +197,64 @@ class StateIndicator:
             if self._root and self._root.winfo_exists():
                 self._root.after(0, self._update_size_internal)
 
-import ctypes
-from ctypes import wintypes
-user32 = ctypes.windll.user32
+if WIN32_AVAILABLE:
+    user32 = ctypes.windll.user32
 
-def get_focused_window():
-    """Return the window that currently has the keyboard focus."""
-    return user32.GetForegroundWindow()
+    def get_focused_window():
+        """Return the window that currently has the keyboard focus."""
+        return user32.GetForegroundWindow()
 
-def get_window_rect(hwnd):
-    """Return the bounding rectangle of a window."""
-    HWND = wintypes.HWND
-    RECT = wintypes.RECT
-    rect = RECT()
-    user32.GetWindowRect(hwnd, ctypes.byref(rect))
-    return rect
+    def get_window_rect(hwnd):
+        """Return the bounding rectangle of a window."""
+        HWND = wintypes.HWND
+        RECT = wintypes.RECT
+        rect = RECT()
+        user32.GetWindowRect(hwnd, ctypes.byref(rect))
+        return rect
 
-def set_window_pos(hwnd, x: int, y: int, w: int, h: int):
-    """Move (and optionally resize) a window."""
-    # 0x0040 == SWP_NOACTIVATE | 0x0020 == SWP_SHOWWINDOW
-    user32.SetWindowPos(hwnd, 0, x, y, w, h, 0x0040 | 0x0020)
+    def set_window_pos(hwnd, x: int, y: int, w: int, h: int):
+        """Move (and optionally resize) a window."""
+        # 0x0040 == SWP_NOACTIVATE | 0x0020 == SWP_SHOWWINDOW
+        user32.SetWindowPos(hwnd, 0, x, y, w, h, 0x0040 | 0x0020)
 
 
-def find_window_by_title_fuzzy(title_query, threshold=70):
-    from fuzzywuzzy import process
-    from fuzzywuzzy import fuzz
-    def enum_windows_callback(hwnd, windows):
-        if win32gui.IsWindowVisible(hwnd):
-            window_title = win32gui.GetWindowText(hwnd)
-            if window_title:
-                windows.append((hwnd, window_title))
-        return True
+    def find_window_by_title_fuzzy(title_query, threshold=70):
+        from fuzzywuzzy import process
+        from fuzzywuzzy import fuzz
+        def enum_windows_callback(hwnd, windows):
+            if win32gui.IsWindowVisible(hwnd):
+                window_title = win32gui.GetWindowText(hwnd)
+                if window_title:
+                    windows.append((hwnd, window_title))
+            return True
 
-    windows = []
-    win32gui.EnumWindows(enum_windows_callback, windows)
+        windows = []
+        win32gui.EnumWindows(enum_windows_callback, windows)
 
-    if not windows:
+        if not windows:
+            return None
+
+        titles = [title for hwnd, title in windows]
+        best_match = process.extractOne(title_query, titles, scorer=fuzz.token_set_ratio)
+
+        if best_match[1] >= threshold:
+            matched_title = best_match[0]
+            for hwnd, title in windows:
+                if title == matched_title:
+                    return hwnd
+        return None
+else:
+    def get_focused_window():
+        print("get_focused_window() only supports Windows! Returning None")
         return None
 
-    titles = [title for hwnd, title in windows]
-    best_match = process.extractOne(title_query, titles, scorer=fuzz.token_set_ratio)
+    def get_window_rect(hwnd):
+        print("get_window_rect() only supports Windows! Returning None")
+        return None
 
-    if best_match[1] >= threshold:
-        matched_title = best_match[0]
-        for hwnd, title in windows:
-            if title == matched_title:
-                return hwnd
-    return None
+    def set_window_pos(hwnd, x: int, y: int, w: int, h: int):
+        print("set_window_pos() only supports Windows! Functionality disabled")
+
+    def find_window_by_title_fuzzy(title_query, threshold=70):
+        print("find_window_by_title_fuzzy() only supports Windows! Returning None")
+        return None

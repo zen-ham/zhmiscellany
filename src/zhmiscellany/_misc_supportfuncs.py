@@ -1,7 +1,19 @@
-import threading, os, signal, time, sys, shutil, ctypes
+import threading, os, signal, time, sys, shutil, ctypes, math
 from ctypes import Structure, c_long, c_uint, c_int, POINTER, sizeof
 import zhmiscellany.fileio
-import win32api, math
+import sys
+
+# Windows-specific imports
+if sys.platform == "win32":
+    try:
+        import win32api
+        from ctypes import windll
+        WIN32_AVAILABLE = True
+    except ImportError:
+        WIN32_AVAILABLE = False
+        print("Warning: Windows modules not available - Windows functionality disabled")
+else:
+    WIN32_AVAILABLE = False
 
 
 _misc_action = 0
@@ -113,18 +125,26 @@ MOUSEEVENTF_MIDDLEUP = 0x0040
 
 # Screen metrics
 def get_actual_screen_resolution():
-    hdc = ctypes.windll.user32.GetDC(0)
-    width = ctypes.windll.gdi32.GetDeviceCaps(hdc, 118)  # HORZRES
-    height = ctypes.windll.gdi32.GetDeviceCaps(hdc, 117)  # VERTRES
-    ctypes.windll.user32.ReleaseDC(0, hdc)
-    return width, height
+    if WIN32_AVAILABLE:
+        hdc = windll.user32.GetDC(0)
+        width = windll.gdi32.GetDeviceCaps(hdc, 118)  # HORZRES
+        height = windll.gdi32.GetDeviceCaps(hdc, 117)  # VERTRES
+        windll.user32.ReleaseDC(0, hdc)
+        return width, height
+    else:
+        print("get_actual_screen_resolution() only supports Windows! Returning (1920, 1080)")
+        return 1920, 1080
 
-SCREEN_WIDTH, SCREEN_HEIGHT = get_actual_screen_resolution()
+SCREEN_WIDTH, SCREEN_HEIGHT = (1920, 1080) if not WIN32_AVAILABLE else get_actual_screen_resolution()
 
 calibrated = False
 calipass = False
 
 def move_mouse(x: int, y: int, relative=False):
+    if not WIN32_AVAILABLE:
+        print("move_mouse() only supports Windows! Functionality disabled")
+        return
+    
     if not relative:
         # Convert coordinates to normalized coordinates (0-65535)
         normalized_x = int(x * (65535 / SCREEN_WIDTH))
@@ -157,13 +177,21 @@ def move_mouse(x: int, y: int, relative=False):
         )
     )
 
-    ctypes.windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
+    windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
 
 def get_mouse_xy():
-    x, y = win32api.GetCursorPos()
-    return x, y
+    if WIN32_AVAILABLE:
+        x, y = win32api.GetCursorPos()
+        return x, y
+    else:
+        print("get_mouse_xy() only supports Windows! Returning (0, 0)")
+        return 0, 0
 
 def calibrate():
+    if not WIN32_AVAILABLE:
+        print("calibrate() only supports Windows! Functionality disabled")
+        return
+    
     global calibration_multiplier_x, calibration_multiplier_y, calibrated, calipass
     if calibrated:
         return
@@ -191,6 +219,10 @@ def calibrate():
 
 def mouse_down(button: int):
     """Press mouse button down. button: 1=left, 2=right, 3=middle"""
+    if not WIN32_AVAILABLE:
+        print("mouse_down() only supports Windows! Functionality disabled")
+        return
+    
     if button not in [1, 2, 3]:
         raise ValueError("Button must be 1 (left), 2 (right), or 3 (middle)")
 
@@ -214,11 +246,15 @@ def mouse_down(button: int):
         )
     )
 
-    ctypes.windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
+    windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
 
 
 def mouse_up(button: int):
     """Release mouse button. button: 1=left, 2=right, 3=middle"""
+    if not WIN32_AVAILABLE:
+        print("mouse_up() only supports Windows! Functionality disabled")
+        return
+    
     if button not in [1, 2, 3]:
         raise ValueError("Button must be 1 (left), 2 (right), or 3 (middle)")
 
@@ -242,4 +278,4 @@ def mouse_up(button: int):
         )
     )
 
-    ctypes.windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
+    windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))

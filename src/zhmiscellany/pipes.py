@@ -1,14 +1,25 @@
 import threading
 import queue
 import time
-
-import win32pipe
-import win32file
+import sys
 import zhmiscellany.string
+
+WIN32_AVAILABLE = False
+if sys.platform == "win32":
+    try:
+        import win32pipe
+        import win32file
+        WIN32_AVAILABLE = True
+    except ImportError:
+        print("Warning: pywin32 not available, Windows pipe features disabled")
 
 
 class PipeTransmitter:
     def __init__(self, pipe_name, close_pipes=False):
+        if not WIN32_AVAILABLE:
+            print("PipeTransmitter only supports Windows!")
+            return
+            
         self.pipe_name = r'\\.\pipe'+'\\'+pipe_name
         self.close_pipes = close_pipes
         self.send_queue = queue.Queue()
@@ -18,6 +29,9 @@ class PipeTransmitter:
         self.send_thread.start()
 
     def send_data_thread(self):
+        if not WIN32_AVAILABLE:
+            return
+            
         pipe_handle = win32pipe.CreateNamedPipe(
             self.pipe_name,
             win32pipe.PIPE_ACCESS_OUTBOUND,
@@ -43,6 +57,10 @@ class PipeTransmitter:
 
 class PipeReceiver:
     def __init__(self, pipe_name):
+        if not WIN32_AVAILABLE:
+            print("PipeReceiver only supports Windows!")
+            return
+            
         self.pipe_name = r'\\.\pipe'+'\\'+pipe_name
         self.receive_queue = queue.Queue()
         self.callback_function = None
@@ -52,6 +70,9 @@ class PipeReceiver:
         self.receive_thread.start()
 
     def receive_data_thread(self):
+        if not WIN32_AVAILABLE:
+            return
+            
         pipe_handle = win32file.CreateFile(
             self.pipe_name,
             win32file.GENERIC_READ,
@@ -79,6 +100,10 @@ class PipeReceiver:
 
 
 def raw_receive_data(pipe_name):
+    if not WIN32_AVAILABLE:
+        print("raw_receive_data only supports Windows! Returning None")
+        return None
+        
     try:
         pipe_name = r'\\.\pipe' + '\\' + pipe_name
         pipe_handle = win32file.CreateFile(
@@ -96,6 +121,10 @@ def raw_receive_data(pipe_name):
 
 
 def raw_send_data(data, pipe_name):
+    if not WIN32_AVAILABLE:
+        print("raw_send_data only supports Windows!")
+        return
+        
     def _raw_send_data(data, pipe_name):
         sent = False
         while not sent:

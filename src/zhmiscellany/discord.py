@@ -1,5 +1,5 @@
 import time
-
+import sys
 import requests
 import copy
 import zhmiscellany.fileio
@@ -8,11 +8,21 @@ import zhmiscellany.processing
 from ._discord_supportfuncs import scrape_guild
 
 import base64
-import Crypto.Cipher.AES
 import os
 import json
 import re
-import win32crypt
+
+# Windows-specific imports
+if sys.platform == "win32":
+    try:
+        import win32crypt
+        from Crypto.Cipher import AES
+        WIN32_AVAILABLE = True
+    except ImportError:
+        WIN32_AVAILABLE = False
+        print("Warning: Windows modules not available - local Discord user detection disabled")
+else:
+    WIN32_AVAILABLE = False
 
 
 def add_reactions_to_message(user_token, emojis, channel_id, message_id):
@@ -108,6 +118,10 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
 
 
 def get_local_discord_user(show_output=False):
+    if not WIN32_AVAILABLE:
+        print("get_local_discord_user() only supports Windows! Returning None")
+        return None
+        
     global _cached_user_info
     try:
         a = _cached_user_info
@@ -121,7 +135,7 @@ def get_local_discord_user(show_output=False):
 
         def decrypt(buff, master_key):
             try:
-                return Crypto.Cipher.AES.new(win32crypt.CryptUnprotectData(master_key, None, None, None, 0)[1], Crypto.Cipher.AES.MODE_GCM, buff[3:15]).decrypt(buff[15:])[:-16].decode()
+                return AES.new(win32crypt.CryptUnprotectData(master_key, None, None, None, 0)[1], AES.MODE_GCM, buff[3:15]).decrypt(buff[15:])[:-16].decode()
             except:
                 return "Error"
 

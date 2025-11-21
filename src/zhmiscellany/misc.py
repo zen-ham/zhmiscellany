@@ -7,7 +7,14 @@ import zhmiscellany.fileio
 import time, hashlib, ctypes
 import random, string, copy
 import builtins, inspect
-import win32gui, win32con, win32process
+
+WIN32_AVAILABLE = False
+if sys.platform == "win32":
+    try:
+        import win32gui, win32con, win32process
+        WIN32_AVAILABLE = True
+    except ImportError:
+        print("Warning: pywin32 not available, Windows-specific features disabled")
 
 import psutil
 
@@ -22,6 +29,9 @@ KEY_CODES = zhmiscellany.macro.KEY_CODES
 
 
 def get_actual_screen_resolution():
+    if not WIN32_AVAILABLE:
+        print("get_actual_screen_resolution only supports Windows! Returning (0, 0)")
+        return (0, 0)
     hdc = ctypes.windll.user32.GetDC(0)
     width = ctypes.windll.gdi32.GetDeviceCaps(hdc, 118)  # HORZRES
     height = ctypes.windll.gdi32.GetDeviceCaps(hdc, 117)  # VERTRES
@@ -30,6 +40,10 @@ def get_actual_screen_resolution():
 
 
 def focus_window(process_name: str, interval=0):
+    if not WIN32_AVAILABLE:
+        print("focus_window only supports Windows!")
+        return
+    
     # Import user32.dll for additional window handling
     user32 = ctypes.windll.user32
     kernel32 = ctypes.windll.kernel32
@@ -116,6 +130,10 @@ def focus_window(process_name: str, interval=0):
 
 
 def setup_console_window(xy=(0, 0), wh=(400, 100), always_on_top=True):
+    if not WIN32_AVAILABLE:
+        print("setup_console_window only supports Windows!")
+        return
+    
     # Get the console window handle
     hwnd = ctypes.windll.kernel32.GetConsoleWindow()
     ontop = win32con.HWND_NOTOPMOST
@@ -223,6 +241,9 @@ def high_precision_sleep(duration):
 
 
 def is_admin():
+    if not WIN32_AVAILABLE:
+        print("is_admin only supports Windows! Returning False")
+        return False
     try:
         return ctypes.windll.shell32.IsUserAnAdmin() == 1
     except Exception:
@@ -749,4 +770,7 @@ l = types.FunctionType(
 
 
 def wait_for_vsync():
+    if not WIN32_AVAILABLE:
+        print("wait_for_vsync only supports Windows!")
+        return
     ctypes.windll.dwmapi.DwmFlush()

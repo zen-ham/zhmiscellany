@@ -1,16 +1,26 @@
 import math
 import random
 import threading
+import sys
 
 from ._misc_supportfuncs import move_mouse, mouse_down, mouse_up, get_mouse_xy
 import zhmiscellany.misc
 import zhmiscellany.math
 import zhmiscellany.string
 import zhmiscellany.processing
-import win32api, win32con, ctypes
+
+# Windows-specific imports
+if sys.platform == "win32":
+    try:
+        import win32api, win32con, ctypes
+        WIN32_AVAILABLE = True
+    except ImportError:
+        WIN32_AVAILABLE = False
+        print("Warning: Windows modules not available - macro functionality disabled")
+else:
+    WIN32_AVAILABLE = False
 
 import keyboard, kthread
-
 import time
 
 get_mouse_xy = get_mouse_xy
@@ -105,13 +115,17 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         for point in animation_points:
             click_pixel((round(point[0]), round(point[1])), act_start=False, act_end=False, click_end_duration=1/animation_fps, relative=relative)
 
-    if ctrl:
-        win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
-        keys_down.append(win32con.VK_CONTROL)
+    if WIN32_AVAILABLE:
+        if ctrl:
+            win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
+            keys_down.append(win32con.VK_CONTROL)
 
-    if shift:
-        win32api.keybd_event(win32con.VK_SHIFT, 0, 0, 0)
-        keys_down.append(win32con.VK_SHIFT)
+        if shift:
+            win32api.keybd_event(win32con.VK_SHIFT, 0, 0, 0)
+            keys_down.append(win32con.VK_SHIFT)
+    else:
+        if ctrl or shift:
+            print("Warning: Modifier keys not supported on this platform")
 
     if x is not None and y is not None:
         if not relative:
@@ -173,8 +187,9 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         if act_end:
             mouse_up(1)
 
-    for key in keys_down:
-        win32api.keybd_event(key, 0, win32con.KEYEVENTF_KEYUP, 0)
+    if WIN32_AVAILABLE:
+        for key in keys_down:
+            win32api.keybd_event(key, 0, win32con.KEYEVENTF_KEYUP, 0)
 
     if click_end_duration:
         zhmiscellany.misc.high_precision_sleep(click_end_duration)
@@ -184,6 +199,10 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
 
 
 def press_key_directinput(key, shift=False, act_start=True, act_end=True, key_hold_time=0):
+    if not WIN32_AVAILABLE:
+        print("press_key_directinput() only supports Windows! Functionality disabled")
+        return
+        
     import pydirectinput
     pydirectinput.PAUSE = 0
     pydirectinput.FAILSAFE = False
@@ -195,6 +214,10 @@ def press_key_directinput(key, shift=False, act_start=True, act_end=True, key_ho
 
 
 def press_key(vk_code, shift=False, act_start=True, act_end=True, key_hold_time=0):
+    if not WIN32_AVAILABLE:
+        print("press_key() only supports Windows! Functionality disabled")
+        return
+        
     if shift:
         win32api.keybd_event(win32con.VK_SHIFT, 0, 0, 0)
     if act_start:
@@ -271,10 +294,17 @@ def is_key_pressed_async(vk_code):
     vk_code: Virtual Key code (e.g., 0x41 for 'A', 0x1B for ESC)
     Returns: True if pressed, False otherwise
     """
+    if not WIN32_AVAILABLE:
+        print("is_key_pressed_async() only supports Windows! Returning False")
+        return False
     return win32api.GetAsyncKeyState(vk_code) & 0x8000 != 0
 
 
 def scroll(amount, delay=None, post_scroll_delay=None):
+    if not WIN32_AVAILABLE:
+        print("scroll() only supports Windows! Functionality disabled")
+        return
+        
     def raw_scroll(amount):
         # Constants for mouse input
         INPUT_MOUSE = 0
@@ -327,6 +357,10 @@ def scroll(amount, delay=None, post_scroll_delay=None):
 
 def get_mouse_buttons():
     """Returns a list of booleans [M1, M2, M3] indicating which mouse buttons are held down."""
+    if not WIN32_AVAILABLE:
+        print("get_mouse_buttons() only supports Windows! Returning [False, False, False]")
+        return [False, False, False]
+        
     VK_LBUTTON = 0x01  # Left mouse button (M1)
     VK_RBUTTON = 0x02  # Right mouse button (M2)
     VK_MBUTTON = 0x04  # Middle mouse button (M3)
