@@ -60,7 +60,8 @@ def patch_rhg():  # patches random_header_generator library's missing files. thi
     else:
         # we are running in normal Python environment
         pass
-patch_rhg()
+if WIN32_AVAILABLE:
+    patch_rhg()
 
 
 def patch_cpp():
@@ -87,7 +88,9 @@ def patch_cpp():
         gen()
         shutil.copy2(os.path.join(base_path, 'resources', fn), tp)
         os.chdir(cwd)
-patch_cpp()
+
+if WIN32_AVAILABLE:
+    patch_cpp()
 
 
 class POINT(Structure):
