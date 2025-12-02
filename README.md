@@ -15,7 +15,7 @@ Introduction
 
 Can be installed with `pip install zhmiscellany`
 
-Currently, the package stands at 148 functions/classes/bindings across 15 modules.
+Currently, the package stands at 149 functions/classes/bindings across 15 modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
@@ -1525,6 +1525,15 @@ Records keyboard and mouse events and generates zhmiscellany.macro code to emula
 `zhmiscellany.macro.is_key_pressed_async(vk_code)`
 
 See if a key is pressed.
+
+#
+
+`zhmiscellany.macro.press_key_directinput()`
+---
+
+`zhmiscellany.macro.press_key_directinput(key, shift=False, act_start=True, act_end=True, key_hold_time=0)`
+
+press key using direct input library
 
 #
 
