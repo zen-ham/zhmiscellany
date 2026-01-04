@@ -1,4 +1,3 @@
-import tkinter as tk
 import threading
 import sys
 
@@ -26,6 +25,8 @@ class StateIndicator:
     WS_EX_TRANSPARENT = 0x20
 
     def __init__(self, colour=(255, 0, 0), opacity=0.8, corner='topright', offset=(10, 10), size=_DEFAULT_SIZE):
+        import tkinter as tk
+        self.tk = tk
         self._colour = colour
         self._opacity = opacity
         self._corner = corner
@@ -43,7 +44,7 @@ class StateIndicator:
         self._tk_ready_event.wait(timeout=5)
 
     def _run_gui_thread(self):
-        self._root = tk.Tk()
+        self._root = self.tk.Tk()
         self._root.withdraw()
 
         # Configure window for borderless, always-on-top, no focus
@@ -54,7 +55,7 @@ class StateIndicator:
         self._root.config(bg=self._TRANSPARENT_COLOR)
 
         # Create canvas for the colored box, using transparent color as background
-        self._canvas = tk.Canvas(self._root, width=self._size[0], height=self._size[1],
+        self._canvas = self.tk.Canvas(self._root, width=self._size[0], height=self._size[1],
                                  highlightthickness=0, bg=self._TRANSPARENT_COLOR)
         self._canvas.pack()
 
