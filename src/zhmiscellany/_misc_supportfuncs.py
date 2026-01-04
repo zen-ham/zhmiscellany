@@ -95,12 +95,15 @@ if WIN32_AVAILABLE:
 # Linux specific imports
 if not WIN32_AVAILABLE:
     try:
-        import pyautogui
+        try:
+            import pyautogui
 
-        # Optimize PyAutoGUI for speed to match ctypes performance
-        pyautogui.FAILSAFE = False
-        pyautogui.PAUSE = 0
-        pyautogui.MINIMUM_DURATION = 0
+            # Optimize PyAutoGUI for speed to match ctypes performance
+            pyautogui.FAILSAFE = False
+            pyautogui.PAUSE = 0
+            pyautogui.MINIMUM_DURATION = 0
+        except KeyError:
+            pass
     except ImportError:
         raise ImportError("Linux support requires pyautogui. Install it via: pip install pyautogui")
 
