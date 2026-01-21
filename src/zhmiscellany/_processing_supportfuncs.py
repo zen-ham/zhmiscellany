@@ -217,7 +217,7 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
     _ray_init_thread.join()
     
     if not expect_crashes:
-        @ray.remote(max_retries=max_retries)
+        @ray.remote(max_retries=max_retries, num_cpus=0)
         def worker(func, *args):
             return func(*args)
         
