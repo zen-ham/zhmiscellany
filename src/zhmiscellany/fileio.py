@@ -237,7 +237,7 @@ def cache(function, *args, **kwargs):
             # CUSTOM OBJECTS: Try to return their __dict__ or string rep
             if hasattr(obj, '__dict__'):
                 return obj.__dict__
-
+            
             # Fallback: String representation (risky if str() format changes)
             return str(obj)
         json_bytes = orjson.dumps(
