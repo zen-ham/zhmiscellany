@@ -8,6 +8,8 @@ from itertools import chain
 import tempfile
 import random
 import string
+import orjson
+from datetime import datetime
 
 
 def read_json_file(file_path):
@@ -207,22 +209,51 @@ def chdir_to_script_dir():
     os.chdir(os.path.dirname(get_script_path()))
 
 
-def cache(seed, function):
+def cache(function, *args, **kwargs):
     cache_folder = 'zhmiscellany_cache'
-    zhmiscellany.fileio.create_folder(cache_folder)
 
-    def generate_hash(obj):
-        obj_str = str(obj)
-        return hashlib.md5(obj_str.encode()).hexdigest()
+    def get_hash_orjson(data):
+        def default_converter(obj):
+            # SETS: Must be sorted to ensure determinism!
+            # JSON doesn't support sets, so we turn them into sorted lists.
+            if isinstance(obj, set):
+                return sorted(list(obj))
 
-    seed_hash = generate_hash(seed)
+            # BYTES: Decode to string (if utf-8) or hex
+            if isinstance(obj, bytes):
+                return obj.hex()
 
-    cache_file = f'{cache_folder}/fn_cache_{seed_hash}.pkl'
+            # DATETIMES: Convert to ISO format string
+            if isinstance(obj, datetime):
+                return obj.isoformat()
+
+            # CUSTOM OBJECTS: Try to return their __dict__ or string rep
+            if hasattr(obj, '__dict__'):
+                return obj.__dict__
+
+            # Fallback: String representation (risky if str() format changes)
+            return str(obj)
+        json_bytes = orjson.dumps(
+            data,
+            default=default_converter,
+            option=orjson.OPT_SORT_KEYS
+        )
+        return hashlib.md5(json_bytes).hexdigest()
+
+    seed = {
+        'args': fast_dill_dumps(args),
+        'kwargs': fast_dill_dumps(kwargs)
+    }
+
+    seed_hash = get_hash_orjson(seed)
+
+    cache_file = f'{cache_folder}/cache_{function.__name__}_{seed_hash}.pkl'
 
     if os.path.exists(cache_file):
         return load_object_from_file(cache_file)
     else:
-        result = function(seed)
+        result = function(*args, **kwargs)
+        zhmiscellany.fileio.create_folder(cache_folder)
         save_object_to_file(result, cache_file)
         return result
 
