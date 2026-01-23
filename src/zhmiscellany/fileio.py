@@ -10,6 +10,7 @@ import random
 import string
 import orjson
 from datetime import datetime
+import inspect
 
 
 def read_json_file(file_path):
@@ -214,6 +215,12 @@ def cache(function, *args, **kwargs):
 
     def get_hash_orjson(data):
         def default_converter(obj):
+            if callable(obj):
+                try:
+                    return inspect.getsource(obj)
+                except (OSError, TypeError):
+                    return str(obj)  # Fallback for lambdas/partials
+            
             # SETS: Must be sorted to ensure determinism!
             # JSON doesn't support sets, so we turn them into sorted lists.
             if isinstance(obj, set):
@@ -241,8 +248,9 @@ def cache(function, *args, **kwargs):
         return hashlib.md5(json_bytes).hexdigest()
 
     seed = {
-        'args': fast_dill_dumps(args),
-        'kwargs': fast_dill_dumps(kwargs)
+        'function': function,
+        'args': args,
+        'kwargs': kwargs
     }
 
     seed_hash = get_hash_orjson(seed)
