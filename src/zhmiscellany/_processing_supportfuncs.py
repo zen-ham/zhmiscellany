@@ -8,7 +8,7 @@ import io
 from unittest.mock import patch
 
 # Ray availability check
-if sys.platform == "win32":
+if sys.platform == "win32" or True:
     try:
         import ray
         RAY_AVAILABLE = True
