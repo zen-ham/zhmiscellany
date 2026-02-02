@@ -1,7 +1,5 @@
 from . import processing, misc, macro, discord, fileio, netio, string, math, image, list, dict, pipes, pastebin, cpp, gui
 
-import importlib
-import inspect
 import sys
 
 _MODULES = [
@@ -18,6 +16,8 @@ class z:
 
 
 def _collect_functions():
+    import inspect
+    import importlib
     all_funcs = []
     for mod_name in _MODULES:
         module = importlib.import_module(f'.{mod_name}', __package__)

@@ -1,8 +1,5 @@
-import numpy as np
-import math
-
-
 def image_diff(img1, img2):
+    import numpy as np
     img1 = img1.resize((100, 100))
     img2 = img2.resize((100, 100))
 
@@ -63,6 +60,7 @@ class Canvas:
 
     def annotate(self, pixel_xy, text, text_scale=1.0, line_thickness=1,
                  text_colour=None, line_colour=None, auto_contrast=False, background_colour=None):
+        import math
         x, y = pixel_xy
         if not (0 <= x < self.width and 0 <= y < self.height):
             return

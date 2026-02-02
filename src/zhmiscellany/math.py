@@ -1,6 +1,3 @@
-import numpy as np
-
-
 def smart_percentage(things, total_things):
     if total_things == 0:
         return total_things
@@ -25,6 +22,7 @@ def clamp(value, minimum, maximum):
 
 
 def generate_grid(top_left, bottom_right, rows, cols, int_coords=True, row_major=True):
+    import numpy as np
     x = np.linspace(top_left[0], bottom_right[0], cols)
     y = np.linspace(top_left[1], bottom_right[1], rows)
     grid = np.array(np.meshgrid(x, y)).T.reshape(-1, 2)
@@ -44,6 +42,7 @@ def generate_grid(top_left, bottom_right, rows, cols, int_coords=True, row_major
 
 
 def generate_eased_points(p1, p2, num_points):
+    import numpy as np
     def ease_in_out(t):
         return t * t * (3 - 2 * t)  # Smoothstep formula
     x1, y1 = p1
@@ -65,6 +64,7 @@ def generate_eased_points(p1, p2, num_points):
 
 
 def generate_linear_points(p1, p2, num_points):
+    import numpy as np
     x1, y1 = p1
     x2, y2 = p2
 

@@ -1,26 +1,19 @@
-import threading, os, signal, time, sys, shutil, ctypes, math
-from ctypes import Structure, c_long, c_uint, c_int, POINTER, sizeof
-import zhmiscellany.fileio
-import sys
+import sys  # this one cannot be moved unfortunately
 
 # Windows-specific imports
 if sys.platform == "win32":
-    try:
-        import win32api
-        from ctypes import windll
-        WIN32_AVAILABLE = True
-    except ImportError:
-        WIN32_AVAILABLE = False
-        print("Warning: Windows modules not available - Windows functionality disabled")
+    WIN32_AVAILABLE = True
 else:
     WIN32_AVAILABLE = False
-
 
 _misc_action = 0
 _misc_timeout_exists = 0
 
 
 def do_timeout(timeout):
+    import time
+    import os
+    import signal
     global _misc_action, _misc_timeout_exists
     self_time = time.time()
     _misc_timeout_exists = self_time
@@ -33,17 +26,23 @@ def do_timeout(timeout):
 
 
 def set_activity_timeout(timeout):
+    import time
+    import threading
     global _misc_action
     _misc_action = time.time()
     threading.Thread(target=do_timeout, args=timeout).start()
 
 
 def activity():
+    import time
     global _misc_action
     _misc_action = time.time()
 
 
 def patch_rhg():  # patches random_header_generator library's missing files. this only matters if zhmiscellany has been compiled into a pyinstaller executable. zhmiscellany chooses to patch this broken package for the benefit of the user.
+    import os
+    import shutil
+    import zhmiscellany.fileio
     if getattr(sys, 'frozen', False):
         # we are running in a PyInstaller bundle
         base_path = sys._MEIPASS
@@ -61,11 +60,15 @@ def patch_rhg():  # patches random_header_generator library's missing files. thi
     else:
         # we are running in normal Python environment
         pass
+
+_ = None
 if WIN32_AVAILABLE:
-    patch_rhg()
+    _ = patch_rhg()
 
 
 def patch_cpp():
+    import os
+    import shutil
     if getattr(sys, 'frozen', False):
         base_path = sys._MEIPASS
     else:
@@ -90,62 +93,14 @@ def patch_cpp():
         shutil.copy2(os.path.join(base_path, 'resources', fn), tp)
         os.chdir(cwd)
 
+
 if WIN32_AVAILABLE:
     patch_cpp()
-
-# Linux specific imports
-if not WIN32_AVAILABLE:
-    try:
-        try:
-            import pyautogui
-
-            # Optimize PyAutoGUI for speed to match ctypes performance
-            pyautogui.FAILSAFE = False
-            pyautogui.PAUSE = 0
-            pyautogui.MINIMUM_DURATION = 0
-        except KeyError:
-            pass
-    except ImportError:
-        raise ImportError("Linux support requires pyautogui. Install it via: pip install pyautogui")
-
-# Windows specific imports and Structs
-if WIN32_AVAILABLE:
-    class POINT(Structure):
-        _fields_ = [("x", c_long),
-                    ("y", c_long)]
-
-
-    class MOUSEINPUT(Structure):
-        _fields_ = [("dx", c_long),
-                    ("dy", c_long),
-                    ("mouseData", c_uint),
-                    ("dwFlags", c_uint),
-                    ("time", c_uint),
-                    ("dwExtraInfo", POINTER(c_uint))]
-
-
-    class INPUT_UNION(ctypes.Union):
-        _fields_ = [("mi", MOUSEINPUT)]
-
-
-    class INPUT(Structure):
-        _fields_ = [("type", c_int),
-                    ("union", INPUT_UNION)]
-
-
-    # Constants
-    MOUSEEVENTF_ABSOLUTE = 0x8000
-    MOUSEEVENTF_MOVE = 0x0001
-    MOUSEEVENTF_LEFTDOWN = 0x0002
-    MOUSEEVENTF_LEFTUP = 0x0004
-    MOUSEEVENTF_RIGHTDOWN = 0x0008
-    MOUSEEVENTF_RIGHTUP = 0x0010
-    MOUSEEVENTF_MIDDLEDOWN = 0x0020
-    MOUSEEVENTF_MIDDLEUP = 0x0040
 
 
 def get_actual_screen_resolution():
     if WIN32_AVAILABLE:
+        from ctypes import windll
         hdc = windll.user32.GetDC(0)
         width = windll.gdi32.GetDeviceCaps(hdc, 118)  # HORZRES
         height = windll.gdi32.GetDeviceCaps(hdc, 117)  # VERTRES
@@ -154,6 +109,13 @@ def get_actual_screen_resolution():
     else:
         # Linux implementation using pyautogui
         try:
+            try:
+                import pyautogui
+                pyautogui.FAILSAFE = False
+                pyautogui.PAUSE = 0
+                pyautogui.MINIMUM_DURATION = 0
+            except KeyError:
+                pass
             return pyautogui.size()
         except Exception:
             # Could not determine screen resolution on Linux, defaulting to 1920x1080
@@ -171,53 +133,108 @@ calibration_multiplier_y = 1.0
 def move_mouse(x: int, y: int, relative=False):
     # --- LINUX IMPLEMENTATION ---
     if not WIN32_AVAILABLE:
-        # PyAutoGUI handles relative/absolute logic natively
-        if relative:
-            pyautogui.move(x, y)
-        else:
-            pyautogui.moveTo(x, y)
-        return
-
-    # --- WINDOWS IMPLEMENTATION ---
-    if not relative:
-        # Convert coordinates to normalized coordinates (0-65535)
-        normalized_x = int(x * (65535 / SCREEN_WIDTH))
-        normalized_y = int(y * (65535 / SCREEN_HEIGHT))
+        try:
+            try:
+                import pyautogui
+                pyautogui.FAILSAFE = False
+                pyautogui.PAUSE = 0
+                pyautogui.MINIMUM_DURATION = 0
+            except KeyError:
+                pass
+            # PyAutoGUI handles relative/absolute logic natively
+            if relative:
+                pyautogui.move(x, y)
+            else:
+                pyautogui.moveTo(x, y)
+            return
+        except ImportError:
+            raise ImportError("Linux support requires pyautogui. Install it via: pip install pyautogui")
     else:
-        calibrate()
-        if calibrated:
-            normalized_x = math.ceil(x * calibration_multiplier_x)
-            normalized_y = math.ceil(y * calibration_multiplier_y)
+        from ctypes import windll
+        from ctypes import Structure, c_long, c_uint, c_int, POINTER, sizeof
+        import ctypes
+        import math
+
+        class POINT(Structure):
+            _fields_ = [("x", c_long),
+                        ("y", c_long)]
+
+        class MOUSEINPUT(Structure):
+            _fields_ = [("dx", c_long),
+                        ("dy", c_long),
+                        ("mouseData", c_uint),
+                        ("dwFlags", c_uint),
+                        ("time", c_uint),
+                        ("dwExtraInfo", POINTER(c_uint))]
+
+        class INPUT_UNION(ctypes.Union):
+            _fields_ = [("mi", MOUSEINPUT)]
+
+        class INPUT(Structure):
+            _fields_ = [("type", c_int),
+                        ("union", INPUT_UNION)]
+
+        # Constants
+        MOUSEEVENTF_ABSOLUTE = 0x8000
+        MOUSEEVENTF_MOVE = 0x0001
+        MOUSEEVENTF_LEFTDOWN = 0x0002
+        MOUSEEVENTF_LEFTUP = 0x0004
+        MOUSEEVENTF_RIGHTDOWN = 0x0008
+        MOUSEEVENTF_RIGHTUP = 0x0010
+        MOUSEEVENTF_MIDDLEDOWN = 0x0020
+        MOUSEEVENTF_MIDDLEUP = 0x0040
+
+        if not relative:
+            # Convert coordinates to normalized coordinates (0-65535)
+            normalized_x = int(x * (65535 / SCREEN_WIDTH))
+            normalized_y = int(y * (65535 / SCREEN_HEIGHT))
         else:
-            normalized_x = x
-            normalized_y = y
+            calibrate()
+            if calibrated:
+                normalized_x = math.ceil(x * calibration_multiplier_x)
+                normalized_y = math.ceil(y * calibration_multiplier_y)
+            else:
+                normalized_x = x
+                normalized_y = y
 
-    if not relative:
-        dwflags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE
-    else:
-        dwflags = MOUSEEVENTF_MOVE
+        if not relative:
+            dwflags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE
+        else:
+            dwflags = MOUSEEVENTF_MOVE
 
-    input_struct = INPUT(
-        type=0,  # INPUT_MOUSE
-        union=INPUT_UNION(
-            mi=MOUSEINPUT(
-                dx=normalized_x,
-                dy=normalized_y,
-                mouseData=0,
-                dwFlags=dwflags,
-                time=0,
-                dwExtraInfo=None
+        input_struct = INPUT(
+            type=0,  # INPUT_MOUSE
+            union=INPUT_UNION(
+                mi=MOUSEINPUT(
+                    dx=normalized_x,
+                    dy=normalized_y,
+                    mouseData=0,
+                    dwFlags=dwflags,
+                    time=0,
+                    dwExtraInfo=None
+                )
             )
         )
-    )
 
-    windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
+        windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
 
 
 def get_mouse_xy():
     # --- LINUX IMPLEMENTATION ---
     if not WIN32_AVAILABLE:
-        return pyautogui.position()
+        try:
+            try:
+                import pyautogui
+                pyautogui.FAILSAFE = False
+                pyautogui.PAUSE = 0
+                pyautogui.MINIMUM_DURATION = 0
+            except KeyError:
+                pass
+            return pyautogui.position()
+        except ImportError:
+            raise ImportError("Linux support requires pyautogui. Install it via: pip install pyautogui")
+    else:
+        import win32api
 
     # --- WINDOWS IMPLEMENTATION ---
     x, y = win32api.GetCursorPos()
@@ -272,32 +289,74 @@ def mouse_down(button: int):
 
     # --- LINUX IMPLEMENTATION ---
     if not WIN32_AVAILABLE:
-        btn_map = {1: 'left', 2: 'right', 3: 'middle'}
-        pyautogui.mouseDown(button=btn_map[button])
-        return
+        try:
+            try:
+                import pyautogui
+                pyautogui.FAILSAFE = False
+                pyautogui.PAUSE = 0
+                pyautogui.MINIMUM_DURATION = 0
+            except KeyError:
+                pass
+            btn_map = {1: 'left', 2: 'right', 3: 'middle'}
+            pyautogui.mouseDown(button=btn_map[button])
+            return
+        except ImportError:
+            raise ImportError("Linux support requires pyautogui. Install it via: pip install pyautogui")
+    else:
+        from ctypes import windll
+        from ctypes import Structure, c_long, c_uint, c_int, POINTER, sizeof
+        import ctypes
 
-    # --- WINDOWS IMPLEMENTATION ---
-    flags = {
-        1: MOUSEEVENTF_LEFTDOWN,
-        2: MOUSEEVENTF_RIGHTDOWN,
-        3: MOUSEEVENTF_MIDDLEDOWN
-    }
+        class POINT(Structure):
+            _fields_ = [("x", c_long),
+                        ("y", c_long)]
 
-    input_struct = INPUT(
-        type=0,  # INPUT_MOUSE
-        union=INPUT_UNION(
-            mi=MOUSEINPUT(
-                dx=0,
-                dy=0,
-                mouseData=0,
-                dwFlags=flags[button],
-                time=0,
-                dwExtraInfo=None
+        class MOUSEINPUT(Structure):
+            _fields_ = [("dx", c_long),
+                        ("dy", c_long),
+                        ("mouseData", c_uint),
+                        ("dwFlags", c_uint),
+                        ("time", c_uint),
+                        ("dwExtraInfo", POINTER(c_uint))]
+
+        class INPUT_UNION(ctypes.Union):
+            _fields_ = [("mi", MOUSEINPUT)]
+
+        class INPUT(Structure):
+            _fields_ = [("type", c_int),
+                        ("union", INPUT_UNION)]
+
+        # Constants
+        MOUSEEVENTF_ABSOLUTE = 0x8000
+        MOUSEEVENTF_MOVE = 0x0001
+        MOUSEEVENTF_LEFTDOWN = 0x0002
+        MOUSEEVENTF_LEFTUP = 0x0004
+        MOUSEEVENTF_RIGHTDOWN = 0x0008
+        MOUSEEVENTF_RIGHTUP = 0x0010
+        MOUSEEVENTF_MIDDLEDOWN = 0x0020
+        MOUSEEVENTF_MIDDLEUP = 0x0040
+
+        flags = {
+            1: MOUSEEVENTF_LEFTDOWN,
+            2: MOUSEEVENTF_RIGHTDOWN,
+            3: MOUSEEVENTF_MIDDLEDOWN
+        }
+
+        input_struct = INPUT(
+            type=0,  # INPUT_MOUSE
+            union=INPUT_UNION(
+                mi=MOUSEINPUT(
+                    dx=0,
+                    dy=0,
+                    mouseData=0,
+                    dwFlags=flags[button],
+                    time=0,
+                    dwExtraInfo=None
+                )
             )
         )
-    )
 
-    windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
+        windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
 
 
 def mouse_up(button: int):
@@ -307,29 +366,71 @@ def mouse_up(button: int):
 
     # --- LINUX IMPLEMENTATION ---
     if not WIN32_AVAILABLE:
-        btn_map = {1: 'left', 2: 'right', 3: 'middle'}
-        pyautogui.mouseUp(button=btn_map[button])
-        return
+        try:
+            try:
+                import pyautogui
+                pyautogui.FAILSAFE = False
+                pyautogui.PAUSE = 0
+                pyautogui.MINIMUM_DURATION = 0
+            except KeyError:
+                pass
+            btn_map = {1: 'left', 2: 'right', 3: 'middle'}
+            pyautogui.mouseUp(button=btn_map[button])
+            return
+        except ImportError:
+            raise ImportError("Linux support requires pyautogui. Install it via: pip install pyautogui")
+    else:
+        from ctypes import windll
+        from ctypes import Structure, c_long, c_uint, c_int, POINTER, sizeof
+        import ctypes
 
-    # --- WINDOWS IMPLEMENTATION ---
-    flags = {
-        1: MOUSEEVENTF_LEFTUP,
-        2: MOUSEEVENTF_RIGHTUP,
-        3: MOUSEEVENTF_MIDDLEUP
-    }
+        class POINT(Structure):
+            _fields_ = [("x", c_long),
+                        ("y", c_long)]
 
-    input_struct = INPUT(
-        type=0,  # INPUT_MOUSE
-        union=INPUT_UNION(
-            mi=MOUSEINPUT(
-                dx=0,
-                dy=0,
-                mouseData=0,
-                dwFlags=flags[button],
-                time=0,
-                dwExtraInfo=None
+        class MOUSEINPUT(Structure):
+            _fields_ = [("dx", c_long),
+                        ("dy", c_long),
+                        ("mouseData", c_uint),
+                        ("dwFlags", c_uint),
+                        ("time", c_uint),
+                        ("dwExtraInfo", POINTER(c_uint))]
+
+        class INPUT_UNION(ctypes.Union):
+            _fields_ = [("mi", MOUSEINPUT)]
+
+        class INPUT(Structure):
+            _fields_ = [("type", c_int),
+                        ("union", INPUT_UNION)]
+
+        # Constants
+        MOUSEEVENTF_ABSOLUTE = 0x8000
+        MOUSEEVENTF_MOVE = 0x0001
+        MOUSEEVENTF_LEFTDOWN = 0x0002
+        MOUSEEVENTF_LEFTUP = 0x0004
+        MOUSEEVENTF_RIGHTDOWN = 0x0008
+        MOUSEEVENTF_RIGHTUP = 0x0010
+        MOUSEEVENTF_MIDDLEDOWN = 0x0020
+        MOUSEEVENTF_MIDDLEUP = 0x0040
+
+        flags = {
+            1: MOUSEEVENTF_LEFTUP,
+            2: MOUSEEVENTF_RIGHTUP,
+            3: MOUSEEVENTF_MIDDLEUP
+        }
+
+        input_struct = INPUT(
+            type=0,  # INPUT_MOUSE
+            union=INPUT_UNION(
+                mi=MOUSEINPUT(
+                    dx=0,
+                    dy=0,
+                    mouseData=0,
+                    dwFlags=flags[button],
+                    time=0,
+                    dwExtraInfo=None
+                )
             )
         )
-    )
 
-    windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))
+        windll.user32.SendInput(1, ctypes.byref(input_struct), sizeof(INPUT))

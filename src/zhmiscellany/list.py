@@ -1,5 +1,3 @@
-from itertools import chain
-
 def remove_duplicates(l_list):
     return list(dict.fromkeys(l_list))
 
@@ -52,6 +50,7 @@ def split_into_sublists(lst, n):
 
 
 def flatten(an_iterable):
+    from itertools import chain
     return list(chain.from_iterable(an_iterable))
 
 

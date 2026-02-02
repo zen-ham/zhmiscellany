@@ -1,24 +1,10 @@
-import os, signal, importlib, sys
-import zhmiscellany.math
-import zhmiscellany.string
-import zhmiscellany.processing
+import sys
 import zhmiscellany.macro
-import zhmiscellany.fileio
-import time, hashlib, ctypes
-import random, string, copy
-import builtins, inspect
+import types
 
 WIN32_AVAILABLE = False
 if sys.platform == "win32":
-    try:
-        import win32gui, win32con, win32process
-        WIN32_AVAILABLE = True
-    except ImportError:
-        print("Warning: pywin32 not available, Windows-specific features disabled")
-
-import psutil
-
-import types
+    WIN32_AVAILABLE = True
 
 # support backwards compatibility
 click_pixel = zhmiscellany.macro.click_pixel
@@ -29,6 +15,7 @@ KEY_CODES = zhmiscellany.macro.KEY_CODES
 
 
 def get_actual_screen_resolution():
+    import ctypes
     if not WIN32_AVAILABLE:
         print("get_actual_screen_resolution only supports Windows! Returning (0, 0)")
         return (0, 0)
@@ -40,9 +27,14 @@ def get_actual_screen_resolution():
 
 
 def focus_window(process_name: str, interval=0):
+    import time
+    import psutil
+    import ctypes
     if not WIN32_AVAILABLE:
         print("focus_window only supports Windows!")
         return
+    else:
+        import win32gui, win32con, win32process
     
     # Import user32.dll for additional window handling
     user32 = ctypes.windll.user32
@@ -130,9 +122,12 @@ def focus_window(process_name: str, interval=0):
 
 
 def setup_console_window(xy=(0, 0), wh=(400, 100), always_on_top=True):
+    import ctypes
     if not WIN32_AVAILABLE:
         print("setup_console_window only supports Windows!")
         return
+    else:
+        import win32gui, win32con, win32process
     
     # Get the console window handle
     hwnd = ctypes.windll.kernel32.GetConsoleWindow()
@@ -150,10 +145,13 @@ def setup_console_window(xy=(0, 0), wh=(400, 100), always_on_top=True):
 
 
 def die():
+    import os
+    import signal
     os.kill(os.getpid(), signal.SIGTERM)
 
 
 def show_progress(things, total_things, extra_data='', smart_ratelimit=False, max_prints=1000):
+    import zhmiscellany.math
     do_print = True
 
     if smart_ratelimit:
@@ -182,6 +180,8 @@ def smart_every_nth(number, n, total):
 
 
 def calculate_eta(timestamps, total_timestamps):
+    import time
+    import zhmiscellany.string
     if not timestamps:
         return "Not enough data to calculate ETA."
 
@@ -211,6 +211,8 @@ def decide(options, text):
 
 
 def import_module_from_path(path, module_name=None):
+    import importlib
+    import zhmiscellany.string
     if not module_name:
         module_name = zhmiscellany.string.get_universally_unique_string()
     spec = importlib.util.spec_from_file_location(module_name, path)
@@ -220,14 +222,18 @@ def import_module_from_path(path, module_name=None):
 
 
 def base62_hash(anything):
+    import hashlib
+    import zhmiscellany.string
     return zhmiscellany.string.convert_to_base62(int(int(hashlib.md5(anything if isinstance(anything, bytes) else str(anything).encode()).hexdigest(), 16)**0.5))
 
 
 def md5_int_hash(anything):
+    import hashlib
     return int(hashlib.md5(anything if isinstance(anything, bytes) else str(anything).encode()).hexdigest(), 16)
 
 
 def high_precision_sleep(duration):
+    import time
     start_time = time.perf_counter()
     while True:
         elapsed_time = time.perf_counter() - start_time
@@ -241,6 +247,7 @@ def high_precision_sleep(duration):
 
 
 def is_admin():
+    import ctypes
     if not WIN32_AVAILABLE:
         print("is_admin only supports Windows! Returning False")
         return False
@@ -251,6 +258,8 @@ def is_admin():
 
 
 def die_on_key(key='f9', show_message=False):
+    import zhmiscellany.macro
+    import zhmiscellany.processing
     def _die_on_key(key):
         zhmiscellany.macro.better_wait_for(key)
         if show_message:
@@ -259,10 +268,19 @@ def die_on_key(key='f9', show_message=False):
     zhmiscellany.processing.start_daemon(target=_die_on_key, args=(key,))
 
 if WIN32_AVAILABLE:
-    temp_folder = os.popen(r'echo %TEMP%').read().replace('\n', '')
+    def get_temp_folder():
+        import os
+        temp_folder = os.popen(r'echo %TEMP%').read().replace('\n', '')
+        return temp_folder
 
     def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='# DNO', remove_prints=True, remove_comments=True, add_lines=True, new_line_ratio=10):
         import keyword
+        import copy
+        import random
+        import string
+        import builtins
+        import inspect
+        import zhmiscellany.string
 
         obf = python_code_string
         dno_sig = do_not_obfuscate_indent_block_comment
@@ -697,6 +715,10 @@ _CYAN = '\033[96m'
 _RESET = '\033[0m'
 
 def time_it(action=False, clock=0):
+    import time
+    import inspect
+    import zhmiscellany.math
+    import sys
     global _start
     try:
         a = _start
@@ -718,6 +740,8 @@ def time_it(action=False, clock=0):
 
 
 def here(*args):
+    import inspect
+    import sys
     frame = inspect.currentframe().f_back  # Get caller frame
     filename = frame.f_code.co_filename
     lineno = frame.f_lineno
@@ -769,6 +793,7 @@ l = types.FunctionType(
 
 
 def wait_for_vsync():
+    import ctypes
     if not WIN32_AVAILABLE:
         print("wait_for_vsync only supports Windows!")
         return

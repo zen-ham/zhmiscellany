@@ -1,16 +1,9 @@
-import sys
-import time
-import re
-import zhmiscellany.fileio
-import zhmiscellany.string
-import os
-
-
 def calculateOption(guild_id, action):  # action == 'append' or 'replace'
+    import re
     if action == 'append':
         lastUserIDs = _bot.gateway.guildMemberSearches[guild_id]["queries"][''.join(_Queries.qList)]
         data = [_bot.gateway.session.guild(guild_id).members[i] for i in _bot.gateway.session.guild(guild_id).members if i in lastUserIDs]
-        lastName = sorted(set([re.sub(' +', ' ', j['nick'].lower()) if (j.get('nick') and re.sub(' +', ' ', j.get('nick').lower()).startswith(''.join(_Queries.qList))) else re.sub(' +', ' ', j['username'].lower()) for j in data]))[-1]
+        lastName = sorted(set([re.sub(' +', ' ', j['nick'].lower()) if (j.get('nick') and re.sub(' +', ' ', j.get('nick')).lower().startswith(''.join(_Queries.qList))) else re.sub(' +', ' ', j['username'].lower()) for j in data]))[-1]
         try:
             option = lastName[len(_Queries.qList)]
             return option
@@ -34,6 +27,7 @@ def findReplaceableIndex(guild_id):
 
 
 def bruteForceTest(resp, guild_id, wait):
+    import time
     if resp.event.guild_members_chunk:
         remove = False
         if len(_bot.gateway.guildMemberSearches[guild_id]["queries"][''.join(_Queries.qList)]) == 100:  # append
@@ -107,6 +101,8 @@ def scrape_guild_internal(guild_id, channel_id, user_token, console=False, extra
 
 
 def scrape_guild(guild_id, channel_id, user_token, use_cache=True, console=False, extra_scrape=True):
+    import os
+    import zhmiscellany.fileio
     if use_cache:
         cache_folder = 'zhmiscellany_cache'
         potential_path = os.path.join(cache_folder, f'{guild_id}_members.json')
@@ -122,5 +118,6 @@ def scrape_guild(guild_id, channel_id, user_token, use_cache=True, console=False
 
 
 def print_str_if(string, print_it):
+    import sys
     if print_it:
         sys.stdout.write(string+'\n')

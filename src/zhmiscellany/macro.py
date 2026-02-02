@@ -1,32 +1,19 @@
-import math
-import random
-import threading
 import sys
 
-from ._misc_supportfuncs import move_mouse, mouse_down, mouse_up, get_mouse_xy
-import zhmiscellany.misc
-import zhmiscellany.math
-import zhmiscellany.string
-import zhmiscellany.processing
+IS_WINDOWS = sys.platform == "win32"
 
-# Windows-specific imports
-if sys.platform == "win32":
-    try:
-        import win32api, win32con, ctypes
-        WIN32_AVAILABLE = True
-    except ImportError:
-        WIN32_AVAILABLE = False
-        print("Warning: Windows modules not available - macro functionality disabled")
-else:
-    WIN32_AVAILABLE = False
-
-import keyboard, kthread
-import time
-
-get_mouse_xy = get_mouse_xy
-
+_last_press_time_map = {}  # Stores the last press timestamp for each key
 
 def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False, ensure_movement=True, pre_click_duration=None, pre_click_wiggle=True, click=True):
+    import random
+    import math
+    from ._misc_supportfuncs import move_mouse, mouse_down, mouse_up, get_mouse_xy
+    import zhmiscellany.math
+    if IS_WINDOWS:
+        import win32api
+        import win32con
+        import ctypes
+    
     if not click:
         act_start=False;act_end=False
     if right_click and middle_click:
@@ -115,7 +102,7 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         for point in animation_points:
             click_pixel((round(point[0]), round(point[1])), act_start=False, act_end=False, click_end_duration=1/animation_fps, relative=relative)
 
-    if WIN32_AVAILABLE:
+    if IS_WINDOWS:
         if ctrl:
             win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
             keys_down.append(win32con.VK_CONTROL)
@@ -187,7 +174,7 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
         if act_end:
             mouse_up(1)
 
-    if WIN32_AVAILABLE:
+    if IS_WINDOWS:
         for key in keys_down:
             win32api.keybd_event(key, 0, win32con.KEYEVENTF_KEYUP, 0)
 
@@ -197,13 +184,13 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
     if double_click:
         click_pixel(x, y, click_duration, right_click, shift, ctrl, act_start, act_end, middle_click, click_end_duration, pre_click_duration=pre_click_duration, pre_click_wiggle=pre_click_wiggle)
 
-
 def press_key_directinput(key, shift=False, act_start=True, act_end=True, key_hold_time=0):
-    if not WIN32_AVAILABLE:
+    if not IS_WINDOWS:
         print("press_key_directinput() only supports Windows! Functionality disabled")
         return
         
     import pydirectinput
+    import zhmiscellany.misc
     pydirectinput.PAUSE = 0
     pydirectinput.FAILSAFE = False
     if shift: pydirectinput.keyDown('shift')
@@ -212,12 +199,15 @@ def press_key_directinput(key, shift=False, act_start=True, act_end=True, key_ho
     if act_end: pydirectinput.keyUp(key)
     if shift: pydirectinput.keyUp('shift')
 
-
 def press_key(vk_code, shift=False, act_start=True, act_end=True, key_hold_time=0):
-    if not WIN32_AVAILABLE:
+    if not IS_WINDOWS:
         print("press_key() only supports Windows! Functionality disabled")
         return
         
+    import win32api
+    import win32con
+    import zhmiscellany.misc
+    
     if shift:
         win32api.keybd_event(win32con.VK_SHIFT, 0, 0, 0)
     if act_start:
@@ -229,8 +219,8 @@ def press_key(vk_code, shift=False, act_start=True, act_end=True, key_hold_time=
     if shift:
         win32api.keybd_event(win32con.VK_SHIFT, 0, win32con.KEYEVENTF_KEYUP, 0)
 
-
 def type_string(text=None, delay=None, key_hold_time=None, vk_codes=None, combine=False):
+    import zhmiscellany.misc
     # Dictionary mapping characters to their virtual key codes and shift state
     char_to_vk = {
         'a': (0x41, False), 'b': (0x42, False), 'c': (0x43, False), 'd': (0x44, False),
@@ -287,24 +277,27 @@ def type_string(text=None, delay=None, key_hold_time=None, vk_codes=None, combin
             for vk_code in vk_codes:
                 press_key(vk_code, False, act_start=False, act_end=True, key_hold_time=key_hold_time)
 
-
 def is_key_pressed_async(vk_code):
     """
     Async check if a key is currently pressed
     vk_code: Virtual Key code (e.g., 0x41 for 'A', 0x1B for ESC)
     Returns: True if pressed, False otherwise
     """
-    if not WIN32_AVAILABLE:
+    if not IS_WINDOWS:
         print("is_key_pressed_async() only supports Windows! Returning False")
         return False
+    import win32api
+    import ctypes
     return win32api.GetAsyncKeyState(vk_code) & 0x8000 != 0
 
-
 def scroll(amount, delay=None, post_scroll_delay=None):
-    if not WIN32_AVAILABLE:
+    if not IS_WINDOWS:
         print("scroll() only supports Windows! Functionality disabled")
         return
         
+    import zhmiscellany.misc
+    import ctypes
+    
     def raw_scroll(amount):
         # Constants for mouse input
         INPUT_MOUSE = 0
@@ -354,13 +347,14 @@ def scroll(amount, delay=None, post_scroll_delay=None):
     if post_scroll_delay:
         zhmiscellany.misc.high_precision_sleep(post_scroll_delay)
 
-
 def get_mouse_buttons():
     """Returns a list of booleans [M1, M2, M3] indicating which mouse buttons are held down."""
-    if not WIN32_AVAILABLE:
+    if not IS_WINDOWS:
         print("get_mouse_buttons() only supports Windows! Returning [False, False, False]")
         return [False, False, False]
         
+    import ctypes
+    
     VK_LBUTTON = 0x01  # Left mouse button (M1)
     VK_RBUTTON = 0x02  # Right mouse button (M2)
     VK_MBUTTON = 0x04  # Middle mouse button (M3)
@@ -373,10 +367,11 @@ def get_mouse_buttons():
         bool(GetAsyncKeyState(VK_MBUTTON) & 0x8000)
     ]
 
-
-_last_press_time_map = {} # Stores the last press timestamp for each key
-
 def better_wait_for(key):
+    import threading
+    import keyboard
+    import time
+    
     key_name = key.lower()
     press_event = threading.Event() # Event to signal when the key is pressed
     _last_press_time_map.setdefault(key_name, 0) # Initialize last press time for this key
@@ -391,8 +386,11 @@ def better_wait_for(key):
     press_event.wait() # Block execution until the press_event is set
     keyboard.unhook(hook_id) # Clean up the listener after key is detected
 
-
 def toggle_function(func, key='f8', blocking=True):
+    import kthread
+    import threading
+    # better_wait_for is in the same module, no import needed
+    
     def atom():
         while True:
             better_wait_for(key)
@@ -406,7 +404,6 @@ def toggle_function(func, key='f8', blocking=True):
         t = threading.Thread(target=atom)
         t.start()
         return t
-
 
 def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
     import time
@@ -652,7 +649,6 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
 
     # Generate the replay script
     return generate_code(events, start_time)
-
 
 KEY_CODES = {
     'None': 0,

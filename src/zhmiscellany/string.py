@@ -1,7 +1,5 @@
-import string, time, datetime
-
-
 def convert_to_base62(number):
+    import string
     number = int(str(number).replace('.', ''))
     # Base 62 characters: digits (0-9), lowercase letters (a-z), and uppercase letters (A-Z)
     base62_chars = string.digits + string.ascii_lowercase + string.ascii_uppercase
@@ -17,6 +15,7 @@ def convert_to_base62(number):
 
 
 def get_universally_unique_string():
+    import time
     #number = None
     #if not number:
     timestamp = str(time.perf_counter_ns())
@@ -40,6 +39,7 @@ def multi_replace(string, replaces, recursive=False):
 
 
 def timestamp_to_time(unix_timestamp):
+    import datetime
     # Convert the Unix timestamp to a datetime object
     dt_object = datetime.datetime.fromtimestamp(unix_timestamp)
 

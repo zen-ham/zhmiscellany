@@ -1,6 +1,5 @@
-import sys
-
 def is_junction(entry):
+    import sys
     if sys.platform != "win32":
         return False
     try:

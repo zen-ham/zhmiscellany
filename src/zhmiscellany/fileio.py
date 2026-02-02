@@ -1,22 +1,9 @@
-from ._fileio_supportfuncs import is_junction
-import json, os, shutil, dill, sys, pickle, base64, zlib
-import zhmiscellany.string
-import zhmiscellany.misc
-import hashlib
-from collections import defaultdict
-from itertools import chain
-import tempfile
-import random
-import string
-import orjson
-from datetime import datetime
-import inspect
-
-
 def read_json_file(file_path):
     """
     Reads JSON data from a file and returns it as a dictionary.
     """
+    import json
+    import os
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
             data = json.load(file)
@@ -31,61 +18,65 @@ def write_json_file(file_path, data):
     """
     Writes a dictionary to a JSON file.
     """
+    import json
     with open(file_path, 'w') as file:
         json.dump(data, file, indent=4)
 
 
 def create_folder(folder_name):
+    import os
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
 
 
 def remove_folder(folder_name):
+    import os
+    import shutil
     if os.path.exists(folder_name):
         shutil.rmtree(folder_name)
 
 
 def base_name_no_ext(file_path):
+    import os
     base_name = os.path.basename(file_path)
     base_name_without_extension, _ = os.path.splitext(base_name)
     return base_name_without_extension
 
 
 def convert_name_to_filename(name):
+    import zhmiscellany.string
     return zhmiscellany.string.multi_replace(name, [("/","["), (":","]"), (".","+")])
 
 
 def convert_filename_to_name(filename):
+    import zhmiscellany.string
     return zhmiscellany.string.multi_replace(filename, [("[","/"), ("]",":"), ("+",".")])
 
 
 def recursive_copy_files(source_dir, destination_dir, prints=False):
+    import os
+    import shutil
     if prints:
         print('Validating matching directory structure')
     for root, dirs, files in os.walk(source_dir):
         for dir in dirs:
             dir_path = os.path.join(root, dir)
             dest_dir_path = os.path.join(destination_dir, os.path.relpath(dir_path, source_dir))
-
             if not os.path.exists(dest_dir_path):
                 print(f'Creating missing directory {dest_dir_path}')
                 os.makedirs(dest_dir_path)
-
     if prints:
         print('Getting a list of files in the source directory')
     source_files = []
     for root, _, files in os.walk(source_dir):
         for file in files:
             source_files.append(os.path.join(root, file))
-
     if prints:
         print('Getting a list of files in the destination directory')
     dest_files = []
     for root, _, files in os.walk(destination_dir):
         for file in files:
             dest_files.append(os.path.join(root, file))
-
-
     if prints:
         print('Copying files from source to destination, skipping duplicates')
     for root, dirs, files in os.walk(source_dir):
@@ -93,7 +84,6 @@ def recursive_copy_files(source_dir, destination_dir, prints=False):
             source_file = os.path.join(root, file)
             rel_path = os.path.relpath(source_file, source_dir)
             dest_file = os.path.join(destination_dir, rel_path)
-
             if not os.path.exists(dest_file):
                 if prints:
                     print(f'Copying {source_file}')
@@ -105,10 +95,11 @@ def recursive_copy_files(source_dir, destination_dir, prints=False):
 
 
 def empty_directory(directory_path):
+    import os
+    import shutil
     # Iterate over all items in the directory
     for item in os.listdir(directory_path):
         item_path = os.path.join(directory_path, item)
-
         if os.path.isfile(item_path):
             # If it's a file, delete it
             os.unlink(item_path)
@@ -118,10 +109,12 @@ def empty_directory(directory_path):
 
 
 def abs_listdir(path):
+    import os
     return [os.path.join(path, file) for file in os.listdir(path)]
 
 
 def delete_ends_with(directory, string_endswith, avoid=[]):
+    import os
     files = abs_listdir(directory)
     for file in files:
         if file.endswith(string_endswith):
@@ -134,17 +127,20 @@ def read_bytes_section(file_path, section_start, section_end):
         file.seek(section_start)  # Move the file pointer to the 'start' position
         bytes_to_read = section_end - section_start
         data = file.read(bytes_to_read)  # Read 'bytes_to_read' number of bytes
-
     return data
 
 
 def copy_file_with_overwrite(src, dst):
+    import os
+    import shutil
     if os.path.exists(dst):
         os.remove(dst)
     shutil.copy2(src, dst)
 
 
 def fast_dill_dumps(object):
+    import pickle
+    import dill
     try:
         data = pickle.dumps(object, protocol=5)  # pickle is much faster so at least attempt to use it at first
     except:
@@ -153,6 +149,8 @@ def fast_dill_dumps(object):
 
 
 def fast_dill_loads(data):
+    import pickle
+    import dill
     try:
         object = pickle.loads(data)  # pickle is much faster so at least attempt to use it at first
     except:
@@ -161,6 +159,7 @@ def fast_dill_loads(data):
 
 
 def save_object_to_file(object, file_name, compressed=False):
+    import zlib
     with open(file_name, 'wb') as f:
         if compressed:
             f.write(zlib.compress(fast_dill_dumps(object)))
@@ -169,6 +168,7 @@ def save_object_to_file(object, file_name, compressed=False):
 
 
 def load_object_from_file(file_name, compressed=False):
+    import zlib
     with open(file_name, 'rb') as f:
         if compressed:
             return fast_dill_loads(zlib.decompress(f.read()))
@@ -178,26 +178,33 @@ def load_object_from_file(file_name, compressed=False):
 
 def pickle_and_encode(obj):
     """Pickles an object and URL-safe encodes it."""
+    import base64
+    import zlib
     pickled_data = zlib.compress(fast_dill_dumps(obj), 9)  # Serialize the object
     encoded_data = base64.urlsafe_b64encode(pickled_data).decode()  # Base64 encode
     return encoded_data
 
+
 def decode_and_unpickle(encoded_str):
     """Decodes a URL-safe encoded string and unpickles the object."""
+    import base64
+    import zlib
     pickled_data = base64.urlsafe_b64decode(encoded_str)  # Decode from Base64
     obj = fast_dill_loads(zlib.decompress(pickled_data))  # Deserialize
     return obj
 
 
 def list_files_by_modified_time(directory):
+    import os
     files_with_times = [(file, os.path.getmtime(os.path.join(directory, file))) for file in os.listdir(directory) if os.path.isfile(os.path.join(directory, file))]
     sorted_files = sorted(files_with_times, key=lambda x: x[1], reverse=True)
     sorted_file_names = [file for file, _ in sorted_files]
-
     return sorted_file_names
 
 
 def get_script_path():
+    """Returns the path to the current script or executable."""
+    import sys
     if getattr(sys, 'frozen', False):
         # Running as a standalone executable
         return sys.executable
@@ -207,10 +214,21 @@ def get_script_path():
 
 
 def chdir_to_script_dir():
+    import os
     os.chdir(os.path.dirname(get_script_path()))
 
 
 def cache(function, *args, **kwargs):
+    """
+    Caches the result of a function call to disk.
+    """
+    import os
+    import inspect
+    import orjson
+    import hashlib
+    from datetime import datetime
+    import zhmiscellany.fileio
+
     cache_folder = 'zhmiscellany_cache'
 
     def get_hash_orjson(data):
@@ -267,6 +285,10 @@ def cache(function, *args, **kwargs):
 
 
 def load_all_cached():
+    """
+    Loads all cached objects from the cache folder.
+    """
+    import os
     cache_folder = 'zhmiscellany_cache'
     if os.path.exists(cache_folder):
         files = abs_listdir(cache_folder)
@@ -280,6 +302,11 @@ def load_all_cached():
 
 
 def list_files_recursive(folder):
+    """
+    Recursively lists all files in a directory, excluding symlinks and junctions.
+    """
+    import os
+    from ._fileio_supportfuncs import is_junction
     files = []
     try:
         for entry in os.scandir(folder):
@@ -295,6 +322,9 @@ def list_files_recursive(folder):
 
 
 def list_files_recursive_multiprocessed(dir_path, return_folders=False):
+    import os
+    import zhmiscellany.processing
+
     def is_junction(entry):
         try:
             st = entry.stat(follow_symlinks=False)
@@ -342,6 +372,8 @@ def list_files_recursive_multiprocessed(dir_path, return_folders=False):
 
 def encode_safe_filename(s, max_length=16):
     """Encodes a string into a short, URL-safe, and file name-safe string."""
+    import base64
+    import hashlib
     encoded = base64.urlsafe_b64encode(s.encode()).decode().rstrip("=")  # URL-safe encoding
     if len(encoded) > max_length:  # Truncate if too long
         encoded = hashlib.md5(s.encode()).hexdigest()[:max_length]  # Use a hash
@@ -349,6 +381,15 @@ def encode_safe_filename(s, max_length=16):
 
 
 def list_files_recursive_cache_optimised_multiprocessed(dir_path, show_timings=False, cache_in_temp=True):
+    import os
+    import zhmiscellany.processing
+    import zhmiscellany.fileio
+    import tempfile
+    from collections import defaultdict
+    import random
+    from itertools import chain
+    import zhmiscellany.misc
+
     def is_junction(entry):
         try:
             st = entry.stat(follow_symlinks=False)
@@ -501,7 +542,6 @@ def list_files_recursive_cache_optimised_multiprocessed(dir_path, show_timings=F
     
     groups = split_into_n_groups(changed_folders, scan_changed_folders_thread_group_count)
     tasks = [(atom, (group,)) for group in groups]
-
     if not tasks:
         results = []
     else:
@@ -516,19 +556,16 @@ def list_files_recursive_cache_optimised_multiprocessed(dir_path, show_timings=F
     if len(changed_folders) > fully_update_cache_threshold:
         new_folders.update(get_m_times(new_new_folders))
         if show_timings: zhmiscellany.misc.time_it(f'get m times of {len(new_new_folders)} new folders')
-        
         zhmiscellany.fileio.save_object_to_file((files, new_folders), cache_file)
-        
         if show_timings: zhmiscellany.misc.time_it(f'writing to cache')
     
     ret = list(chain.from_iterable(files.values()))
-    
     if show_timings: zhmiscellany.misc.time_it('Everything together', 'lfrcomt')
-    
     return ret
 
 
 def save_chunk(name, data):
+    import zhmiscellany.string
     create_folder(name)
     chunk_path = f'{name}/chunk_{zhmiscellany.string.get_universally_unique_string()}.pkl'
     save_object_to_file(data, chunk_path)
@@ -544,8 +581,12 @@ def load_chunks(name):
 
 
 def clear_chunks(name):
+    import os
     if os.path.exists(name):
         empty_directory(name)
 
+
 def list_drives():
+    import os
+    import string
     return [f"{d}:\\" for d in string.ascii_uppercase if os.path.exists(f"{d}:\\")]

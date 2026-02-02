@@ -1,15 +1,8 @@
-import os, requests
-import zhmiscellany.string
 import sys
 
 WIN32_AVAILABLE = False
 if sys.platform == "win32":
-    try:
-        from zhmiscellany._misc_supportfuncs import patch_rhg
-        from random_header_generator import HeaderGenerator
-        WIN32_AVAILABLE = True
-    except ImportError:
-        print("Warning: random_header_generator not available, Windows-specific features disabled")
+    WIN32_AVAILABLE = True
 
 
 def resolve_file(url, destination_folder="."):
@@ -23,6 +16,7 @@ def resolve_file(url, destination_folder="."):
 
 
 def download_file(url, destination_folder=".", just_return_path=False, headers=None, file_path=None):
+    import os, requests
     from urllib3.exceptions import InsecureRequestWarning
     import urllib3
     urllib3.disable_warnings(InsecureRequestWarning)
@@ -58,6 +52,8 @@ def generate_headers(url):
     headers = {}
     
     if WIN32_AVAILABLE:
+        from zhmiscellany._misc_supportfuncs import _
+        from random_header_generator import HeaderGenerator
         generator = HeaderGenerator()
         for k, v in generator().items():
             headers[k] = v
@@ -69,6 +65,7 @@ def generate_headers(url):
 
 
 def is_internet():
+    import os, requests
     urls = [
         "http://1.1.1.1",
         "https://www.google.com",

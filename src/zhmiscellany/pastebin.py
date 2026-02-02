@@ -1,16 +1,15 @@
-
-import requests
-
 # PasteBin API Class - Developed by acidvegas in Python, modernized for use in zhmiscellany package. (https://git.acid.vegas/pastebin)
 class PasteBin:
     def __init__(self, api_dev_key, api_user_key=None):
+        import requests
+        self.requests = requests
         self.api_dev_key = api_dev_key
         self.api_user_key = api_user_key
 
     def api_call(self, method, params):
         '''Make a call to the PasteBin API.'''
         url = f'https://pastebin.com/api/{method}'
-        response = requests.post(url, data=params, timeout=10)
+        response = self.requests.post(url, data=params, timeout=10)
         try:
             response.raise_for_status()  # Raise an exception for HTTP errors
         except:
@@ -102,6 +101,8 @@ class PasteBin:
 
 class Pasteee:
     def __init__(self, api_key):
+        import requests
+        self.requests = requests
         self.api_key = api_key
         self.base_url = "https://api.paste.ee/v1/pastes"
 
@@ -111,15 +112,15 @@ class Pasteee:
         url = f"{self.base_url}{endpoint}"
 
         if method == 'POST':
-            response = requests.post(url, headers=headers, json=json_data, params=params, timeout=10)
+            response = self.requests.post(url, headers=headers, json=json_data, params=params, timeout=10)
         elif method == 'GET':
-            response = requests.get(url, headers=headers, params=params, timeout=10)
+            response = self.requests.get(url, headers=headers, params=params, timeout=10)
         elif method == 'DELETE':
-            response = requests.delete(url, headers=headers, params=params, timeout=10)
+            response = self.requests.delete(url, headers=headers, params=params, timeout=10)
 
         try:
             response.raise_for_status()
-        except requests.exceptions.RequestException as e:
+        except self.requests.exceptions.RequestException as e:
             raise Exception(f'ERROR {response.status_code}: {response.text}') from e
 
         return response.json()

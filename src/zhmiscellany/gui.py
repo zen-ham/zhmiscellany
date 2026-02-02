@@ -1,16 +1,7 @@
-import threading
 import sys
 
-# Windows-specific imports
 if sys.platform == "win32":
-    try:
-        import ctypes
-        from ctypes import wintypes
-        import win32gui
-        WIN32_AVAILABLE = True
-    except ImportError:
-        WIN32_AVAILABLE = False
-        print("Warning: Windows modules not available - GUI functionality disabled")
+    WIN32_AVAILABLE = True
 else:
     WIN32_AVAILABLE = False
 
@@ -26,6 +17,7 @@ class StateIndicator:
 
     def __init__(self, colour=(255, 0, 0), opacity=0.8, corner='topright', offset=(10, 10), size=_DEFAULT_SIZE):
         import tkinter as tk
+        import threading
         self.tk = tk
         self._colour = colour
         self._opacity = opacity
@@ -80,6 +72,9 @@ class StateIndicator:
         if not WIN32_AVAILABLE:
             print("Click-through only supported on Windows")
             return
+        else:
+            import ctypes
+            from ctypes import wintypes
             
         try:
             # Get the window handle
@@ -144,6 +139,9 @@ class StateIndicator:
         """Update the layered window attributes for proper transparency with click-through"""
         if not WIN32_AVAILABLE:
             return
+        else:
+            import ctypes
+            from ctypes import wintypes
             
         try:
             hwnd = ctypes.windll.user32.GetParent(self._root.winfo_id())
@@ -199,29 +197,38 @@ class StateIndicator:
                 self._root.after(0, self._update_size_internal)
 
 if WIN32_AVAILABLE:
-    user32 = ctypes.windll.user32
-
     def get_focused_window():
         """Return the window that currently has the keyboard focus."""
+        import ctypes
+        from ctypes import wintypes
+        user32 = ctypes.windll.user32
         return user32.GetForegroundWindow()
 
     def get_window_rect(hwnd):
         """Return the bounding rectangle of a window."""
+        import ctypes
+        from ctypes import wintypes
         HWND = wintypes.HWND
         RECT = wintypes.RECT
         rect = RECT()
+        user32 = ctypes.windll.user32
         user32.GetWindowRect(hwnd, ctypes.byref(rect))
         return rect
 
     def set_window_pos(hwnd, x: int, y: int, w: int, h: int):
         """Move (and optionally resize) a window."""
         # 0x0040 == SWP_NOACTIVATE | 0x0020 == SWP_SHOWWINDOW
+        import ctypes
+        user32 = ctypes.windll.user32
         user32.SetWindowPos(hwnd, 0, x, y, w, h, 0x0040 | 0x0020)
 
 
     def find_window_by_title_fuzzy(title_query, threshold=70):
         from fuzzywuzzy import process
         from fuzzywuzzy import fuzz
+        import ctypes
+        from ctypes import wintypes
+        import win32gui
         def enum_windows_callback(hwnd, windows):
             if win32gui.IsWindowVisible(hwnd):
                 window_title = win32gui.GetWindowText(hwnd)

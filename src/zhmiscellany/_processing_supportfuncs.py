@@ -1,11 +1,5 @@
 # these lines are purposefully the first thing to run when zhmiscellany is imported
-import threading, logging, os, inspect, tempfile, shutil
-from itertools import chain
-import zhmiscellany.fileio
-from io import StringIO
-import sys
-import io
-from unittest.mock import patch
+import sys  # cannot be moved
 
 # Ray availability check
 if sys.platform == "win32" or True:
@@ -13,8 +7,13 @@ if sys.platform == "win32" or True:
 else:
     RAY_AVAILABLE = False
 
+import os  # needed for module-level log clearing and cause detection
 
 def clear_logs():
+    import tempfile
+    import os
+    import shutil
+    import zhmiscellany.fileio
     ray_dir = tempfile.gettempdir()
     ray_dir = os.path.join(ray_dir, 'ray')
     
@@ -46,6 +45,7 @@ if 'ray_logs_cleared' not in os.environ:
 
 
 def safe_open_log(path, unbuffered=False, **kwargs):
+    import os
     try:
         kwargs.setdefault("buffering", 1)
         kwargs.setdefault("mode", "a")
@@ -65,6 +65,8 @@ def safe_open_log(path, unbuffered=False, **kwargs):
 
 
 def ray_init(auto=False):
+    import threading
+    import os
     if not RAY_AVAILABLE:
         print("ray_init() only supports Windows! Functionality disabled")
         return
@@ -96,6 +98,10 @@ def _ray_init():
 
     try:
         def safe_ray_init():
+            import sys
+            import io
+            import ray
+
             def ensure_valid_handles():
                 """Ensure stdout and stderr are valid file-like objects"""
                 if not hasattr(sys.stdout, 'write') or sys.stdout.closed:
@@ -136,6 +142,7 @@ def _ray_init():
 
 
 def get_import_chain():
+    import inspect
     frame = inspect.currentframe()
     chain = []
     while frame:
@@ -149,6 +156,8 @@ def get_import_chain():
         frame = frame.f_back
     return chain[::-1]
 
+
+# Cause detection for auto-initializing ray
 cause_strings = [
     'processing.multiprocess(',
     'processing.batch_multiprocess(',
@@ -171,6 +180,7 @@ for file in cause_files:
             cause = True
             break
 
+import threading
 _ray_init_thread = threading.Thread()  # initialize variable to completed thread
 _ray_init_thread.start()
 
@@ -194,6 +204,8 @@ class ThreadWithResult(threading.Thread):
 
 
 def batch_multiprocess(targets_and_args, max_retries=0, expect_crashes=False, disable_warning=False, flatten=False):
+    import logging
+    from itertools import chain
     if not RAY_AVAILABLE:
         print("batch_multiprocess() only supports Windows! Returning empty list")
         return []
@@ -213,6 +225,7 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
     _ray_init_thread.join()
     
     if not expect_crashes:
+        import ray
         @ray.remote(max_retries=max_retries, num_cpus=0)
         def worker(func, *args):
             return func(*args)
@@ -223,12 +236,14 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
             results = list(chain.from_iterable(results))
         return results
     else:
+        import ray
         def wrap_exception(task, disable_warning, max_retries):
             try:
                 result = multiprocess(*task, disable_warning=disable_warning, max_retries=max_retries)
                 return result
             except ray.exceptions.WorkerCrashedError:
                 return None
+        import threading  # this import is explicitly in the original code
         threads = []
         for task in targets_and_args:
             t = ThreadWithResult(
@@ -244,6 +259,7 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
             results = list(chain.from_iterable(results))
         return results
 
+
 def multiprocess(target, args=(), max_retries=0, disable_warning=False):
     if not RAY_AVAILABLE:
         print("multiprocess() only supports Windows! Returning None")
@@ -255,10 +271,12 @@ class RayActorWrapper:
     def __init__(self, actor_instance):
         self._actor = actor_instance
         
+        import ray
         ray.get(self._actor._ready.remote())
     
     def __getattr__(self, name):
         # When you access an attribute, assume it's a remote method.
+        import ray
         remote_method = getattr(self._actor, name)
         if not callable(remote_method):
             # If it's not callable, try to get its value.
@@ -274,6 +292,8 @@ class RayActorWrapper:
 
 
 def synchronous_class_multiprocess(cls, *args, disable_warning=False, **kwargs):
+    import logging
+    import ray
     if not RAY_AVAILABLE:
         print("synchronous_class_multiprocess() only supports Windows! Returning None")
         return None

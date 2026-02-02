@@ -1,12 +1,7 @@
-from ._processing_supportfuncs import batch_multiprocess, multiprocess, synchronous_class_multiprocess, ThreadWithResult
-import threading, kthread
-import traceback
-import zhmiscellany.string
-import subprocess, zlib, pickle, dill, tempfile, os, base64
-from itertools import chain
-
+import threading
 
 def start_daemon(**kwargs):
+    import threading
     thread = threading.Thread(**kwargs)
     thread.daemon = True
     thread.start()
@@ -15,6 +10,8 @@ def start_daemon(**kwargs):
 
 def batch_threading(targets, max_threads=None, show_errors=True, flatten=False):
     import concurrent.futures
+    import traceback
+    from itertools import chain
     def execute_target(target):
         try: return target[0](*target[1])
         except Exception:
@@ -35,6 +32,7 @@ def batch_threading(targets, max_threads=None, show_errors=True, flatten=False):
 
 def batch_threading_gen(targets, max_threads=None, show_errors=True):
     import concurrent.futures
+    import traceback
     def execute_target(target):
         try: return target[0](*target[1])
         except Exception:
@@ -50,6 +48,9 @@ def batch_threading_gen(targets, max_threads=None, show_errors=True):
 
 
 def batch_multiprocess_threaded(targets_and_args, disable_warning=False, killable=False, daemon=False):
+    import kthread
+    import threading
+    from ._processing_supportfuncs import batch_multiprocess
     if killable:
         thread_method = kthread.KThread
     else:
@@ -66,6 +67,13 @@ def multiprocess_threaded(target, args=(), disable_warning=False, killable=False
 
 
 def raw_multiprocess(func, args=(), fileless=True):
+    import zhmiscellany.string
+    import subprocess
+    import tempfile
+    import os
+    import zlib
+    import pickle
+    import dill
     cap_string = b'|'+bytes(zhmiscellany.string.get_universally_unique_string(), 'u8')+b'|'
     code = \
 '''import os, dill, zlib, sys, pickle, traceback, psutil, signal
@@ -159,6 +167,14 @@ if __name__ == "__main__":
 
 
 def raw_continuous_multiprocess(input_class, args=(), fileless=True, cleanup_file=True):
+    import zhmiscellany.string
+    import subprocess
+    import tempfile
+    import os
+    import zlib
+    import pickle
+    import dill
+    import base64
     cap_string = b'|' + bytes(zhmiscellany.string.get_universally_unique_string(), 'u8') + b'|'
     block_header_string = b'|' + bytes(zhmiscellany.string.get_universally_unique_string(), 'u8') + b'|'
     completion_marker = b'|' + bytes(zhmiscellany.string.get_universally_unique_string(), 'u8') + b'|'

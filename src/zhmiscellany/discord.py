@@ -1,32 +1,16 @@
-import time
-import sys
-import requests
-import copy
-import zhmiscellany.fileio
-import zhmiscellany.netio
-import zhmiscellany.processing
+import sys  # cannot be touched because it's needed
 from ._discord_supportfuncs import scrape_guild
-
-import base64
-import os
-import json
-import re
 
 # Windows-specific imports
 if sys.platform == "win32":
-    try:
-        import win32crypt
-        from Crypto.Cipher import AES
-        WIN32_AVAILABLE = True
-    except ImportError:
-        WIN32_AVAILABLE = False
-        print("Warning: Windows modules not available - local Discord user detection disabled")
+    WIN32_AVAILABLE = True
 else:
     WIN32_AVAILABLE = False
 
 
 def add_reactions_to_message(user_token, emojis, channel_id, message_id):
-
+    import time
+    import requests
     for emoji in emojis:
         url = f'https://discord.com/api/v9/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me'
         #headers = {**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token}
@@ -54,7 +38,9 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
     '''
     Function to get all client messages in a specific channel. Script by @z_h_ on discord.
     '''
-
+    import requests
+    import zhmiscellany.fileio
+    import os
     if use_cache:
         cache_folder = 'zhmiscellany_cache'
         zhmiscellany.fileio.create_folder(cache_folder)
@@ -118,10 +104,18 @@ def get_channel_messages(user_token, channel_id, limit=0, use_cache=True, show_p
 
 
 def get_local_discord_user(show_output=False):
+    import requests
+    import os
+    import json
+    import re
+    import base64
+    import win32crypt
+    from Crypto.Cipher import AES
+    import zhmiscellany.netio
     if not WIN32_AVAILABLE:
         print("get_local_discord_user() only supports Windows! Returning None")
         return None
-        
+
     global _cached_user_info
     try:
         a = _cached_user_info
@@ -241,6 +235,9 @@ def get_local_discord_user(show_output=False):
 
 
 def get_guild_channels(user_token, guild_id, use_cache=True):
+    import requests
+    import os
+    import zhmiscellany.netio
     if use_cache:
         potential_path = os.path.join('zhmiscellany_cache', f'{guild_id}_channels.json')
         if os.path.exists(potential_path):
@@ -260,12 +257,17 @@ def get_guild_channels(user_token, guild_id, use_cache=True):
 
 
 def send_type(user_token, channel_id):  # after sending the typing post request, the account will be shown as "typing" in the given channel for 10 seconds, or until a message is sent.
+    import requests
+    import zhmiscellany.netio
     url = f'https://discord.com/api/v9/channels/{channel_id}/typing'
     headers = {**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token}
     return requests.post(url, headers=headers)
 
 
 def send_message(user_token, text, channel_id, attachments=None, typing_time=0):
+    import time
+    import requests
+    import zhmiscellany.processing
     typing_time_increments = 9.5  # not set to 10 because then every 10 seconds the typing would stop very briefly
     while typing_time > 0:
         zhmiscellany.processing.start_daemon(target=send_type, args=(user_token, channel_id))
@@ -294,6 +296,8 @@ def send_message(user_token, text, channel_id, attachments=None, typing_time=0):
 
 
 def get_message(user_token, channel_id, message_id):
+    import requests
+    import zhmiscellany.netio
     message_url = f'https://discord.com/api/v9/channels/{channel_id}/messages?limit=1&around={message_id}'
     message = requests.get(message_url, headers={**zhmiscellany.netio.generate_headers(message_url), 'Authorization': user_token})
     message = message.json()
@@ -308,6 +312,7 @@ def ids_to_message_url(channel_id, message_id, guild_id=None):
 
 
 def message_url_to_ids(message_url):
+    import re
     # Regular expressions to extract IDs
     guild_channel_message_regex = r'https:\/\/discord\.com\/channels\/(\d+)\/(\d+)\/(\d+)'
     channel_message_regex = r'https:\/\/discord\.com\/channels\/(\d+)\/(\d+)'
@@ -336,6 +341,8 @@ def decode_user_id(user_token):
     padded_base64 = payload_base64 + '=' * (4 - len(payload_base64) % 4)
 
     # Decoding the base64 and converting to a JSON object
+    import base64
+    import json
     payload_json = base64.b64decode(padded_base64).decode('utf-8')
     user_id = json.loads(payload_json)
 
@@ -343,6 +350,9 @@ def decode_user_id(user_token):
 
 
 def get_guilds(user_token, use_cache=True):
+    import requests
+    import os
+    import zhmiscellany.netio
     if use_cache:
         potential_path = os.path.join('zhmiscellany_cache', f'{decode_user_id(user_token)}_guilds.json')
         if os.path.exists(potential_path):
@@ -361,6 +371,9 @@ def get_guilds(user_token, use_cache=True):
 
 
 def get_dm_channels(user_token, use_cache=True):
+    import requests
+    import os
+    import zhmiscellany.netio
     if use_cache:
         potential_path = os.path.join('zhmiscellany_cache', f'{decode_user_id(user_token)}_dm_channels.json')
         if os.path.exists(potential_path):
@@ -379,6 +392,9 @@ def get_dm_channels(user_token, use_cache=True):
 
 
 def get_invite_info(user_token, invite_code, use_cache=True):
+    import requests
+    import os
+    import zhmiscellany.netio
     if use_cache:
         potential_path = os.path.join('zhmiscellany_cache', f'{invite_code}_invite.json')
         if os.path.exists(potential_path):
@@ -397,6 +413,8 @@ def get_invite_info(user_token, invite_code, use_cache=True):
 
 
 def generate_server_invite(user_token, channel_id):
+    import zhmiscellany.netio
+    import requests
     url = f"https://discord.com/api/v9/channels/{channel_id}/invites"
     response = requests.get(url, headers={**zhmiscellany.netio.generate_headers(url), 'Authorization': user_token})
 
@@ -408,6 +426,8 @@ def generate_server_invite(user_token, channel_id):
 
 
 def get_approximate_member_count(user_token, channel_id, use_cache=True):
+    import os
+    import zhmiscellany.netio
     if use_cache:
         potential_path = os.path.join('zhmiscellany_cache', f'{channel_id}_member_count.json')
         if os.path.exists(potential_path):
@@ -434,6 +454,9 @@ def timestamp_to_id(timestamp):
 
 
 def get_user_avatar_url(user_token, user_id, use_cache=True):
+    import requests
+    import os
+    import zhmiscellany.netio
     url = f"https://discord.com/api/v10/users/{user_id}"
 
     if use_cache:
