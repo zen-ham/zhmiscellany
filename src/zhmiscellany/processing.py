@@ -1,3 +1,4 @@
+from ._processing_supportfuncs import batch_multiprocess, multiprocess, synchronous_class_multiprocess, ThreadWithResult
 import threading
 
 def start_daemon(**kwargs):
@@ -50,7 +51,6 @@ def batch_threading_gen(targets, max_threads=None, show_errors=True):
 def batch_multiprocess_threaded(targets_and_args, disable_warning=False, killable=False, daemon=False):
     import kthread
     import threading
-    from ._processing_supportfuncs import batch_multiprocess
     if killable:
         thread_method = kthread.KThread
     else:
