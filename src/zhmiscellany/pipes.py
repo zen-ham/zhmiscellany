@@ -2,7 +2,6 @@ import threading
 import queue
 import time
 import sys
-import zhmiscellany.string
 
 WIN32_AVAILABLE = False
 if sys.platform == "win32":

@@ -2,7 +2,6 @@ from ._processing_supportfuncs import batch_multiprocess, multiprocess, synchron
 import threading, kthread
 import traceback
 import zhmiscellany.string
-import concurrent.futures
 import subprocess, zlib, pickle, dill, tempfile, os, base64
 from itertools import chain
 
@@ -15,6 +14,7 @@ def start_daemon(**kwargs):
 
 
 def batch_threading(targets, max_threads=None, show_errors=True, flatten=False):
+    import concurrent.futures
     def execute_target(target):
         try: return target[0](*target[1])
         except Exception:
@@ -34,6 +34,7 @@ def batch_threading(targets, max_threads=None, show_errors=True, flatten=False):
 
 
 def batch_threading_gen(targets, max_threads=None, show_errors=True):
+    import concurrent.futures
     def execute_target(target):
         try: return target[0](*target[1])
         except Exception:

@@ -429,7 +429,6 @@ def id_to_timestamp(id):
 
 
 def timestamp_to_id(timestamp):
-    id = int(id)
     DISCORD_EPOCH = 1420070400000
     return int((timestamp * 1000 - DISCORD_EPOCH) * 4194304)
 

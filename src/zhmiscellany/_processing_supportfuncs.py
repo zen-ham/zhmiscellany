@@ -9,11 +9,7 @@ from unittest.mock import patch
 
 # Ray availability check
 if sys.platform == "win32" or True:
-    try:
-        import ray
-        RAY_AVAILABLE = True
-    except ImportError:
-        RAY_AVAILABLE = False
+    RAY_AVAILABLE = True
 else:
     RAY_AVAILABLE = False
 

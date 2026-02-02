@@ -156,7 +156,7 @@ def get_actual_screen_resolution():
         try:
             return pyautogui.size()
         except Exception:
-            print("Could not determine screen resolution on Linux, defaulting to 1920x1080")
+            # Could not determine screen resolution on Linux, defaulting to 1920x1080
             return 1920, 1080
 
 

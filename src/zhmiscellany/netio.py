@@ -1,11 +1,6 @@
 import os, requests
 import zhmiscellany.string
-import urllib.parse
 import sys
-from urllib3.exceptions import InsecureRequestWarning
-import urllib3
-
-urllib3.disable_warnings(InsecureRequestWarning)
 
 WIN32_AVAILABLE = False
 if sys.platform == "win32":
@@ -18,6 +13,7 @@ if sys.platform == "win32":
 
 
 def resolve_file(url, destination_folder="."):
+    import urllib.parse
     file_name = urllib.parse.unquote(url.split("/")[-1])
     file_name = file_name.split('?')[0]
     destination_path = f"{destination_folder}/{file_name}"
@@ -27,6 +23,10 @@ def resolve_file(url, destination_folder="."):
 
 
 def download_file(url, destination_folder=".", just_return_path=False, headers=None, file_path=None):
+    from urllib3.exceptions import InsecureRequestWarning
+    import urllib3
+    urllib3.disable_warnings(InsecureRequestWarning)
+
     if file_path:
         destination_path = file_path
     else:
@@ -54,6 +54,7 @@ def download_file(url, destination_folder=".", just_return_path=False, headers=N
 
 
 def generate_headers(url):
+    import urllib.parse
     headers = {}
     
     if WIN32_AVAILABLE:

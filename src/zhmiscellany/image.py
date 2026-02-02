@@ -1,5 +1,4 @@
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
 import math
 
 
@@ -19,6 +18,8 @@ def image_diff(img1, img2):
 
 class Canvas:
     def __init__(self, width, height, colour=(0, 0, 0, 255)):
+        from PIL import Image, ImageDraw, ImageFont
+        self.ImageFont = ImageFont
         self.width = width
         self.height = height
         self.image = Image.new("RGBA", (self.width, self.height), color=colour)
@@ -83,11 +84,11 @@ class Canvas:
                 line_colour = default_color
 
         try:
-            font = ImageFont.truetype("consola.ttf", int(12 * text_scale))
+            font = self.ImageFont.truetype("consola.ttf", int(12 * text_scale))
         except IOError:
-            font = ImageFont.load_default()
+            font = self.ImageFont.load_default()
             if hasattr(font, "size"):
-                font = ImageFont.load_default().font_variant(size=int(12 * text_scale))
+                font = self.ImageFont.load_default().font_variant(size=int(12 * text_scale))
         text_bbox = self.draw.textbbox((0, 0), text, font=font)
         text_width = text_bbox[2] - text_bbox[0]
         text_height = text_bbox[3] - text_bbox[1]
