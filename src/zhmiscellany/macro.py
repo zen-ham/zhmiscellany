@@ -1,3 +1,4 @@
+from ._misc_supportfuncs import move_mouse, mouse_down, mouse_up, get_mouse_xy
 import sys
 
 IS_WINDOWS = sys.platform == "win32"
@@ -7,7 +8,6 @@ _last_press_time_map = {}  # Stores the last press timestamp for each key
 def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_click=False, shift=False, ctrl=False, act_start=True, act_end=True, click_end_duration=None, double_click=False, animation_time=None, animation_fps=60, animation_easing=True, relative=False, ensure_movement=True, pre_click_duration=None, pre_click_wiggle=True, click=True):
     import random
     import math
-    from ._misc_supportfuncs import move_mouse, mouse_down, mouse_up, get_mouse_xy
     import zhmiscellany.math
     if IS_WINDOWS:
         import win32api
