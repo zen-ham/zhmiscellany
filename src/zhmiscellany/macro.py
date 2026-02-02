@@ -792,5 +792,6 @@ KEY_CODES = {
     'StartApplication1': 182,
     'StartApplication2': 183,
     'Equals': 187,
+    'Comma': 188,
     'Minus': 189,
 }
