@@ -231,77 +231,78 @@ def cache(function, *args, _cache_compressed=False, **kwargs):
 
     cache_folder = 'zhmiscellany_cache'
 
+    def normalize_for_json(obj):
+        """Recursively normalize objects to be JSON-serializable."""
+        if callable(obj):
+            try:
+                return ('__callable__', inspect.getsource(obj))
+            except (OSError, TypeError):
+                return ('__callable__', str(obj))
+
+        # Handle dict-like objects (including bidict, defaultdict, etc.)
+        if isinstance(obj, dict):
+            # Convert non-string keys to strings
+            return {str(k): normalize_for_json(v) for k, v in obj.items()}
+
+        # Handle lists and tuples
+        if isinstance(obj, (list, tuple)):
+            return type(obj)(normalize_for_json(item) for item in obj)
+
+        # Handle sets
+        if isinstance(obj, set):
+            return sorted([normalize_for_json(item) for item in obj])
+
+        # Handle pandas DataFrames
+        if hasattr(obj, '__class__') and obj.__class__.__name__ == 'DataFrame':
+            try:
+                import pandas as pd
+                if isinstance(obj, pd.DataFrame):
+                    return {
+                        '__type__': 'DataFrame',
+                        'data': obj.to_dict(orient='split'),
+                        'dtypes': {col: str(dtype) for col, dtype in obj.dtypes.items()},
+                        'index_name': obj.index.name,
+                        'columns': list(obj.columns)
+                    }
+            except ImportError:
+                pass
+
+        # Handle pandas Series
+        if hasattr(obj, '__class__') and obj.__class__.__name__ == 'Series':
+            try:
+                import pandas as pd
+                if isinstance(obj, pd.Series):
+                    return {
+                        '__type__': 'Series',
+                        'data': obj.to_dict(),
+                        'dtype': str(obj.dtype),
+                        'name': obj.name,
+                        'index': list(obj.index)
+                    }
+            except ImportError:
+                pass
+
+        # Handle bytes
+        if isinstance(obj, bytes):
+            return ('__bytes__', obj.hex())
+
+        # Handle datetime
+        if isinstance(obj, datetime):
+            return ('__datetime__', obj.isoformat())
+
+        # Handle custom objects with __dict__
+        if hasattr(obj, '__dict__') and not isinstance(obj, type):
+            return {f'__{obj.__class__.__name__}__': normalize_for_json(obj.__dict__)}
+
+        # Return primitives as-is
+        return obj
+
     def get_hash_orjson(data):
-        def default_converter(obj):
-            if callable(obj):
-                try:
-                    return inspect.getsource(obj)
-                except (OSError, TypeError):
-                    return str(obj)  # Fallback for lambdas/partials
-
-            # DICT-LIKE OBJECTS WITH NON-STRING KEYS (e.g., bidict, defaultdict, etc.)
-            # Convert keys to strings to make them JSON-serializable
-            if isinstance(obj, dict):
-                try:
-                    # Check if any key is not a string
-                    if any(not isinstance(k, str) for k in obj.keys()):
-                        return {str(k): v for k, v in obj.items()}
-                except (TypeError, AttributeError):
-                    pass
-
-            # PANDAS DATAFRAMES: Convert to stable dictionary format
-            if hasattr(obj, '__class__') and obj.__class__.__name__ == 'DataFrame':
-                try:
-                    import pandas as pd
-                    if isinstance(obj, pd.DataFrame):
-                        # Convert to dict with records orientation for stability
-                        # Include dtypes to ensure type information is preserved
-                        return {
-                            'data': obj.to_dict(orient='split'),
-                            'dtypes': {col: str(dtype) for col, dtype in obj.dtypes.items()},
-                            'index_name': obj.index.name,
-                            'columns': list(obj.columns)
-                        }
-                except ImportError:
-                    pass
-
-            # PANDAS SERIES: Similar handling
-            if hasattr(obj, '__class__') and obj.__class__.__name__ == 'Series':
-                try:
-                    import pandas as pd
-                    if isinstance(obj, pd.Series):
-                        return {
-                            'data': obj.to_dict(),
-                            'dtype': str(obj.dtype),
-                            'name': obj.name,
-                            'index': list(obj.index)
-                        }
-                except ImportError:
-                    pass
-
-            # SETS: Must be sorted to ensure determinism!
-            # JSON doesn't support sets, so we turn them into sorted lists.
-            if isinstance(obj, set):
-                return sorted(list(obj))
-
-            # BYTES: Decode to string (if utf-8) or hex
-            if isinstance(obj, bytes):
-                return obj.hex()
-
-            # DATETIMES: Convert to ISO format string
-            if isinstance(obj, datetime):
-                return obj.isoformat()
-
-            # CUSTOM OBJECTS: Try to return their __dict__ or string rep
-            if hasattr(obj, '__dict__'):
-                return obj.__dict__
-
-            # Fallback: String representation (risky if str() format changes)
-            return str(obj)
+        # Pre-process the data to handle non-string keys and other issues
+        normalized_data = normalize_for_json(data)
 
         json_bytes = orjson.dumps(
-            data,
-            default=default_converter,
+            normalized_data,
             option=orjson.OPT_SORT_KEYS
         )
         return hashlib.md5(json_bytes).hexdigest()
