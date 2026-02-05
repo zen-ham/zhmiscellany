@@ -300,7 +300,7 @@ def cache(function, *args, _cache_compressed=False, **kwargs):
         'function': function,
         'args': args,
         'kwargs': kwargs,
-        'compressed': compressed
+        'compressed': _cache_compressed
     }
 
     seed_hash = get_hash_orjson(seed)
@@ -308,11 +308,11 @@ def cache(function, *args, _cache_compressed=False, **kwargs):
     cache_file = f'{cache_folder}/cache_{function.__name__}_{seed_hash}.pkl'
 
     if os.path.exists(cache_file):
-        return load_object_from_file(cache_file, compressed=compressed)
+        return load_object_from_file(cache_file, compressed=_cache_compressed)
     else:
         result = function(*args, **kwargs)
         zhmiscellany.fileio.create_folder(cache_folder)
-        save_object_to_file(result, cache_file, compressed=compressed)
+        save_object_to_file(result, cache_file, compressed=_cache_compressed)
         return result
 
 
