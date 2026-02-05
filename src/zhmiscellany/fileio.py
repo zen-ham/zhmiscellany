@@ -162,7 +162,7 @@ def save_object_to_file(object, file_name, compressed=False):
     import lzma
     with open(file_name, 'wb') as f:
         if compressed:
-            f.write(lzma.compress(fast_dill_dumps(object)))
+            f.write(lzma.compress(fast_dill_dumps(object), preset=9 | lzma.PRESET_EXTREME))
         else:
             f.write(fast_dill_dumps(object))
 
@@ -180,7 +180,7 @@ def pickle_and_encode(obj):
     """Pickles an object and URL-safe encodes it."""
     import base64
     import lzma
-    pickled_data = lzma.compress(fast_dill_dumps(obj), 9)  # Serialize the object
+    pickled_data = lzma.compress(fast_dill_dumps(obj), preset=9 | lzma.PRESET_EXTREME)  # Serialize the object
     encoded_data = base64.urlsafe_b64encode(pickled_data).decode()  # Base64 encode
     return encoded_data
 
