@@ -159,19 +159,19 @@ def fast_dill_loads(data):
 
 
 def save_object_to_file(object, file_name, compressed=False):
-    import zlib
+    import lzma
     with open(file_name, 'wb') as f:
         if compressed:
-            f.write(zlib.compress(fast_dill_dumps(object)))
+            f.write(lzma.compress(fast_dill_dumps(object)))
         else:
             f.write(fast_dill_dumps(object))
 
 
 def load_object_from_file(file_name, compressed=False):
-    import zlib
+    import lzma
     with open(file_name, 'rb') as f:
         if compressed:
-            return fast_dill_loads(zlib.decompress(f.read()))
+            return fast_dill_loads(lzma.decompress(f.read()))
         else:
             return fast_dill_loads(f.read())
 
@@ -179,8 +179,8 @@ def load_object_from_file(file_name, compressed=False):
 def pickle_and_encode(obj):
     """Pickles an object and URL-safe encodes it."""
     import base64
-    import zlib
-    pickled_data = zlib.compress(fast_dill_dumps(obj), 9)  # Serialize the object
+    import lzma
+    pickled_data = lzma.compress(fast_dill_dumps(obj), 9)  # Serialize the object
     encoded_data = base64.urlsafe_b64encode(pickled_data).decode()  # Base64 encode
     return encoded_data
 
@@ -188,9 +188,9 @@ def pickle_and_encode(obj):
 def decode_and_unpickle(encoded_str):
     """Decodes a URL-safe encoded string and unpickles the object."""
     import base64
-    import zlib
+    import lzma
     pickled_data = base64.urlsafe_b64decode(encoded_str)  # Decode from Base64
-    obj = fast_dill_loads(zlib.decompress(pickled_data))  # Deserialize
+    obj = fast_dill_loads(lzma.decompress(pickled_data))  # Deserialize
     return obj
 
 
@@ -218,7 +218,7 @@ def chdir_to_script_dir():
     os.chdir(os.path.dirname(get_script_path()))
 
 
-def cache(function, *args, **kwargs):
+def cache(function, *args, compressed=False, **kwargs):
     """
     Caches the result of a function call to disk.
     """
@@ -299,7 +299,8 @@ def cache(function, *args, **kwargs):
     seed = {
         'function': function,
         'args': args,
-        'kwargs': kwargs
+        'kwargs': kwargs,
+        'compressed': compressed
     }
 
     seed_hash = get_hash_orjson(seed)
@@ -307,11 +308,11 @@ def cache(function, *args, **kwargs):
     cache_file = f'{cache_folder}/cache_{function.__name__}_{seed_hash}.pkl'
 
     if os.path.exists(cache_file):
-        return load_object_from_file(cache_file)
+        return load_object_from_file(cache_file, compressed=compressed)
     else:
         result = function(*args, **kwargs)
         zhmiscellany.fileio.create_folder(cache_folder)
-        save_object_to_file(result, cache_file)
+        save_object_to_file(result, cache_file, compressed=compressed)
         return result
 
 

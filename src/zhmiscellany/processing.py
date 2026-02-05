@@ -71,17 +71,17 @@ def raw_multiprocess(func, args=(), fileless=True):
     import subprocess
     import tempfile
     import os
-    import zlib
+    import lzma
     import pickle
     import dill
     cap_string = b'|'+bytes(zhmiscellany.string.get_universally_unique_string(), 'u8')+b'|'
     code = \
-'''import os, dill, zlib, sys, pickle, traceback, psutil, signal
+'''import os, dill, lzma, sys, pickle, traceback, psutil, signal
 cwd = '''+repr(os.getcwd())+'''
 host_pid = {os.getpid()}
 os.chdir(os.path.dirname(cwd))
-func = dill.loads(zlib.decompress('''+repr(zlib.compress(dill.dumps(func), 9))+'''))
-args_list = dill.loads(zlib.decompress('''+repr(zlib.compress(dill.dumps(args), 9))+f'''))
+func = dill.loads(lzma.decompress('''+repr(lzma.compress(dill.dumps(func), 9))+'''))
+args_list = dill.loads(lzma.decompress('''+repr(lzma.compress(dill.dumps(args), 9))+f'''))
 if __name__ == "__main__":
     data = [None, None]
     def sync_host_alive_state():
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         except:
             pickled = pickle.dumps([1, None], protocol=5)
     del data
-    compressed = zlib.compress(pickled, 9);del pickled
+    compressed = lzma.compress(pickled, 9);del pickled
     sys.stdout.buffer.write({repr(cap_string)} + compressed + {repr(cap_string)})
     sys.stdout.buffer.flush()
 '''
@@ -146,7 +146,7 @@ if __name__ == "__main__":
         raise Exception(f'Critical error in process:\n{raw}')
     
     try:
-        decompressed = zlib.decompress(raw)
+        decompressed = lzma.decompress(raw)
     except Exception as e:
         print(raw)
         raise e
@@ -171,7 +171,7 @@ def raw_continuous_multiprocess(input_class, args=(), fileless=True, cleanup_fil
     import subprocess
     import tempfile
     import os
-    import zlib
+    import lzma
     import pickle
     import dill
     import base64
@@ -185,7 +185,7 @@ def raw_continuous_multiprocess(input_class, args=(), fileless=True, cleanup_fil
     marker_prefix = block_header_str + cap_str
     
     code = f'''
-import os, dill, zlib, sys, pickle, traceback, base64, threading, psutil, time, signal
+import os, dill, lzma, sys, pickle, traceback, base64, threading, psutil, time, signal
 cwd = {repr(os.getcwd())}
 host_pid = {os.getpid()}
 os.chdir(os.path.dirname(cwd))
@@ -210,13 +210,13 @@ if __name__=="__main__":
                 pickled = dill.dumps(data, protocol=5)
             except:
                 pickled = pickle.dumps([1, None], protocol=5)
-        compressed = zlib.compress(pickled, 9)
+        compressed = lzma.compress(pickled, 9)
         encoded = base64.b64encode(compressed).decode('utf-8')
         print({repr(block_header_str)} + {repr(cap_str)} + encoded + {repr(cap_str)} + '\\n', flush=True, end='')
     computed = False
     try:
-        cls = dill.loads(zlib.decompress({repr(zlib.compress(dill.dumps(input_class), 9))}))
-        args_list = dill.loads(zlib.decompress({repr(zlib.compress(dill.dumps(args), 9))}))
+        cls = dill.loads(lzma.decompress({repr(lzma.compress(dill.dumps(input_class), 9))}))
+        args_list = dill.loads(lzma.decompress({repr(lzma.compress(dill.dumps(args), 9))}))
         computed = True
     except:
         data[0] = traceback.format_exc()
@@ -278,7 +278,7 @@ if __name__=="__main__":
         encoded = line[len(marker_prefix):-len(cap_str)]
         try:
             compressed = base64.b64decode(encoded)
-            decompressed = zlib.decompress(compressed)
+            decompressed = lzma.decompress(compressed)
         except Exception as e:
             raise Exception("Error decoding output") from e
         try:
