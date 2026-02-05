@@ -239,6 +239,16 @@ def cache(function, *args, _cache_compressed=False, **kwargs):
                 except (OSError, TypeError):
                     return str(obj)  # Fallback for lambdas/partials
 
+            # DICT-LIKE OBJECTS WITH NON-STRING KEYS (e.g., bidict, defaultdict, etc.)
+            # Convert keys to strings to make them JSON-serializable
+            if isinstance(obj, dict):
+                try:
+                    # Check if any key is not a string
+                    if any(not isinstance(k, str) for k in obj.keys()):
+                        return {str(k): v for k, v in obj.items()}
+                except (TypeError, AttributeError):
+                    pass
+
             # PANDAS DATAFRAMES: Convert to stable dictionary format
             if hasattr(obj, '__class__') and obj.__class__.__name__ == 'DataFrame':
                 try:
