@@ -218,7 +218,7 @@ def chdir_to_script_dir():
     os.chdir(os.path.dirname(get_script_path()))
 
 
-def cache(function, *args, compressed=False, **kwargs):
+def cache(function, *args, _cache_compressed=False, **kwargs):
     """
     Caches the result of a function call to disk.
     """
