@@ -367,26 +367,35 @@ def get_mouse_buttons():
         bool(GetAsyncKeyState(VK_MBUTTON) & 0x8000)
     ]
 
-def better_wait_for(key):
+
+def better_wait_for(key, wait_for_release=False):
     import threading
     import keyboard
     import time
-    
+
     key_name = key.lower()
-    press_event = threading.Event() # Event to signal when the key is pressed
-    _last_press_time_map.setdefault(key_name, 0) # Initialize last press time for this key
+    event_signal = threading.Event()  # Event to signal when the key event occurs
+    _last_press_time_map.setdefault(key_name, 0)  # Initialize last press time for this key
 
     def _on_key_event(e):
-        if e.name == key_name and e.event_type == keyboard.KEY_DOWN:
-            current_time = time.time()
-            _last_press_time_map[key_name] = current_time # Update last press time
-            press_event.set() # Signal that the key was pressed
+        if e.name == key_name:
+            if wait_for_release and e.event_type == keyboard.KEY_UP:
+                event_signal.set()  # Signal that the key was released
+            elif not wait_for_release and e.event_type == keyboard.KEY_DOWN:
+                current_time = time.time()
+                _last_press_time_map[key_name] = current_time  # Update last press time
+                event_signal.set()  # Signal that the key was pressed
 
-    hook_id = keyboard.on_press(_on_key_event) # Register the raw key press listener
-    press_event.wait() # Block execution until the press_event is set
-    keyboard.unhook(hook_id) # Clean up the listener after key is detected
+    # Register the appropriate listener based on wait_for_release
+    if wait_for_release:
+        hook_id = keyboard.on_release(_on_key_event)
+    else:
+        hook_id = keyboard.on_press(_on_key_event)
 
-def toggle_function(func, key='f8', blocking=True):
+    event_signal.wait()  # Block execution until the event is set
+    keyboard.unhook(hook_id)  # Clean up the listener after key is detected
+
+def toggle_function(func, key='f8', blocking=True, hold=False):
     import kthread
     import threading
     # better_wait_for is in the same module, no import needed
