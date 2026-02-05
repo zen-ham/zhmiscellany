@@ -400,17 +400,20 @@ def toggle_function(func, key='f8', blocking=True, hold=False):
     import threading
     # better_wait_for is in the same module, no import needed
     
-    def atom():
+    def atom(hold):
         while True:
             better_wait_for(key)
             t = kthread.KThread(target=func)
             t.start()
-            better_wait_for(key)
+            if not hold:
+                better_wait_for(key)
+            else:
+                better_wait_for(key, wait_for_release=True)
             t.kill()
     if blocking:
-        atom()
+        atom(hold)
     else:
-        t = threading.Thread(target=atom)
+        t = threading.Thread(target=atom, args=(hold,))
         t.start()
         return t
 
