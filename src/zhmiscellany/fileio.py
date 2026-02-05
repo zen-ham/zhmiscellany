@@ -238,7 +238,37 @@ def cache(function, *args, **kwargs):
                     return inspect.getsource(obj)
                 except (OSError, TypeError):
                     return str(obj)  # Fallback for lambdas/partials
-            
+
+            # PANDAS DATAFRAMES: Convert to stable dictionary format
+            if hasattr(obj, '__class__') and obj.__class__.__name__ == 'DataFrame':
+                try:
+                    import pandas as pd
+                    if isinstance(obj, pd.DataFrame):
+                        # Convert to dict with records orientation for stability
+                        # Include dtypes to ensure type information is preserved
+                        return {
+                            'data': obj.to_dict(orient='split'),
+                            'dtypes': {col: str(dtype) for col, dtype in obj.dtypes.items()},
+                            'index_name': obj.index.name,
+                            'columns': list(obj.columns)
+                        }
+                except ImportError:
+                    pass
+
+            # PANDAS SERIES: Similar handling
+            if hasattr(obj, '__class__') and obj.__class__.__name__ == 'Series':
+                try:
+                    import pandas as pd
+                    if isinstance(obj, pd.Series):
+                        return {
+                            'data': obj.to_dict(),
+                            'dtype': str(obj.dtype),
+                            'name': obj.name,
+                            'index': list(obj.index)
+                        }
+                except ImportError:
+                    pass
+
             # SETS: Must be sorted to ensure determinism!
             # JSON doesn't support sets, so we turn them into sorted lists.
             if isinstance(obj, set):
@@ -255,9 +285,10 @@ def cache(function, *args, **kwargs):
             # CUSTOM OBJECTS: Try to return their __dict__ or string rep
             if hasattr(obj, '__dict__'):
                 return obj.__dict__
-            
+
             # Fallback: String representation (risky if str() format changes)
             return str(obj)
+
         json_bytes = orjson.dumps(
             data,
             default=default_converter,
