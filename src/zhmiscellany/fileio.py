@@ -252,32 +252,40 @@ def cache(function, *args, _cache_compressed=False, **kwargs):
         if isinstance(obj, set):
             return sorted([normalize_for_json(item) for item in obj])
 
-        # Handle pandas DataFrames
+        # Handle pandas DataFrames - OPTIMIZED FOR HASHING
         if hasattr(obj, '__class__') and obj.__class__.__name__ == 'DataFrame':
             try:
                 import pandas as pd
                 if isinstance(obj, pd.DataFrame):
+                    # For hashing purposes, use a much faster representation
+                    # We use the pandas internal hash which is very fast
+                    import pandas.util as pd_util
+
+                    # Fast hash based on shape, columns, dtypes (as a single string), and a sample of data
                     return {
                         '__type__': 'DataFrame',
-                        'data': obj.to_dict(orient='split'),
-                        'dtypes': {col: str(dtype) for col, dtype in obj.dtypes.items()},
+                        'shape': obj.shape,
+                        'columns': list(obj.columns),
+                        'dtypes_str': str(obj.dtypes.to_dict()),  # Single conversion instead of dict comp
                         'index_name': obj.index.name,
-                        'columns': list(obj.columns)
+                        # Use pandas' built-in hash on a sample for speed
+                        'hash': str(pd_util.hash_pandas_object(obj.iloc[:min(100, len(obj))]).sum())
                     }
             except ImportError:
                 pass
 
-        # Handle pandas Series
+        # Handle pandas Series - OPTIMIZED
         if hasattr(obj, '__class__') and obj.__class__.__name__ == 'Series':
             try:
                 import pandas as pd
                 if isinstance(obj, pd.Series):
+                    import pandas.util as pd_util
                     return {
                         '__type__': 'Series',
-                        'data': obj.to_dict(),
                         'dtype': str(obj.dtype),
                         'name': obj.name,
-                        'index': list(obj.index)
+                        'shape': obj.shape,
+                        'hash': str(pd_util.hash_pandas_object(obj.iloc[:min(100, len(obj))]).sum())
                     }
             except ImportError:
                 pass
