@@ -80,8 +80,8 @@ def raw_multiprocess(func, args=(), fileless=True):
 cwd = '''+repr(os.getcwd())+'''
 host_pid = {os.getpid()}
 os.chdir(os.path.dirname(cwd))
-func = dill.loads(lzma.decompress('''+repr(lzma.compress(dill.dumps(func), preset=9 | lzma.PRESET_EXTREME))+'''))
-args_list = dill.loads(lzma.decompress('''+repr(lzma.compress(dill.dumps(args), preset=9 | lzma.PRESET_EXTREME))+f'''))
+func = dill.loads(lzma.decompress('''+repr(lzma.compress(dill.dumps(func), preset=5))+'''))
+args_list = dill.loads(lzma.decompress('''+repr(lzma.compress(dill.dumps(args), preset=5))+f'''))
 if __name__ == "__main__":
     data = [None, None]
     def sync_host_alive_state():
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         except:
             pickled = pickle.dumps([1, None], protocol=5)
     del data
-    compressed = lzma.compress(pickled, preset=9 | lzma.PRESET_EXTREME);del pickled
+    compressed = lzma.compress(pickled, preset=5);del pickled
     sys.stdout.buffer.write({repr(cap_string)} + compressed + {repr(cap_string)})
     sys.stdout.buffer.flush()
 '''
@@ -210,13 +210,13 @@ if __name__=="__main__":
                 pickled = dill.dumps(data, protocol=5)
             except:
                 pickled = pickle.dumps([1, None], protocol=5)
-        compressed = lzma.compress(pickled, preset=9 | lzma.PRESET_EXTREME)
+        compressed = lzma.compress(pickled, preset=5)
         encoded = base64.b64encode(compressed).decode('utf-8')
         print({repr(block_header_str)} + {repr(cap_str)} + encoded + {repr(cap_str)} + '\\n', flush=True, end='')
     computed = False
     try:
-        cls = dill.loads(lzma.decompress({repr(lzma.compress(dill.dumps(input_class), preset=9 | lzma.PRESET_EXTREME))}))
-        args_list = dill.loads(lzma.decompress({repr(lzma.compress(dill.dumps(args), preset=9 | lzma.PRESET_EXTREME))}))
+        cls = dill.loads(lzma.decompress({repr(lzma.compress(dill.dumps(input_class), preset=5))}))
+        args_list = dill.loads(lzma.decompress({repr(lzma.compress(dill.dumps(args), preset=5))}))
         computed = True
     except:
         data[0] = traceback.format_exc()
