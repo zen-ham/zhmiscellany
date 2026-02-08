@@ -158,39 +158,51 @@ def fast_dill_loads(data):
     return object
 
 
+zstd_comp = None
+zstd_decomp = None
+
+def _get_std_objects():
+    global zstd_comp, zstd_decomp
+    if zstd_comp is None or zstd_decomp is None:
+        import zstandard as zstd
+        zstd_comp = zstd.ZstdCompressor(level=4)
+        zstd_decomp = zstd.ZstdDecompressor()
+    return zstd_comp, zstd_decomp
+
+
 def save_object_to_file(object, file_name, compressed=False):
-    import lzma
+    zstd_comp, zstd_decomp = _get_std_objects()
     with open(file_name, 'wb') as f:
         if compressed:
-            f.write(lzma.compress(fast_dill_dumps(object), preset=5))
+            f.write(zstd_comp.compress(fast_dill_dumps(object)))
         else:
             f.write(fast_dill_dumps(object))
 
 
 def load_object_from_file(file_name, compressed=False):
-    import lzma
+    zstd_comp, zstd_decomp = _get_std_objects()
     with open(file_name, 'rb') as f:
         if compressed:
-            return fast_dill_loads(lzma.decompress(f.read()))
+            return fast_dill_loads(zstd_decomp.decompress(f.read()))
         else:
             return fast_dill_loads(f.read())
 
 
 def pickle_and_encode(obj):
+    zstd_comp, zstd_decomp = _get_std_objects()
     """Pickles an object and URL-safe encodes it."""
     import base64
-    import lzma
-    pickled_data = lzma.compress(fast_dill_dumps(obj), preset=5)  # Serialize the object
+    pickled_data = zstd_comp.compress(fast_dill_dumps(obj))  # Serialize the object
     encoded_data = base64.urlsafe_b64encode(pickled_data).decode()  # Base64 encode
     return encoded_data
 
 
 def decode_and_unpickle(encoded_str):
+    zstd_comp, zstd_decomp = _get_std_objects()
     """Decodes a URL-safe encoded string and unpickles the object."""
     import base64
-    import lzma
     pickled_data = base64.urlsafe_b64decode(encoded_str)  # Decode from Base64
-    obj = fast_dill_loads(lzma.decompress(pickled_data))  # Deserialize
+    obj = fast_dill_loads(zstd_decomp.decompress(pickled_data))  # Deserialize
     return obj
 
 

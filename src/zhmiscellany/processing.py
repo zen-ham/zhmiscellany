@@ -71,17 +71,20 @@ def raw_multiprocess(func, args=(), fileless=True):
     import subprocess
     import tempfile
     import os
-    import lzma
+    zstd_comp, zstd_decomp = _get_std_objects()
     import pickle
     import dill
     cap_string = b'|'+bytes(zhmiscellany.string.get_universally_unique_string(), 'u8')+b'|'
     code = \
-'''import os, dill, lzma, sys, pickle, traceback, psutil, signal
+'''import os, dill, zst, sys, pickle, traceback, psutil, signal
+import zstandard as zstd
+zstd_comp = zstd.ZstdCompressor(level=4)
+zstd_decomp = zstd.ZstdDecompressor()
 cwd = '''+repr(os.getcwd())+'''
 host_pid = {os.getpid()}
 os.chdir(os.path.dirname(cwd))
-func = dill.loads(lzma.decompress('''+repr(lzma.compress(dill.dumps(func), preset=5))+'''))
-args_list = dill.loads(lzma.decompress('''+repr(lzma.compress(dill.dumps(args), preset=5))+f'''))
+func = dill.loads(zstd_decomp.decompress('''+repr(zstd_comp.compress(dill.dumps(func)))+'''))
+args_list = dill.loads(zstd_decomp.decompress('''+repr(zstd_comp.compress(dill.dumps(args)))+f'''))
 if __name__ == "__main__":
     data = [None, None]
     def sync_host_alive_state():
@@ -110,7 +113,7 @@ if __name__ == "__main__":
         except:
             pickled = pickle.dumps([1, None], protocol=5)
     del data
-    compressed = lzma.compress(pickled, preset=5);del pickled
+    compressed = zstd_comp.compress(pickled, preset=5);del pickled
     sys.stdout.buffer.write({repr(cap_string)} + compressed + {repr(cap_string)})
     sys.stdout.buffer.flush()
 '''
@@ -146,7 +149,7 @@ if __name__ == "__main__":
         raise Exception(f'Critical error in process:\n{raw}')
     
     try:
-        decompressed = lzma.decompress(raw)
+        decompressed = zstd_decomp.decompress(raw)
     except Exception as e:
         print(raw)
         raise e
@@ -166,15 +169,27 @@ if __name__ == "__main__":
     return results
 
 
+zstd_comp = None
+zstd_decomp = None
+
+def _get_std_objects():
+    global zstd_comp, zstd_decomp
+    if zstd_comp is None or zstd_decomp is None:
+        import zstandard as zstd
+        zstd_comp = zstd.ZstdCompressor(level=4)
+        zstd_decomp = zstd.ZstdDecompressor()
+    return zstd_comp, zstd_decomp
+
+
 def raw_continuous_multiprocess(input_class, args=(), fileless=True, cleanup_file=True):
     import zhmiscellany.string
     import subprocess
     import tempfile
     import os
-    import lzma
     import pickle
     import dill
     import base64
+    zstd_comp, zstd_decomp = _get_std_objects()
     cap_string = b'|' + bytes(zhmiscellany.string.get_universally_unique_string(), 'u8') + b'|'
     block_header_string = b'|' + bytes(zhmiscellany.string.get_universally_unique_string(), 'u8') + b'|'
     completion_marker = b'|' + bytes(zhmiscellany.string.get_universally_unique_string(), 'u8') + b'|'
@@ -185,7 +200,10 @@ def raw_continuous_multiprocess(input_class, args=(), fileless=True, cleanup_fil
     marker_prefix = block_header_str + cap_str
     
     code = f'''
-import os, dill, lzma, sys, pickle, traceback, base64, threading, psutil, time, signal
+import os, dill, sys, pickle, traceback, base64, threading, psutil, time, signal
+import zstandard as zstd
+zstd_comp = zstd.ZstdCompressor(level=4)
+zstd_decomp = zstd.ZstdDecompressor()
 cwd = {repr(os.getcwd())}
 host_pid = {os.getpid()}
 os.chdir(os.path.dirname(cwd))
@@ -210,13 +228,13 @@ if __name__=="__main__":
                 pickled = dill.dumps(data, protocol=5)
             except:
                 pickled = pickle.dumps([1, None], protocol=5)
-        compressed = lzma.compress(pickled, preset=5)
+        compressed = zstd_comp.compress(pickled, preset=5)
         encoded = base64.b64encode(compressed).decode('utf-8')
         print({repr(block_header_str)} + {repr(cap_str)} + encoded + {repr(cap_str)} + '\\n', flush=True, end='')
     computed = False
     try:
-        cls = dill.loads(lzma.decompress({repr(lzma.compress(dill.dumps(input_class), preset=5))}))
-        args_list = dill.loads(lzma.decompress({repr(lzma.compress(dill.dumps(args), preset=5))}))
+        cls = dill.loads(zstd_decomp.decompress({repr(zstd_comp.compress(dill.dumps(input_class)))}))
+        args_list = dill.loads(zstd_decomp.decompress({repr(zstd_comp.compress(dill.dumps(args)))}))
         computed = True
     except:
         data[0] = traceback.format_exc()
@@ -278,7 +296,7 @@ if __name__=="__main__":
         encoded = line[len(marker_prefix):-len(cap_str)]
         try:
             compressed = base64.b64decode(encoded)
-            decompressed = lzma.decompress(compressed)
+            decompressed = zstd_decomp.decompress(compressed)
         except Exception as e:
             raise Exception("Error decoding output") from e
         try:
