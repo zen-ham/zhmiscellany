@@ -351,12 +351,11 @@ if WIN32_AVAILABLE:
                 'create_list': random.Random(base_rng.random()),
             }
 
-
             if not number_tokens:
                 def make_random_number():
                     ends = [10, 100, 1000]
                     return rngs['make_random_number'].randint(0, rngs['make_random_number'].choice(ends))
-                number_tokens = [make_random_number for i in range(round((len(obf.split('\n'))*new_line_ratio)/10))]
+                number_tokens = [make_random_number() for i in range(round((len(obf.split('\n'))*new_line_ratio)/10))]
             total_new_lines = len(obf.split('\n'))*new_line_ratio
 
             def create_var_name(vars):
