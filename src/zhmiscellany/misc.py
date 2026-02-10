@@ -26,6 +26,51 @@ def get_actual_screen_resolution():
     return width, height
 
 
+def force_focus_window(hwnd):
+    import time
+    import psutil
+    import ctypes
+    if not WIN32_AVAILABLE:
+        print("focus_window only supports Windows!")
+        return
+    else:
+        import win32gui, win32con, win32process
+
+    SWP_NOMOVE = 0x0002
+    SWP_NOSIZE = 0x0001
+    HWND_TOPMOST = -1
+    HWND_NOTOPMOST = -2
+
+    # Import user32.dll for additional window handling
+    user32 = ctypes.windll.user32
+    try:
+        # Get window placement info
+        placement = win32gui.GetWindowPlacement(hwnd)
+
+        # Force restore if minimized
+        if placement[1] == win32con.SW_SHOWMINIMIZED:
+            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+
+        # Set window position and focus aggressively
+        user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
+        user32.SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
+
+        # Multiple focus attempts
+        user32.ShowWindow(hwnd, win32con.SW_SHOW)
+        user32.SetForegroundWindow(hwnd)
+        user32.BringWindowToTop(hwnd)
+        user32.SetActiveWindow(hwnd)
+        user32.SetFocus(hwnd)
+
+        # Force input processing
+        user32.BlockInput(True)
+        time.sleep(0.01)  # Brief pause
+        user32.BlockInput(False)
+
+    except Exception as e:
+        print(f"Focus attempt error: {str(e)}")
+
+
 def focus_window(process_name: str, interval=0):
     import time
     import psutil
@@ -45,34 +90,6 @@ def focus_window(process_name: str, interval=0):
     SWP_NOSIZE = 0x0001
     HWND_TOPMOST = -1
     HWND_NOTOPMOST = -2
-    
-    def force_focus_window(hwnd):
-        try:
-            # Get window placement info
-            placement = win32gui.GetWindowPlacement(hwnd)
-            
-            # Force restore if minimized
-            if placement[1] == win32con.SW_SHOWMINIMIZED:
-                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-            
-            # Set window position and focus aggressively
-            user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
-            user32.SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
-            
-            # Multiple focus attempts
-            user32.ShowWindow(hwnd, win32con.SW_SHOW)
-            user32.SetForegroundWindow(hwnd)
-            user32.BringWindowToTop(hwnd)
-            user32.SetActiveWindow(hwnd)
-            user32.SetFocus(hwnd)
-            
-            # Force input processing
-            user32.BlockInput(True)
-            time.sleep(0.01)  # Brief pause
-            user32.BlockInput(False)
-        
-        except Exception as e:
-            print(f"Focus attempt error: {str(e)}")
     
     def get_window_handle(process_name):
         handles = []
