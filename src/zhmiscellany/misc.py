@@ -402,7 +402,7 @@ if WIN32_AVAILABLE:
                                 elements.append(rngs['create_list'].choice(vars['all']))
                     else:
                         break
-                lst_str = lst_str + ', '.join(elements)
+                lst_str = lst_str + ', '.join([str(i) for i in elements])
                 lst_str = lst_str + ']'
                 return lst_str
 
