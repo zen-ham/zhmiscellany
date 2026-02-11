@@ -110,7 +110,25 @@ def empty_directory(directory_path):
 
 def abs_listdir(path):
     import os
-    return [os.path.join(path, file) for file in os.listdir(path)]
+    abs_directory_path = os.path.abspath(path)
+
+    # Verify the path exists and is a directory
+    if not os.path.exists(abs_directory_path):
+        raise FileNotFoundError(f"Directory not found: {abs_directory_path}")
+
+    if not os.path.isdir(abs_directory_path):
+        raise NotADirectoryError(f"Path is not a directory: {abs_directory_path}")
+
+    # Get all items in the directory
+    items = os.listdir(abs_directory_path)
+
+    # Create absolute paths by joining the directory path with each item
+    absolute_paths = []
+    for item in items:
+        absolute_path = os.path.join(abs_directory_path, item)
+        absolute_paths.append(absolute_path)
+
+    return absolute_paths
 
 
 def delete_ends_with(directory, string_endswith, avoid=[]):
