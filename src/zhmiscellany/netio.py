@@ -58,6 +58,10 @@ def generate_headers(url):
         for k, v in generator().items():
             headers[k] = v
 
+    if not url.startswith('http'):
+        url = f'https://{url}'
+        if not url.endswith('/'):
+            url += '/'
     headers['Referer'] = url
     headers['Host'] = urllib.parse.urlparse(url).netloc
 
