@@ -9,23 +9,33 @@ def start_daemon(**kwargs):
     return thread
 
 
+import os
+
+
 def batch_threading(targets, max_threads=None, show_errors=True, flatten=False):
     import concurrent.futures
     import traceback
     from itertools import chain
+
     def execute_target(target):
-        try: return target[0](*target[1])
+        try:
+            return target[0](*target[1])
         except Exception:
-            if show_errors: print(traceback.format_exc())
+            if show_errors:
+                print(traceback.format_exc())
             return None
 
-    max_threads = max_threads or len(targets)
-    results = [None] * len(targets)
+    # Fix: Prevent creating 3.5 million threads if max_threads is None
+    if not max_threads:
+        max_threads = (os.cpu_count() or 1) * 5
+
+    # Fix: Use executor.map instead of submit+as_completed.
+    # executor.map preserves the order of results (matching your original list index logic)
+    # and lazily submits tasks so it doesn't flood memory with Future objects.
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
-        futures = {executor.submit(execute_target, t): i for i, t in enumerate(targets)}
-        for f in concurrent.futures.as_completed(futures):
-            try: results[futures[f]] = f.result()
-            except Exception: results[futures[f]] = None
+        # map returns an iterator, converting to list triggers the execution
+        results = list(executor.map(execute_target, targets))
+
     if flatten:
         results = list(chain.from_iterable(results))
     return results
@@ -34,18 +44,52 @@ def batch_threading(targets, max_threads=None, show_errors=True, flatten=False):
 def batch_threading_gen(targets, max_threads=None, show_errors=True):
     import concurrent.futures
     import traceback
+
     def execute_target(target):
-        try: return target[0](*target[1])
+        try:
+            return target[0](*target[1])
         except Exception:
-            if show_errors: print(traceback.format_exc())
+            if show_errors:
+                print(traceback.format_exc())
             return None
 
-    max_threads = max_threads or len(targets)
+    if not max_threads:
+        max_threads = min((os.cpu_count() or 1) * (2**13), 2**19)
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
-        futures = [executor.submit(execute_target, t) for t in targets]
-        for f in concurrent.futures.as_completed(futures):
-            try: yield f.result()
-            except Exception: yield None
+        # Create an iterator so we don't load all targets into memory if it's a generator
+        targets_iter = iter(targets)
+        futures = set()
+
+        # Initial fill: submit only up to max_threads tasks
+        for _ in range(max_threads):
+            try:
+                task = next(targets_iter)
+                futures.add(executor.submit(execute_target, task))
+            except StopIteration:
+                break
+
+        # Sliding window: As one finishes, yield it and submit a new one
+        while futures:
+            # Wait for the first available thread to finish
+            done, futures = concurrent.futures.wait(
+                futures, return_when=concurrent.futures.FIRST_COMPLETED
+            )
+
+            # Yield results from finished threads
+            for f in done:
+                try:
+                    yield f.result()
+                except Exception:
+                    yield None
+
+                # Attempt to submit the next task
+                try:
+                    new_task = next(targets_iter)
+                    futures.add(executor.submit(execute_target, new_task))
+                except StopIteration:
+                    # No more tasks to submit, just finish processing existing futures
+                    pass
 
 
 def batch_multiprocess_threaded(targets_and_args, disable_warning=False, killable=False, daemon=False):
