@@ -118,7 +118,7 @@ def raw_multiprocess(func, args=(), fileless=True):
     import dill
     cap_string = b'|'+bytes(zhmiscellany.string.get_universally_unique_string(), 'u8')+b'|'
     code = \
-'''import os, dill, zst, sys, pickle, traceback, psutil, signal
+'''import os, dill, sys, pickle, traceback, psutil, signal
 import zstandard as zstd
 zstd_comp = zstd.ZstdCompressor(level=4)
 zstd_decomp = zstd.ZstdDecompressor()
