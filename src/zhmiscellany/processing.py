@@ -118,7 +118,7 @@ def raw_multiprocess(func, args=(), fileless=True):
     import dill
     cap_string = b'|'+bytes(zhmiscellany.string.get_universally_unique_string(), 'u8')+b'|'
     code = \
-'''import os, dill, sys, pickle, traceback, psutil, signal
+'''import os, dill, sys, pickle, traceback, psutil, signal, threading
 import zstandard as zstd
 zstd_comp = zstd.ZstdCompressor(level=4)
 zstd_decomp = zstd.ZstdDecompressor()
@@ -241,8 +241,8 @@ def raw_continuous_multiprocess(input_class, args=(), fileless=True, cleanup_fil
     completion_marker_str = completion_marker.decode('utf-8')
     marker_prefix = block_header_str + cap_str
     
-    code = f'''
-import os, dill, sys, pickle, traceback, base64, threading, psutil, time, signal
+    code = \
+f'''import os, dill, sys, pickle, traceback, base64, threading, psutil, time, signal
 import zstandard as zstd
 zstd_comp = zstd.ZstdCompressor(level=4)
 zstd_decomp = zstd.ZstdDecompressor()
