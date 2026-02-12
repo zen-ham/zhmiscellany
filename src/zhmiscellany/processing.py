@@ -25,11 +25,9 @@ def batch_threading(targets, max_threads=None, show_errors=True, flatten=False):
                 print(traceback.format_exc())
             return None
 
-    # Fix: Prevent creating 3.5 million threads if max_threads is None
     if not max_threads:
-        max_threads = (os.cpu_count() or 1) * 5
+        max_threads = min((os.cpu_count() or 1) * (2**13), 2**19)
 
-    # Fix: Use executor.map instead of submit+as_completed.
     # executor.map preserves the order of results (matching your original list index logic)
     # and lazily submits tasks so it doesn't flood memory with Future objects.
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
