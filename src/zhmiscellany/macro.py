@@ -395,14 +395,20 @@ def better_wait_for(key, wait_for_release=False):
     event_signal.wait()  # Block execution until the event is set
     keyboard.unhook(hook_id)  # Clean up the listener after key is detected
 
-def toggle_function(func, key='f8', blocking=True, hold=False, event=False):
+def toggle_function(func, key='f8', blocking=True, hold=False, event=False, evl=None):
     import kthread
     import threading
     # better_wait_for is in the same module, no import needed
     
     def atom(hold):
         while True:
-            better_wait_for(key)
+            while 1:
+                better_wait_for(key)
+                if evl is not None:
+                    if evl():
+                        break
+                else:
+                    break
             if not event:
                 t = kthread.KThread(target=func)
             else:
@@ -410,7 +416,13 @@ def toggle_function(func, key='f8', blocking=True, hold=False, event=False):
                 t = kthread.KThread(target=func, kwargs={'_stop_event':stopevent})
             t.start()
             if not hold:
-                better_wait_for(key)
+                while 1:
+                    better_wait_for(key)
+                    if evl is not None:
+                        if evl():
+                            break
+                    else:
+                        break
             else:
                 better_wait_for(key, wait_for_release=True)
             if event:
