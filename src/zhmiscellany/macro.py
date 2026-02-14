@@ -694,7 +694,6 @@ KEY_CODES = {
     'Execute': 43,
     'PrintScreen': 44,
     'Ins': 45,
-    'INS': 45,
     'Delete': 46,
     'Help': 47,
     'Key0': 48,

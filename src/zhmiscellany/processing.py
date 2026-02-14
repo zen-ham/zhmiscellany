@@ -108,6 +108,18 @@ def multiprocess_threaded(target, args=(), disable_warning=False, killable=False
     return batch_multiprocess_threaded([(target, args)], disable_warning=False, killable=False, daemon=False)
 
 
+zstd_comp = None
+zstd_decomp = None
+
+def _get_std_objects():
+    global zstd_comp, zstd_decomp
+    if zstd_comp is None or zstd_decomp is None:
+        import zstandard as zstd
+        zstd_comp = zstd.ZstdCompressor(level=4)
+        zstd_decomp = zstd.ZstdDecompressor()
+    return zstd_comp, zstd_decomp
+
+
 def raw_multiprocess(func, args=(), fileless=True):
     import zhmiscellany.string
     import subprocess
@@ -209,18 +221,6 @@ if __name__ == "__main__":
         raise Exception(f'An error occurred in the function you passed:\n\n{var[0]}')
 
     return results
-
-
-zstd_comp = None
-zstd_decomp = None
-
-def _get_std_objects():
-    global zstd_comp, zstd_decomp
-    if zstd_comp is None or zstd_decomp is None:
-        import zstandard as zstd
-        zstd_comp = zstd.ZstdCompressor(level=4)
-        zstd_decomp = zstd.ZstdDecompressor()
-    return zstd_comp, zstd_decomp
 
 
 def raw_continuous_multiprocess(input_class, args=(), fileless=True, cleanup_file=True):
