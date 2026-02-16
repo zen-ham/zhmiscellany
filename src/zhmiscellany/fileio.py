@@ -226,7 +226,7 @@ def decode_and_unpickle(encoded_str):
 
 def list_files_by_modified_time(directory):
     import os
-    files_with_times = [(file, os.path.getmtime(os.path.join(directory, file))) for file in os.listdir(directory) if os.path.isfile(os.path.join(directory, file))]
+    files_with_times = [(file, os.path.getmtime(file)) for file in abs_listdir(directory) if os.path.isfile(os.path.join(directory, file))]
     sorted_files = sorted(files_with_times, key=lambda x: x[1], reverse=True)
     sorted_file_names = [file for file, _ in sorted_files]
     return sorted_file_names
