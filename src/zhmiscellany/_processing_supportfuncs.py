@@ -2,7 +2,7 @@
 import sys  # cannot be moved
 
 # Ray availability check
-if sys.platform == "win32" or True:
+if sys.platform == "win32":
     RAY_AVAILABLE = True
 else:
     RAY_AVAILABLE = False
