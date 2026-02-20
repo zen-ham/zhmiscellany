@@ -320,3 +320,80 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
     remote_cls = ray.remote(num_cpus=0)(cls)
     actor_instance = remote_cls.remote(*args, **kwargs)
     return RayActorWrapper(actor_instance)
+
+
+def batch_multiprocess_gen(targets_and_args, max_concurrent=None, max_retries=0, expect_crashes=False, disable_warning=False, show_errors=True):
+    import logging
+    import os
+    import traceback
+
+    if not RAY_AVAILABLE:
+        print("batch_multiprocess_gen() only supports Windows! Returning empty generator")
+        yield from []
+        return
+
+    if _ray_state == 'disabled':
+        if not disable_warning:
+            logging.warning("zhmiscellany didn't detect that you were going to be using multiprocessing functions, and ray was not initialized preemptively.\n\
+All this means is that ray will have to be initialized now and the this call to multiprocessing will have to wait a few (around 4) seconds.\n\
+If you want to avoid this in the future you can set `os.environ = 'force'` BEFORE importing zhmiscellany, or you can pass disable_warning=True to this function call.")
+        ray_init()
+    if _ray_state == 'starting':
+        if not disable_warning:
+            logging.warning("You called multiprocessing early enough that ray is not fully initialized yet.\n\
+All this means is that ray is still being initialized and this call to multiprocessing will have to wait a few seconds.\n\
+If you want to avoid this in the future and wait until ray is ready you can add this line just after importing zhmiscellany: (Or you can pass disable_warning=True to this function call)\n\
+from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_thread.join()")
+    _ray_init_thread.join()
+
+    import ray
+
+    if not max_concurrent:
+        max_concurrent = os.cpu_count() or 1
+
+    @ray.remote(max_retries=max_retries, num_cpus=0)
+    def worker(func, *args):
+        return func(*args)
+
+    targets_iter = iter(targets_and_args)
+    futures = []
+
+    # Initial fill: submit only up to max_concurrent tasks
+    for _ in range(max_concurrent):
+        try:
+            task = next(targets_iter)
+            futures.append(worker.remote(task, *task))
+        except StopIteration:
+            break
+
+    # Sliding window: As one finishes, yield it and submit a new one
+    while futures:
+        # Wait for the first available process to finish
+        ready, futures = ray.wait(futures, num_returns=1)
+
+        # ray.wait returns a tuple of lists: (ready_refs, unready_refs)
+        # reassign futures to unready_refs so we only track ongoing tasks
+        futures = list(futures)
+
+        # Yield results from finished processes
+        for f in ready:
+            try:
+                yield ray.get(f)
+            except ray.exceptions.WorkerCrashedError:
+                if not expect_crashes:
+                    raise
+                if show_errors:
+                    print(traceback.format_exc())
+                yield None
+            except Exception:
+                if show_errors:
+                    print(traceback.format_exc())
+                yield None
+
+            # Attempt to submit the next task
+            try:
+                new_task = next(targets_iter)
+                futures.append(worker.remote(new_task, *new_task))
+            except StopIteration:
+                # No more tasks to submit, just finish processing existing futures
+                pass
