@@ -56,10 +56,22 @@ def safe_open_log(path, unbuffered=False, **kwargs):
         stream = open(os.devnull, "w", encoding="utf-8")
     if unbuffered:
         class Unbuffered:
-            def __init__(self, f): self.f = f
-            def write(self, x): self.f.write(x); self.f.flush()
-            def flush(self): self.f.flush()
-            def fileno(self): return self.f.fileno()
+            def __init__(self, f):
+                self.f = f
+            def write(self, x):
+                res = self.f.write(x)
+                self.f.flush()
+                return res  # Must return the byte count written!
+            def writelines(self, datas):
+                self.f.writelines(datas)
+                self.f.flush()
+            def flush(self):
+                self.f.flush()
+            def fileno(self):
+                return self.f.fileno()
+            def __getattr__(self, attr):
+                # Proxies .encoding, .isatty(), etc., to the real file object
+                return getattr(self.f, attr)
         return Unbuffered(stream)
     return stream
 
@@ -226,7 +238,7 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
     
     if not expect_crashes:
         import ray
-        @ray.remote(max_retries=max_retries, num_cpus=0)
+        @ray.remote(max_retries=max_retries, num_cpus=0.5)
         def worker(func, *args):
             return func(*args)
         
@@ -317,7 +329,7 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
     
     cls._ready = _ready
 
-    remote_cls = ray.remote(num_cpus=0)(cls)
+    remote_cls = ray.remote(num_cpus=0.5)(cls)
     actor_instance = remote_cls.remote(*args, **kwargs)
     return RayActorWrapper(actor_instance)
 
@@ -351,7 +363,7 @@ from zhmiscellany._processing_supportfuncs import _ray_init_thread; _ray_init_th
     if not max_concurrent:
         max_concurrent = os.cpu_count() or 1
 
-    @ray.remote(max_retries=max_retries, num_cpus=0)
+    @ray.remote(max_retries=max_retries, num_cpus=0.5)
     def worker(func, *args):
         return func(*args)
 
