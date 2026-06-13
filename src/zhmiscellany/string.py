@@ -14,6 +14,16 @@ def convert_to_base62(number):
     return base62_str
 
 
+def convert_from_base62(s):
+    import string
+    base62_chars = string.digits + string.ascii_lowercase + string.ascii_uppercase
+    char_to_value = {c: i for i, c in enumerate(base62_chars)}
+    number = 0
+    for c in s:
+        number = number * 62 + char_to_value[c]
+    return number
+
+
 def get_universally_unique_string():
     import time
     #number = None
