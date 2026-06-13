@@ -960,7 +960,7 @@ Generates an integer hash from the MD5 hash of the input.
 
 `zhmiscellany.misc.high_precision_sleep(duration)`
 
-Performs precise sleeping using a busy-wait loop for high accuracy.
+Sleeps for `duration` seconds with sub-millisecond accuracy. On Windows 10 1803+ it uses a cached high-resolution kernel waitable timer (`CreateWaitableTimerExW` with `CREATE_WAITABLE_TIMER_HIGH_RESOLUTION`), which gives ~0.5 ms accuracy without busy-waiting AND without bumping the global system timer resolution via `timeBeginPeriod` (the trick that slows the rest of your machine down). On older Windows or other OSes it falls back to a hybrid `time.sleep` + busy-wait. Drift is typically +0.5 ms on Windows, <100 us on Linux/macOS. The timer handle is cached per-thread so repeated calls don't pay any setup cost. A no-op for `duration <= 0`.
 
 #
 

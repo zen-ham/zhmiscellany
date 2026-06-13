@@ -1,17 +1,21 @@
 import sys
+# LITE-START-DROP
 import zhmiscellany.macro
+# LITE-END-DROP
 import types
 
 WIN32_AVAILABLE = False
 if sys.platform == "win32":
     WIN32_AVAILABLE = True
 
+# LITE-START-DROP
 # support backwards compatibility
 click_pixel = zhmiscellany.macro.click_pixel
 type_string = zhmiscellany.macro.type_string
 scroll = zhmiscellany.macro.scroll
 get_mouse_xy = zhmiscellany.macro.get_mouse_xy
 KEY_CODES = zhmiscellany.macro.KEY_CODES
+# LITE-END-DROP
 
 
 def get_actual_screen_resolution():
@@ -249,7 +253,60 @@ def md5_int_hash(anything):
     return int(hashlib.md5(anything if isinstance(anything, bytes) else str(anything).encode()).hexdigest(), 16)
 
 
+_hr_timer_tls = None  # threading.local, lazily created on first Windows use
+
+
 def high_precision_sleep(duration):
+    """Sleep precisely for `duration` seconds with sub-millisecond accuracy.
+
+    On Windows 10 1803+ this uses a kernel `CreateWaitableTimerExW` with the
+    `CREATE_WAITABLE_TIMER_HIGH_RESOLUTION` flag, which gives sub-ms accuracy
+    (typically ~0.5 ms) WITHOUT touching the global timer resolution via
+    `timeBeginPeriod` (so it doesn't slow the rest of your machine down the
+    way that trick does). The timer handle is cached per-thread.
+
+    On older Windows or other OSes the function falls back to a hybrid
+    `time.sleep` + busy-wait, the same one this used to do. That fallback
+    typically lands within ~1-2 ms of the target on Windows and within
+    100 us on Linux/macOS.
+
+    A no-op for `duration <= 0`.
+    """
+    if duration <= 0:
+        return
+
+    # Fast path: cached high-res Win32 waitable timer.
+    if WIN32_AVAILABLE:
+        global _hr_timer_tls
+        import ctypes
+        if _hr_timer_tls is None:
+            import threading
+            _hr_timer_tls = threading.local()
+        handle = getattr(_hr_timer_tls, "handle", None)
+        if handle is None:
+            kernel32 = ctypes.windll.kernel32
+            # CreateWaitableTimerExW(SecurityAttrs, Name, Flags, Access)
+            # Flags = CREATE_WAITABLE_TIMER_HIGH_RESOLUTION = 0x2
+            # Access = TIMER_ALL_ACCESS = 0x1F0003
+            h = kernel32.CreateWaitableTimerExW(None, None, 0x2, 0x1F0003)
+            if h:
+                _hr_timer_tls.handle = h
+                _hr_timer_tls.kernel32 = kernel32
+                handle = h
+            else:
+                # Pre-1803 Windows; remember so we skip the syscall next time.
+                _hr_timer_tls.handle = False
+                handle = False
+        if handle:
+            kernel32 = _hr_timer_tls.kernel32
+            # SetWaitableTimer: due time in 100-nanosecond intervals, negative
+            # value = relative time from now.
+            due = ctypes.c_int64(-int(duration * 10_000_000))
+            kernel32.SetWaitableTimer(handle, ctypes.byref(due), 0, None, None, False)
+            kernel32.WaitForSingleObject(handle, 0xFFFFFFFF)  # INFINITE
+            return
+
+    # Fallback: hybrid sleep + busy-wait.
     import time
     start_time = time.perf_counter()
     while True:
@@ -257,8 +314,8 @@ def high_precision_sleep(duration):
         remaining_time = duration - elapsed_time
         if remaining_time <= 0:
             break
-        if remaining_time > 0.02:  # Sleep for 5ms if remaining time is greater
-            time.sleep(max(remaining_time/2, 0.0001))  # Sleep for the remaining time or minimum sleep interval
+        if remaining_time > 0.02:
+            time.sleep(max(remaining_time / 2, 0.0001))
         else:
             pass
 

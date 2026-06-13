@@ -1,4 +1,6 @@
+# LITE-START-DROP
 from ._processing_supportfuncs import batch_multiprocess, multiprocess, synchronous_class_multiprocess, ThreadWithResult
+# LITE-END-DROP
 import threading
 
 def start_daemon(**kwargs):
@@ -120,6 +122,7 @@ def _get_std_objects():
     return zstd_comp, zstd_decomp
 
 
+# LITE-START-DROP
 def raw_multiprocess(func, args=(), fileless=True):
     import zhmiscellany.string
     import subprocess
@@ -360,6 +363,7 @@ if __name__=="__main__":
     proc.stdout.close()
     proc.wait()
     cleanup()
+# LITE-END-DROP
 
 
 class thread_join_return(threading.Thread):
