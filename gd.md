@@ -4,9 +4,9 @@
 An organized collection of unique and useful functions/classes/modules/bindings.
 -
 
-[Introduction](https://gitlab.com/zenham/zhmiscellany/tree/master#Introduction)\
-[Documentation](https://gitlab.com/zenham/zhmiscellany/tree/master#Documentation)\
-[![PyPI Downloads](https://static.pepy.tech/badge/zhmiscellany)](https://pepy.tech/projects/zhmiscellany) [![PyPI Downloads](https://static.pepy.tech/badge/zhmiscellany/month)](https://pepy.tech/projects/zhmiscellany) ![lastcommitbadge](https://img.shields.io/gitlab/last-commit/zenham/zhmiscellany)
+[Introduction](https://github.com/zen-ham/zhmiscellany/tree/master#Introduction)\
+[Documentation](https://github.com/zen-ham/zhmiscellany/tree/master#Documentation)\
+[![PyPI Downloads](https://static.pepy.tech/badge/zhmiscellany)](https://pepy.tech/projects/zhmiscellany) [![PyPI Downloads](https://static.pepy.tech/badge/zhmiscellany/month)](https://pepy.tech/projects/zhmiscellany) ![lastcommitbadge](https://img.shields.io/github/last-commit/zen-ham/zhmiscellany)
 
 ---
 
@@ -19,7 +19,7 @@ Supports Linux! (Some functionality reduced)
 
 Currently, the package stands at <func_token> functions/classes/bindings across <module_token> modules.
 
-The git repository for this package can be found [here](https://gitlab.com/zenham/zhmiscellany). The docs also look nicer on github.
+The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
 If you wish to reach out, you may add @z_h_ on Discord, or join [the server](https://discord.gg/ThBBAuueVJ).
 
@@ -30,22 +30,22 @@ Believe it or not this package is not a monolith, I've split off some functional
 Documentation:
 ===
 
-[Usage-examples](https://gitlab.com/zenham/zhmiscellany/-/blob/master/README.md#usage-examples) Usage examples for the discord module.\
-[zhmiscellany.discord](https://gitlab.com/zenham/zhmiscellany/tree/master#zhmiscellanydiscord) Functions for interacting with discord in various ways.\
-[zhmiscellany.rust](https://gitlab.com/zenham/zhmiscellany/tree/master#zhmiscellanyrust) Various rust bindings aimed towards speed.\
-[zhmiscellany.cpp](https://gitlab.com/zenham/zhmiscellany/tree/master#zhmiscellanycpp) Various C++ bindings aimed towards speed.\
-[zhmiscellany.macro](https://gitlab.com/zenham/zhmiscellany/tree/master#zhmiscellanymacro) Functions with very high flexibility and speed for simulating interactions with mouse and keyboard.\
-[zhmiscellany.fileio](https://gitlab.com/zenham/zhmiscellany/tree/master#zhmiscellanyfileio) Functions for interacting with local files, such as pickle, json and other file related functions I find useful.\
-[zhmiscellany.string](https://gitlab.com/zenham/zhmiscellany/tree/master#zhmiscellanystring) Functions for interacting with/generating strings that I find useful.\
-[zhmiscellany.math](https://gitlab.com/zenham/zhmiscellany/tree/master#zhmiscellanymath) Functions for making some calculations easier.\
-[zhmiscellany.netio](https://gitlab.com/zenham/zhmiscellany/tree/master#zhmiscellanynetio) Internet related functions that didn't make sense in any other module.\
-[zhmiscellany.image](https://gitlab.com/zenham/zhmiscellany/tree/master#zhmiscellanyimage) Functions for quantifying and manipulating images.\
-[zhmiscellany.list](https://gitlab.com/zenham/zhmiscellany/tree/master#zhmiscellanylist) Functions for manipulating lists.\
-[zhmiscellany.dict](https://gitlab.com/zenham/zhmiscellany/tree/master#zhmiscellanydict) Functions for working with dicts.\
-[zhmiscellany.processing](https://gitlab.com/zenham/zhmiscellany/tree/master#zhmiscellanyprocessing) Functions for processing/multiprocessing using flexible high level ray wrappers, homebrew high level multiprocessing implementations, or in threads in a more straight forward way.\
-[zhmiscellany.misc](https://gitlab.com/zenham/zhmiscellany/tree/master#zhmiscellanymisc) Miscellaneous functions that didn't fit anywhere else. There's alot of useful stuff here.\
-[zhmiscellany.pipes](https://gitlab.com/zenham/zhmiscellany/tree/master#zhmiscellanypipes) Classes and functions for effectively using pipes for IPC (Inter-Process Communication)\
-[zhmiscellany.gui](https://gitlab.com/zenham/zhmiscellany/tree/master#zhmiscellanygui) GUI related utilities for quickly adding visual components where it's needed.
+[Usage-examples](https://github.com/zen-ham/zhmiscellany/blob/master/README.md#usage-examples) Usage examples for the discord module.\
+[zhmiscellany.discord](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanydiscord) Functions for interacting with discord in various ways.\
+[zhmiscellany.rust](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyrust) Various rust bindings aimed towards speed.\
+[zhmiscellany.cpp](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanycpp) Various C++ bindings aimed towards speed.\
+[zhmiscellany.macro](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanymacro) Functions with very high flexibility and speed for simulating interactions with mouse and keyboard.\
+[zhmiscellany.fileio](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyfileio) Functions for interacting with local files, such as pickle, json and other file related functions I find useful.\
+[zhmiscellany.string](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanystring) Functions for interacting with/generating strings that I find useful.\
+[zhmiscellany.math](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanymath) Functions for making some calculations easier.\
+[zhmiscellany.netio](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanynetio) Internet related functions that didn't make sense in any other module.\
+[zhmiscellany.image](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyimage) Functions for quantifying and manipulating images.\
+[zhmiscellany.list](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanylist) Functions for manipulating lists.\
+[zhmiscellany.dict](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanydict) Functions for working with dicts.\
+[zhmiscellany.processing](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanyprocessing) Functions for processing/multiprocessing using flexible high level ray wrappers, homebrew high level multiprocessing implementations, or in threads in a more straight forward way.\
+[zhmiscellany.misc](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanymisc) Miscellaneous functions that didn't fit anywhere else. There's alot of useful stuff here.\
+[zhmiscellany.pipes](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanypipes) Classes and functions for effectively using pipes for IPC (Inter-Process Communication)\
+[zhmiscellany.gui](https://github.com/zen-ham/zhmiscellany/tree/master#zhmiscellanygui) GUI related utilities for quickly adding visual components where it's needed.
 
 
 Usage examples
