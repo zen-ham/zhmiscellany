@@ -347,442 +347,1185 @@ if WIN32_AVAILABLE:
         temp_folder = os.popen(r'echo %TEMP%').read().replace('\n', '')
         return temp_folder
 
-    def obfuscate_python(python_code_string, do_not_obfuscate_indent_block_comment='# DNO', remove_prints=True, remove_comments=True, add_lines=True, new_line_ratio=10):
-        import keyword
-        import copy
-        import random
-        import string
-        import builtins
-        import inspect
-        import zhmiscellany.string
+def obfuscate_python(python_code_string,
+                     do_not_obfuscate_indent_block_comment='# DNO',
+                     remove_prints=True,
+                     remove_comments=True,
+                     add_lines=True,
+                     new_line_ratio=10,
+                     new_lines_target=0,
+                     entangle=False,
+                     seed=None):
+    """
+    Rewritten obfuscate_python.
 
-        obf = python_code_string
-        dno_sig = do_not_obfuscate_indent_block_comment
-        dno_char = '2LAM67M4'
+    Same concept as the original (a code *diluter*: it strips prints/comments and
+    injects plausible-but-dead decoy statements around your real code so the logic
+    is buried in junk -- it does NOT rename your real identifiers), but the
+    hand-rolled string parsing that decided *where* a decoy could go has been
+    replaced with a real `ast` + `tokenize` pass. That makes it handle all valid
+    Python (multi-line literals with/without trailing commas, dict/set/comprehension
+    literals, triple-quoted strings, f-strings, `#` inside strings, backslash
+    continuations, decorators, else/elif/except/finally, match/case, semicolons,
+    docstrings, __future__ imports, ...), and it now also emits decoy *classes*, not
+    just decoy functions.
 
-        if add_lines:
-            remove_comments = True  # Sorry, right now it has to be like this, and I'm too lazy to implement this in a better way. Why would you not want to remove comments anyway...
+    Drop-in: same signature as the original plus an optional `seed=`.
+    Deterministic by default (same input -> same output); pass `seed=<int>` for a
+    different-but-reproducible result.
+    """
 
-        if remove_prints or remove_comments:
-            lines = obf.split('\n')
-            for i, line in enumerate(lines):
-                if remove_prints:
-                    if line.replace(' ', '').startswith('print('):
-                        j = 0
-                        for j, char in enumerate(line):
-                            if char != ' ':
-                                break
-                        lines[i] = f'{" "*j}pass'
-                has_dno = line.endswith(dno_sig)
-                if remove_comments:
-                    lines[i] = lines[i].split('#')[0]
-                if has_dno:
-                    lines[i] = lines[i] + ' ' + dno_char
-            obf = '\n'.join(lines)
-            lines = obf.split('\n')
-            lines = [line for line in lines if not any([set(line) == set(j) for j in ['', ' ']])]
-            obf = '\n'.join(lines)
-
-        if add_lines:
-            # gather reserved strings
-            reserved = []
-            reserved.extend(keyword.kwlist)  # keywords
-            reserved.extend(dir(builtins))  # functions/constants
-            reserved.extend([attr for attr in dir(object) if attr.startswith('__') and attr.endswith('__')])  # dunders
-            reserved.extend([name for name, obj in vars(builtins).items() if inspect.isclass(obj) and issubclass(obj, BaseException)])  # exceptions
-            # tokenize file
-            base_splits = '\n\\!#$%&()*+,-./:;<=>?@[\]^`{|}~'
-            var_splits = base_splits + ' "\''
-            token_splits = base_splits + ' _'
-            possible_existing_variables = zhmiscellany.string.multi_split(obf, list(var_splits))
-            tokens = zhmiscellany.string.multi_split(obf, list(token_splits))
-            tokens = [token for token in tokens if all([char in list(string.ascii_letters + string.digits + "_") for char in token])]
-            tokens = [token for token in tokens if dno_char not in token]
-            tokens = [token for token in tokens if token not in reserved]
-            tokens = list(dict.fromkeys(tokens))
-            number_tokens = [token for token in tokens if all([char in '1234567890' for char in token])]
-            #number_tokens = [token for token in number_tokens if set(token) != set('0')]
-            number_tokens = [token for token in number_tokens if not token.startswith('0')]
-            all_tkns = copy.deepcopy(tokens)
-            for i in number_tokens:
-                tokens.remove(i)
-            number_tokens = [num for num in number_tokens if len(str(num)) < 10000]
+    import ast
+    import tokenize
+    import io
+    import re
+    import keyword
+    import builtins
+    import random
 
 
-            base_rng = random.Random(0.26900750624933856)
+    # match-statement pattern node types (absent on Python < 3.10) -> isinstance-safe.
+    _MATCH_AS = getattr(ast, 'MatchAs', ())
+    _MATCH_STAR = getattr(ast, 'MatchStar', ())
+    _MATCH_MAPPING = getattr(ast, 'MatchMapping', ())
 
-            rngs = {
-                'num_rng': random.Random(base_rng.random()),
-                'var_name_rng': random.Random(base_rng.random()),
-                'str_rng': random.Random(base_rng.random()),
-                'lst_rng': random.Random(base_rng.random()),
-                'new_rng': random.Random(base_rng.random()),
-                'global_rng': random.Random(base_rng.random()),
-                'match_rng': random.Random(base_rng.random()),
-                'create_var_name': random.Random(base_rng.random()),
-                'make_random_number': random.Random(base_rng.random()),
-                'create_string': random.Random(base_rng.random()),
-                'create_list': random.Random(base_rng.random()),
-            }
+    # Calls that observe a scope's namespace; injecting decoys into such a scope
+    # would change what they return, so we never inject there.
+    _INTROSPECT_CALLS = {'locals', 'globals', 'vars', 'dir'}
 
-            if not number_tokens:
-                def make_random_number():
-                    ends = [10, 100, 1000]
-                    return rngs['make_random_number'].randint(0, rngs['make_random_number'].choice(ends))
-                number_tokens = [make_random_number() for i in range(round((len(obf.split('\n'))*new_line_ratio)/10))]
-            total_new_lines = len(obf.split('\n'))*new_line_ratio
+    _ELIF_RE = re.compile(r'elif\b')
 
-            def create_var_name(vars):
-                while True:
-                    var = rngs['create_var_name'].choice(tokens)
-                    while True:
-                        if var[0] in list('1234567890'):
-                            break
-                        if var not in possible_existing_variables and var not in vars['all']:
-                            if rngs['create_var_name'].random() > 1/3:
-                                return var
-                        var = var + '_' + random.choice(tokens)
+    # "Zero cores": integer expressions that are GENUINELY 0 for every int v (so any
+    # dead code behind them never executes -> behavior preserved), but each requires a
+    # number-theoretic fact to fold. opaque_cond() composes these with 0-preserving
+    # operations (0*x, 0&x, 0+0, 0|0) over several fresh vars, so the resulting
+    # predicates span a huge structural space and CANNOT be recognized by a fixed
+    # template matcher (unlike a small fixed set). Validated for all ints; {v} is a
+    # fresh int-literal decoy var.
+    _ZERO_CORES = [
+        '({v}*{v} + {v}) % 2',                          # n^2+n even
+        '({v}*{v} - {v}) % 2',
+        '({v}*({v} + 1)) % 2',                          # consecutive product even
+        '({v}*({v} - 1)) % 2',
+        '({v}*{v}*{v} - {v}) % 6',                      # n^3-n divisible by 6
+        '({v}*({v} + 1)*({v} + 2)) % 6',
+        '({v}*({v} + 1)*({v} - 1)) % 6',
+        '({v}*{v}*{v}*{v} - {v}*{v}) % 12',             # n^4-n^2 divisible by 12
+        '({v}*{v}*{v}*{v}*{v} - {v}) % 30',             # n^5-n divisible by 30 (Fermat)
+        '({v}*({v} + 1)*({v} + 2)*({v} + 3)) % 24',
+        '(({v}*{v} + {v} + 1) % 2) - 1',                # odd minus 1 -> 0
+        '({v} & 1) * (({v} + 1) & 1)',                  # consecutive parities -> one is 0
+        '(({v} % 2) * (({v} + 1) % 2))',
+        '({v}*{v}*{v}*{v}*{v}*{v}*{v} - {v}) % 42',     # n^7-n divisible by 42
+    ]
 
-            def create_string(nds=None):
-                stri = rngs['create_string'].choice(all_tkns)
 
-                if not nds:
-                    stnds = ['"', "'", '"""', "'''"]
-                    nds = rngs['create_string'].choice(stnds)
+    def _opaque_guard(rng, vnames, number_pool, truth):
+        """Build an opaque predicate string over the already-assigned int vars `vnames`.
+        Genuinely constant at runtime (falsy if truth=False, truthy if truth=True) but
+        drawn from a large compositional space. Pure/deterministic; unit-tested directly."""
+        core = rng.choice(_ZERO_CORES).format(v=rng.choice(vnames))     # == 0 at runtime
+        for _ in range(rng.randint(0, 2)):
+            r = rng.random()
+            if r < 0.4:                                                 # 0 + 0, 0 | 0, 0 ^ 0
+                core = f"({core}) {rng.choice(['+', '|', '^'])} ({rng.choice(_ZERO_CORES).format(v=rng.choice(vnames))})"
+            elif r < 0.7:                                               # 0 * junk
+                core = f"(({core}) * ({rng.choice(vnames)} {rng.choice(['+', '-', '*'])} {rng.choice(number_pool)}))"
+            else:                                                       # 0 & junk
+                core = f"(({core}) & ({rng.choice(vnames)} {rng.choice(['+', '-'])} {rng.choice(number_pool)}))"
+        if not truth:
+            return f"({core})"
+        f = rng.random()
+        if f < 0.3:
+            return f"(({core}) == 0)"
+        if f < 0.55:
+            return f"(not ({core}))"
+        if f < 0.8:
+            return f"(({core}) + 1)"
+        return f"(({core}) | 1)"
 
-                while True:
-                    if rngs['create_string'].random() > 1/3:
-                        stri = stri + ' ' + rngs['create_string'].choice(all_tkns)
-                    else:
-                        return nds + stri + nds
 
-            def create_list(vars, will_run=True):
-                lst_str = '['
-                elements = []
-                end = 2
-                if not will_run:
-                    end = 3
-                chz = rngs['create_list'].randint(1, end)
-                stnds = ['"', "'", '"""', "'''"]
-                nds = rngs['create_list'].choice(stnds)
-                while True:
-                    if rngs['create_list'].random() > 1/6:
-                        match chz:
-                            case 1:
-                                elements.append(create_string(nds))
-                            case 2:
-                                elements.append(rngs['create_list'].choice(number_tokens))
-                            case 3:
-                                elements.append(rngs['create_list'].choice(vars['all']))
-                    else:
-                        break
-                lst_str = lst_str + ', '.join([str(i) for i in elements])
-                lst_str = lst_str + ']'
-                return lst_str
+    # A generic vocabulary of natural-looking identifier words. Decoy names are
+    # built from the program's own harvested identifiers PLUS this list, so names
+    # look real even for tiny inputs and never degenerate into `var_var_var...`.
+    _VOCAB = [
+        'data', 'value', 'result', 'tmp', 'temp', 'item', 'items', 'index', 'count',
+        'total', 'buffer', 'node', 'state', 'config', 'params', 'cache', 'queue',
+        'stack', 'offset', 'length', 'size', 'flag', 'token', 'chunk', 'batch',
+        'target', 'source', 'output', 'payload', 'handler', 'context', 'factor',
+        'ratio', 'delta', 'acc', 'cursor', 'record', 'entry', 'element', 'content',
+        'status', 'mode', 'level', 'depth', 'width', 'height', 'start', 'limit',
+        'bound', 'scale', 'weight', 'score', 'frame', 'segment', 'matrix', 'vector',
+        'window', 'sample', 'metric', 'bucket', 'field', 'row', 'col', 'cell',
+    ]
 
-            varis = {
-                'added_lines': [],
-                'all': [],
-                'num': [],
-                'str': [],
-                'lst': [],
-                'fun': [],
-            }
-            prev = ''
+    _DEFAULT_SEED = 0.26900750624933856  # original hard-coded seed; deterministic default
 
-            rngs['gen_num_var'] = random.Random(base_rng.random())
-            rngs['gen_str_var'] = random.Random(base_rng.random())
-            rngs['gen_lst_var'] = random.Random(base_rng.random())
-            rngs['rand_num'] = random.Random(base_rng.random())
-            rngs['rand_var'] = random.Random(base_rng.random())
-            rngs['rand_loop'] = random.Random(base_rng.random())
-            rngs['rand_num_add'] = random.Random(base_rng.random())
-            rngs['rand_num_sub'] = random.Random(base_rng.random())
-            rngs['rand_str'] = random.Random(base_rng.random())
-            rngs['rand_print'] = random.Random(base_rng.random())
-            rngs['rand_lst'] = random.Random(base_rng.random())
-            rngs['add_pass'] = random.Random(base_rng.random())
-            rngs['add_random_line'] = random.Random(base_rng.random())
-            rngs['rand_var_add'] = random.Random(base_rng.random())
-            rngs['rand_var_sub'] = random.Random(base_rng.random())
-            rngs['gen_other_var'] = random.Random(base_rng.random())
-            rngs['rand_func'] = random.Random(base_rng.random())
-            rngs['rand_call_func'] = random.Random(base_rng.random())
 
-            dno_indent = None
+    def _leading_ws(line):
+        return line[:len(line) - len(line.lstrip())]
 
-            for i, line in enumerate(lines):
-                indent = 0
-                for char in line:
-                    if char == ' ':
-                        indent += 1
-                    else:
-                        break
-                single_indent = 4 if indent % 4 == 0 else 2
-                varis['indent'] = indent
 
-                if line.endswith(dno_char) or indent == dno_indent:
-                    dno_indent = indent
+    def _is_docstring(stmt):
+        return (isinstance(stmt, ast.Expr)
+                and isinstance(stmt.value, ast.Constant)
+                and isinstance(stmt.value.value, str))
+
+
+    def _is_future_import(stmt):
+        return isinstance(stmt, ast.ImportFrom) and stmt.module == '__future__'
+
+
+    def _eff_start_line(stmt):
+        """First physical line of a statement, accounting for decorators."""
+        lo = stmt.lineno
+        for d in getattr(stmt, 'decorator_list', []) or []:
+            lo = min(lo, d.lineno)
+        return lo
+
+
+    def _harvest(tree):
+        """Collect real identifiers, int literals, and word-ish strings from the AST."""
+        names = set()
+        ints = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name):
+                names.add(node.id)
+            elif isinstance(node, ast.arg):
+                names.add(node.arg)
+            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                names.add(node.name)
+            elif isinstance(node, ast.Attribute):
+                names.add(node.attr)
+            elif isinstance(node, ast.keyword) and node.arg:
+                names.add(node.arg)
+            elif isinstance(node, ast.alias):
+                names.add((node.asname or node.name).split('.')[0])
+            elif isinstance(node, ast.ExceptHandler):
+                if node.name:
+                    names.add(node.name)
+            elif isinstance(node, (ast.Global, ast.Nonlocal)):
+                names.update(node.names)
+            elif _MATCH_AS and isinstance(node, _MATCH_AS):
+                if node.name:
+                    names.add(node.name)
+            elif _MATCH_STAR and isinstance(node, _MATCH_STAR):
+                if node.name:
+                    names.add(node.name)
+            elif _MATCH_MAPPING and isinstance(node, _MATCH_MAPPING):
+                if node.rest:
+                    names.add(node.rest)
+            elif isinstance(node, ast.Constant):
+                if isinstance(node.value, bool):
                     continue
+                if isinstance(node.value, int):
+                    if 0 <= node.value < 10 ** 9:
+                        ints.add(str(node.value))
+        return names, ints
+
+
+    _BINOP_SYM = {ast.Add: '+', ast.Sub: '-', ast.Mult: '*', ast.Div: '/', ast.FloorDiv: '//',
+                  ast.Mod: '%', ast.Pow: '**', ast.BitXor: '^', ast.BitAnd: '&', ast.BitOr: '|',
+                  ast.LShift: '<<', ast.RShift: '>>'}
+    _CMP_SYM = {ast.Eq: '==', ast.NotEq: '!=', ast.Lt: '<', ast.LtE: '<=', ast.Gt: '>',
+                ast.GtE: '>=', ast.Is: 'is', ast.IsNot: 'is not', ast.In: 'in', ast.NotIn: 'not in'}
+
+
+    def _harvest_constructs(tree):
+        """Extract the *grammar* the source actually uses -- which builtins/functions
+        it calls, which methods it invokes, which operators/comparisons/slices/
+        comprehensions/imports appear -- so decoys can reproduce those same constructs
+        and shape-based grepping can no longer isolate the real lines."""
+        calls, methods, binops, cmpops, imports = set(), set(), set(), set(), set()
+        slice_ = subscript = comp = unpack_for = False
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Name):
+                    calls.add(node.func.id)
+                elif isinstance(node.func, ast.Attribute):
+                    methods.add(node.func.attr)
+            elif isinstance(node, ast.BinOp):
+                binops.add(_BINOP_SYM.get(type(node.op)))
+            elif isinstance(node, ast.AugAssign):
+                binops.add(_BINOP_SYM.get(type(node.op)))
+            elif isinstance(node, ast.Compare):
+                for op in node.ops:
+                    cmpops.add(_CMP_SYM.get(type(op)))
+            elif isinstance(node, ast.Subscript):
+                if isinstance(node.slice, ast.Slice):
+                    slice_ = True
                 else:
-                    dno_indent = None
+                    subscript = True
+            elif isinstance(node, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)):
+                comp = True
+            elif isinstance(node, (ast.For, ast.AsyncFor)):
+                if isinstance(node.target, (ast.Tuple, ast.List)):
+                    unpack_for = True
+            elif isinstance(node, ast.Import):
+                for a in node.names:
+                    imports.add(a.name.split('.')[0])
+            elif isinstance(node, ast.ImportFrom):
+                if node.level == 0 and node.module:
+                    imports.add(node.module.split('.')[0])
+        imports.discard('__future__')  # future imports must be first + use real feature names
+        binops.discard(None); cmpops.discard(None)
+        return {'calls': sorted(calls), 'methods': sorted(methods), 'binops': sorted(binops),
+                'cmpops': sorted(cmpops), 'imports': sorted(imports),
+                'slice': slice_, 'subscript': subscript, 'comp': comp, 'unpack_for': unpack_for}
 
 
-                def gen_num_var(vars):
+    def _scope_introspects(scope):
+        """True if `scope`'s own code calls locals()/globals()/vars()/dir() (i.e.
+        observes its namespace). Does not descend into nested scopes."""
+        found = [False]
 
-                    if 1 / 4 > rngs['gen_num_var'].random() and vars['num']:
-                        cvar = rngs['gen_num_var'].choice(vars['num'])
-                    else:
-                        cvar = create_var_name(vars)
-                        vars['num'].append(cvar)
-                        vars['all'].append(cvar)
+        def walk(n, top):
+            if found[0]:
+                return
+            if not top and isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef,
+                                          ast.ClassDef, ast.Lambda)):
+                return
+            if (isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
+                    and n.func.id in _INTROSPECT_CALLS):
+                found[0] = True
+                return
+            for ch in ast.iter_child_nodes(n):
+                walk(ch, False)
 
-                    return cvar
+        walk(scope, True)
+        return found[0]
 
-                def gen_str_var(vars):
 
-                    non_num = []
-                    non_num.extend(vars['str'])
-                    non_num.extend(vars['lst'])
+    def _assigned_names(target):
+        """Names bound by an assignment target (recursing tuple/list/starred)."""
+        out = []
+        if isinstance(target, ast.Name):
+            out.append(target.id)
+        elif isinstance(target, (ast.Tuple, ast.List)):
+            for e in target.elts:
+                out.extend(_assigned_names(e))
+        elif isinstance(target, ast.Starred):
+            out.extend(_assigned_names(target.value))
+        return out
 
-                    if 1 / 4 > rngs['gen_str_var'].random() and non_num:
-                        cvar = rngs['gen_str_var'].choice(non_num)
-                    else:
-                        cvar = create_var_name(vars)
-                        vars['str'].append(cvar)
-                        vars['all'].append(cvar)
 
-                    return cvar
+    def _scope_bindings(scope):
+        """(name, bind_line) for parameters + top-level simple assignments in `scope`.
+        These names are definitely bound and genuinely local, so they're the only ones
+        safe to entangle (reassign to themselves). Names declared global/nonlocal are
+        excluded to avoid changing a name's scope."""
+        binds = []
+        if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            a = scope.args
+            for arg in list(a.posonlyargs) + list(a.args) + list(a.kwonlyargs):
+                binds.append((arg.arg, -1))
+            if a.vararg:
+                binds.append((a.vararg.arg, -1))
+            if a.kwarg:
+                binds.append((a.kwarg.arg, -1))
+        declared = set()
+        for st in scope.body:
+            if isinstance(st, (ast.Global, ast.Nonlocal)):
+                declared.update(st.names)
+        # A `del name` unbinds it, so reassigning it later (entanglement) would read a
+        # deleted name -> NameError. Exclude any name deleted anywhere in the scope.
+        for node in ast.walk(scope):
+            if isinstance(node, ast.Delete):
+                for t in node.targets:
+                    declared.update(_assigned_names(t))  # only Name targets yield names
+        for st in scope.body:
+            targets = []
+            if isinstance(st, ast.Assign):
+                targets = st.targets
+            elif isinstance(st, ast.AnnAssign) and st.value is not None:
+                targets = [st.target]
+            for t in targets:
+                for nm in _assigned_names(t):
+                    if nm not in declared:
+                        binds.append((nm, getattr(st, 'end_lineno', st.lineno)))
+        return binds
 
-                def gen_lst_var(vars):
 
-                    non_num = []
-                    non_num.extend(vars['str'])
-                    non_num.extend(vars['lst'])
+    src = python_code_string
+    dno_sig = do_not_obfuscate_indent_block_comment
 
-                    if 1 / 4 > rngs['gen_lst_var'].random() and non_num:
-                        cvar = rngs['gen_lst_var'].choice(non_num)
-                    else:
-                        cvar = create_var_name(vars)
-                        vars['lst'].append(cvar)
-                        vars['all'].append(cvar)
+    # Parse up front. This both validates the input and gives us the real
+    # statement structure used for safe decoy placement.
+    try:
+        tree = ast.parse(src)
+    except SyntaxError as e:
+        raise ValueError(f"obfuscate_python: input is not valid Python "
+                         f"(line {e.lineno}: {e.msg}). Fix the source first.") from e
 
-                    return cvar
+    lines = src.split('\n')
 
-                def gen_func_var(vars):
-                    cvar = create_var_name(vars)
-                    vars['fun'].append(cvar)
-                    vars['all'].append(cvar)
+    # ---- DNO detection (on ORIGINAL lines, before comments are stripped) ----
+    dno_line_nums = {i + 1 for i, ln in enumerate(lines)
+                     if ln.rstrip().endswith(dno_sig)}
 
-                    return cvar
+    # All statement spans (start incl. decorators, end inclusive).
+    stmt_spans = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.stmt):
+            stmt_spans.append((_eff_start_line(node),
+                               getattr(node, 'end_lineno', node.lineno)))
 
-                def gen_other_var(vars):
-                    cvar = create_var_name(vars)
-                    vars['all'].append(cvar)
-                    return cvar
+    dno_protected = set()
+    for d in dno_line_nums:
+        containing = [(s, e) for (s, e) in stmt_spans if s <= d <= e]
+        if containing:
+            # marker on/inside a statement -> protect that whole statement + block
+            s, e = min(containing, key=lambda se: se[1] - se[0])  # innermost
+            dno_protected.update(range(s, e + 1))
+        else:
+            # marker on its own comment line -> protect the next statement + block
+            following = [(s, e) for (s, e) in stmt_spans if s > d]
+            if following:
+                nxt = min(s for s, e in following)
+                s, e = max((se for se in following if se[0] == nxt),
+                           key=lambda se: se[1] - se[0])  # outermost at that line
+                dno_protected.update(range(s, e + 1))
+            else:
+                dno_protected.add(d)
 
-                while rngs['global_rng'].random() > 1/(new_line_ratio*2) and (not any([prev.endswith(char) for char in list(' ,\\[{(')+reserved])) and (not any([char in line for char in ':'])):
+    # ---- comment / print stripping (string-aware) ----
+    if remove_comments:
+        try:
+            toks = tokenize.generate_tokens(io.StringIO(src).readline)
+            comment_cols = {}  # row -> col of comment start
+            for tok in toks:
+                if tok.type == tokenize.COMMENT:
+                    row, col = tok.start
+                    # keep the earliest comment col on a line (there is only one)
+                    comment_cols.setdefault(row, col)
+        except tokenize.TokenError:
+            comment_cols = {}
+        for row, col in comment_cols.items():
+            lines[row - 1] = lines[row - 1][:col].rstrip()
 
-                    def rand_num(vars, will_run=True):  # var (new/old) to random int
-                        cvar = gen_num_var(vars)
-                        vars['added_lines'].append((i, f"{' ' * vars['indent']}{cvar} = {rngs['rand_num'].choice(number_tokens)}"))
-                        return cvar
+    if remove_prints:
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)
+                    and isinstance(node.value.func, ast.Name)
+                    and node.value.func.id == 'print'):
+                ln, end = node.lineno, node.end_lineno
+                first = lines[ln - 1]
+                ws = _leading_ws(first)
+                # Only replace if the print occupies its physical lines alone
+                # (col == indent, and nothing trailing after the call) so we
+                # never clobber a sibling like `x = 1; print(2)`.
+                if node.col_offset != len(ws):
+                    continue
+                tail = lines[end - 1][node.value.end_col_offset:]
+                if tail.strip() not in ('', dno_sig):
+                    continue
+                lines[ln - 1] = ws + 'pass'
+                for k in range(ln, end):
+                    lines[k] = ''
 
-                    def rand_var(vars, will_run=False):  # var (new/old) to random previous var
-                        if will_run:
-                            raise Exception('This should not be possible')
+    if not add_lines:
+        return '\n'.join(lines)
 
-                        if vars['all']:
-                            ev = rngs['rand_var'].choice(vars['all'])
-                        else:
-                            add_random_line(vars, will_run)
-                            return
+    # ---- gather reserved names + decoy material ----
+    reserved = set(keyword.kwlist)
+    reserved.update(dir(builtins))
+    reserved.update(['match', 'case', 'type', '_'])  # soft keywords
+    reserved.update([n for n in dir(object) if n.startswith('__') and n.endswith('__')])
 
-                        if ev in vars['num']:
-                            cvar = gen_num_var(vars)
-                        elif ev in vars['str']:
-                            cvar = gen_str_var(vars)
-                        elif ev in vars['lst']:
-                            cvar = gen_lst_var(vars)
-                        else:
-                            cvar = gen_other_var(vars)
+    real_names, int_pool = _harvest(tree)
 
-                        vars['added_lines'].append((i, f"{' ' * vars['indent']}{cvar} = {ev}"))
-                        return cvar
+    # NOTE: sorted() is load-bearing -- building this from a set leaves iteration
+    # order at the mercy of PYTHONHASHSEED, which would make rng.choice() (and
+    # thus the whole output) differ between processes despite the fixed seed.
+    name_pool = sorted(t for t in (real_names | set(_VOCAB))
+                       if t.isidentifier() and not t.startswith('__') and t not in reserved)
+    if not name_pool:
+        name_pool = sorted(_VOCAB)
+    word_pool = list(name_pool)  # for plausible string contents
 
-                    def rand_loop(vars, cvar, will_run=True):
-                        if rngs['rand_loop'].random() > 1/(new_line_ratio/4):
-                            return
-                        end = 1
-                        if cvar in vars['num']:
-                            end = 2
-                        choice = rngs['rand_loop'].randint(1, end)
-                        match choice:
-                            case 1:
-                                vars['added_lines'].append((i, f"{' ' * vars['indent']}while {cvar}:"))
-                            case 2:
-                                vars['added_lines'].append((i, f"{' ' * vars['indent']}for {gen_other_var(vars)} in range(0, {cvar}):"))
+    # real identifiers, safe to *reference* from dead (never-executed) decoy code,
+    # so the decoy data-flow graph isn't a disconnected island a slicer can isolate.
+    # Exclude global/nonlocal-declared names: referencing one inside its function
+    # before that function's `global`/`nonlocal` line is a "used prior to
+    # declaration" SyntaxError.
+    _global_declared = set()
+    for _n in ast.walk(tree):
+        if isinstance(_n, (ast.Global, ast.Nonlocal)):
+            _global_declared.update(_n.names)
+    real_names_list = sorted(n for n in real_names
+                             if n.isidentifier() and n not in reserved and n not in _global_declared)
 
-                        vars['indent'] += single_indent
-                        f = True
-                        while rngs['rand_loop'].random() > 1 / (new_line_ratio * 2) or f:
-                            add_random_line(vars, False)
-                            f = False
-                        vars['indent'] -= single_indent
+    number_pool = sorted(int_pool, key=lambda s: (len(s), s))
+    if not number_pool:
+        number_pool = ['0', '1', '2', '3', '7', '10', '16', '32', '64', '100', '255', '1000']
 
-                    def rand_func(vars, will_run=True):
-                        if rngs['rand_func'].random() > 1/(new_line_ratio):
-                            add_random_line(vars, will_run)
-                            return
-                        cvar = gen_func_var(vars)
-                        ev = []
-                        while rngs['rand_func'].random() < 1/3:
-                            ev.append(create_var_name(vars))
-                        ev = ', '.join(ev)
-                        vars['added_lines'].append((i, f"{' ' * vars['indent']}def {cvar}({ev}):"))
-                        vars['indent'] += single_indent
-                        cvars = []
-                        while rngs['rand_func'].random() > 1 / (new_line_ratio * 2) or len([e for e in cvars if e]) == 0:
-                            cvars.append(add_random_line(vars, will_run))
-                        cvars = [e for e in cvars if e]
-                        ev = []
-                        f = True
-                        while rngs['rand_func'].random() < 1/3 or f:
-                            ev.append(rngs['rand_func'].choice(cvars))
-                            f = False
-                        ev = ', '.join(ev)
-                        if rngs['rand_func'].random() > 1/3:
-                            vars['added_lines'].append((i, f"{' ' * vars['indent']}return {ev}"))
-                        vars['indent'] -= single_indent
-                        return cvar
+    feats = _harvest_constructs(tree)  # the grammar the source uses, for decoys to mimic
 
-                    def rand_call_func(vars, will_run=True):
-                        if (not vars['fun']) or will_run:
-                            add_random_line(vars, will_run)
-                            return
-                        func = rngs['rand_call_func'].choice(vars['fun'])
-                        ev = []
-                        while rngs['rand_call_func'].random() < 1/3:
-                            ev.append(rngs['rand_call_func'].choice(vars['all']))
-                        ev = ', '.join(ev)
-                        vars['added_lines'].append((i, f"{' ' * vars['indent']}{func}({ev})"))
+    rng = random.Random(_DEFAULT_SEED if seed is None else seed)
 
-                    def rand_num_add(vars, will_run=True):  # var (new/old) to random int + random int
-                        cvar = gen_num_var(vars)
-                        pos1 = rngs['rand_num_add'].choice(number_tokens)
-                        pos2 = rngs['rand_num_add'].choice(number_tokens)
-                        falsy = False
-                        chz = rngs['rand_var_add'].randint(1, 3)
-                        match chz:
-                            case 1:
-                                pos3 = '+'
-                                if not (int(pos1) + int(pos2)): falsy = True
-                            case 2:
-                                pos3 = '-'
-                                if not (int(pos1) - int(pos2)): falsy = True
-                            case 3:
-                                pos3 = '*'
-                                if not (int(pos1) * int(pos2)): falsy = True
+    # ---- indent unit (match the file's style: tabs vs spaces) ----
+    sample_indents = [_leading_ws(ln) for ln in lines if ln[:1] in (' ', '\t')]
+    indent_unit = '\t' if any('\t' in s for s in sample_indents) else '    '
 
-                        vars['added_lines'].append((i, f"{' ' * vars['indent']}{cvar} = {pos1} {pos3} {pos2}"))
-                        if falsy:
-                            rand_loop(vars, cvar)
-                        return cvar
+    # ---- decoy name pool: precomputed ONCE, so minting a name is an O(1)
+    # rng.choice with no per-call uniqueness loop (the old loop degraded to O(N^2)
+    # as the name space filled). Names can never collide with a real identifier or
+    # reserved word, so a decoy can't shadow real code; repeats between decoys are
+    # fine (every use is an assignment target or a dead reference). name_pool is
+    # sorted -> deterministic order -> deterministic across processes.
+    def _build_name_pool(cap=16000):
+        pool, seen = [], set()
 
-                    def rand_var_add(vars, will_run=False):  # var (new/old) to random int + random int
-                        if will_run:
-                            raise Exception('This should not be possible')
-                        cvar = gen_num_var(vars)
+        def add(nm):
+            if (nm and nm not in seen and nm not in real_names and nm not in reserved
+                    and not nm[0].isdigit() and nm.isidentifier()):
+                seen.add(nm); pool.append(nm)
 
-                        chz = rngs['rand_var_add'].randint(1, 2)
-                        match chz:
-                            case 1:pos1 = rngs['rand_var_add'].choice(number_tokens)
-                            case 2:pos1 = rngs['rand_var_add'].choice(vars['all'])
+        for w in name_pool:
+            add(w)
+        for a in name_pool:
+            for b in name_pool:
+                add(a + '_' + b)
+                if len(pool) >= cap:
+                    return pool
+        d = 0
+        while len(pool) < cap:
+            for w in name_pool:
+                add(w + str(d))
+            d += 1
+            if d > cap:            # name_pool tiny -> stop; what we have is enough
+                break
+        return pool or ['_v0']
 
-                        chz = rngs['rand_var_add'].randint(1, 2)
-                        match chz:
-                            case 1:pos2 = rngs['rand_var_add'].choice(number_tokens)
-                            case 2:pos2 = rngs['rand_var_add'].choice(vars['all'])
+    _NAME_POOL = _build_name_pool()
 
-                        chz = rngs['rand_var_add'].randint(1, 7)
-                        match chz:
-                            case 1:pos3 = '+'
-                            case 2:pos3 = '-'
-                            case 3:pos3 = '/'
-                            case 4:pos3 = '//'
-                            case 5:pos3 = '%'
-                            case 6:pos3 = '*'
-                            case 7:pos3 = '**'
+    def create_var_name():
+        return rng.choice(_NAME_POOL)
 
-                        vars['added_lines'].append((i, f"{' ' * vars['indent']}{cvar} = {pos1} {pos3} {pos2}"))
-                        return cvar
+    def create_var_names(k):        # k DISTINCT names, for param / member lists
+        if k <= 0:
+            return []
+        if k >= len(_NAME_POOL):
+            return [rng.choice(_NAME_POOL) for _ in range(k)]
+        return rng.sample(_NAME_POOL, k)
 
-                    def rand_str(vars, will_run=True):  # var (new/old) to random string
-                        cvar = gen_str_var(vars)  # impossible for this to be falsy
-                        vars['added_lines'].append((i, f"{' ' * vars['indent']}{cvar} = {create_string()}"))
-                        return cvar
+    def pick(seq, fallback):
+        return rng.choice(seq) if seq else fallback
 
-                    def rand_print(vars, will_run=False):  # print 1 random var or 2 random string or 3 random int or 4 random list
-                        if will_run:
-                            raise Exception('This should not be possible')
-                        cvar = gen_str_var(vars)
-                        choice = rngs['rand_print'].randint(1, 4)
-                        match choice:
-                            case 1:
-                                ev = rngs['rand_print'].choice(vars['all'])
-                            case 2:
-                                ev = create_string()
-                            case 3:
-                                ev = rngs['rand_print'].choice(number_tokens)
-                            case 4:
-                                ev = create_list(vars)
-                        vars['added_lines'].append((i, f"{' ' * vars['indent']}print({ev})"))
+    def make_string():
+        parts = [rng.choice(word_pool) for _ in range(rng.randint(1, 4))]
+        q = rng.choice(["'", '"'])
+        return q + ' '.join(parts) + q
 
-                    def rand_lst(vars, will_run=True):  # var (new/old) to random list
-                        lst = create_list(vars, will_run)
-                        cvar = gen_lst_var(vars)
-                        vars['added_lines'].append((i, f"{' ' * vars['indent']}{cvar} = {lst}"))
-                        if lst == '[]':  # this will miss some but vast majority will be caught
-                            rand_loop(vars, cvar)
-                        return cvar
+    def make_list(vrs, will_run):
+        elems = []
+        kinds = [1, 2] if will_run else [1, 2, 3]  # 3 = reference an existing decoy var
+        while rng.random() > 1 / 6:
+            k = rng.choice(kinds)
+            if k == 1:
+                elems.append(make_string())
+            elif k == 2:
+                elems.append(rng.choice(number_pool))
+            else:
+                elems.append(pick(vrs['all'], rng.choice(number_pool)))
+        return '[' + ', '.join(elems) + ']'
 
-                    def add_pass(vars, will_run=True):  # pass
-                        vars['added_lines'].append((i, f"{' ' * vars['indent']}pass"))
+    # ---- generation context ----
+    ratio = max(0.0, float(new_line_ratio))  # decoy lines added per real code line
+    R = max(1.0, ratio)                       # safe floor for probability denominators
+    MAX_DEPTH = 2
 
-                    run_vars = [rand_num, rand_num_add, rand_str, rand_lst, add_pass, rand_func]
-                    all_vars = run_vars + [rand_var, rand_print, rand_var_add, rand_call_func]
+    class Ctx:
+        __slots__ = ('indent', 'out', 'depth', 'entangle', 'in_func')
 
-                    def add_random_line(vars, will_run=True):
-                        if will_run:
-                            line_variations = run_vars
-                        else:
-                            line_variations = all_vars
-                        variation = rngs['add_random_line'].choice(line_variations)
-                        cvar = variation(vars, will_run)
-                        return cvar
+        def __init__(self, indent, entangle_names=(), in_func=False):
+            self.indent = indent
+            self.out = []
+            self.depth = 0
+            self.entangle = entangle_names  # real locals safe to reassign at this point
+            self.in_func = in_func          # True if this point is inside a function body
 
-                    add_random_line(varis)
+    # Shared decoy-var registry. BOUNDED to a sliding window (a decoy referencing
+    # one of the last ~hundreds of decoy vars is as good as one of hundreds of
+    # thousands) -- keeping these lists from growing unboundedly is what turns the
+    # whole generator from O(N^2) back into O(N).
+    vrs = {'all': [], 'num': [], 'str': [], 'lst': [], 'fun': [], 'cls': []}
+    _VRS_CAP = 800
 
-                prev = line
+    def _push(key, v):
+        lst = vrs[key]
+        lst.append(v)
+        if len(lst) > _VRS_CAP:
+            del lst[:_VRS_CAP // 2]   # sliding window; amortized O(1) per push
 
-            varis['added_lines'].reverse()
-            for line in varis['added_lines']:
-                lines.insert(line[0], line[1])
-            obf = '\n'.join(lines)
+    def emit(ctx, text):
+        ctx.out.append(ctx.indent + text)
 
-            lines = obf.split('\n')
-            for i, line in enumerate(lines):
-                if line.endswith(dno_char):
-                    lines[i] = line.replace(dno_char, '')
-                line_char_list = list(lines[i])
-                if line_char_list:
-                    while line_char_list[-1] == ' ':
-                        line_char_list.pop()
-                        if not line_char_list:
-                            break
-                lines[i] = ''.join(line_char_list)
-            obf = '\n'.join(lines)
-        return obf
+    def gen_num_var(ctx):
+        if vrs['num'] and rng.random() < 1 / 4:
+            return rng.choice(vrs['num'])
+        v = create_var_name()
+        _push('num', v); _push('all', v)
+        return v
+
+    def _reuse_nonnum():
+        s, l = vrs['str'], vrs['lst']
+        if s and l:
+            return rng.choice(s if rng.random() < 0.5 else l)
+        return rng.choice(s or l)
+
+    def gen_str_var(ctx):
+        if (vrs['str'] or vrs['lst']) and rng.random() < 1 / 4:
+            return _reuse_nonnum()
+        v = create_var_name()
+        _push('str', v); _push('all', v)
+        return v
+
+    def gen_lst_var(ctx):
+        if (vrs['str'] or vrs['lst']) and rng.random() < 1 / 4:
+            return _reuse_nonnum()
+        v = create_var_name()
+        _push('lst', v); _push('all', v)
+        return v
+
+    def gen_other_var():
+        v = create_var_name()
+        _push('all', v)
+        return v
+
+    def opaque_cond(ctx, truth):
+        # Mint 1-3 fresh int vars, then build a parametric opaque predicate over
+        # them (see module-level _opaque_guard, which is unit-tested directly).
+        vs = []
+        for _ in range(rng.randint(1, 3)):
+            v = create_var_name()
+            emit(ctx, f"{v} = {rng.choice(number_pool)}")
+            vs.append(v)
+        return _opaque_guard(rng, vs, number_pool, truth)
+
+    def dead_ref():
+        # Operand usable ONLY in dead code: may be a real identifier (the line
+        # never executes, so referencing an out-of-scope/real name is harmless),
+        # which entangles the decoy graph with the real one.
+        r = rng.random()
+        if r < 0.5 and vrs['all']:
+            return rng.choice(vrs['all'])
+        if r < 0.75 and real_names_list:
+            return rng.choice(real_names_list)
+        return rng.choice(number_pool)
+
+    def dead_name():
+        # like dead_ref but NEVER a bare number, so it's valid as a method
+        # receiver (`2.method()` is a parse error; `name.method()` is not).
+        if vrs['all'] and (not real_names_list or rng.random() < 0.6):
+            return rng.choice(vrs['all'])
+        if real_names_list:
+            return rng.choice(real_names_list)
+        return rng.choice(vrs['all']) if vrs['all'] else create_var_name()
+
+    # ---- decoy statement generators -------------------------------------
+    def rand_num(ctx, will_run=True):
+        v = gen_num_var(ctx)
+        emit(ctx, f"{v} = {rng.choice(number_pool)}")
+        return v
+
+    def rand_num_add(ctx, will_run=True):
+        v = gen_num_var(ctx)
+        a = int(rng.choice(number_pool)); b = int(rng.choice(number_pool))
+        op = rng.choice(['+', '-', '*'])
+        emit(ctx, f"{v} = {a} {op} {b}")
+        return v
+
+    def rand_var_add(ctx, will_run=False):  # dead only
+        v = gen_num_var(ctx)
+        a = dead_ref() if rng.random() < 1 / 2 else rng.choice(number_pool)
+        b = dead_ref() if rng.random() < 1 / 2 else rng.choice(number_pool)
+        op = rng.choice(['+', '-', '/', '//', '%', '*', '**'])
+        emit(ctx, f"{v} = {a} {op} {b}")
+        return v
+
+    def rand_str(ctx, will_run=True):
+        v = gen_str_var(ctx)
+        emit(ctx, f"{v} = {make_string()}")
+        return v
+
+    def rand_lst(ctx, will_run=True):
+        v = gen_lst_var(ctx)
+        emit(ctx, f"{v} = {make_list(vrs, will_run)}")
+        return v
+
+    def rand_var(ctx, will_run=False):  # dead only
+        ev = dead_ref()
+        if ev in vrs['num']:
+            v = gen_num_var(ctx)
+        elif ev in vrs['str']:
+            v = gen_str_var(ctx)
+        elif ev in vrs['lst']:
+            v = gen_lst_var(ctx)
+        else:
+            v = gen_other_var()
+        emit(ctx, f"{v} = {ev}")
+        return v
+
+    def rand_print(ctx, will_run=False):  # dead only
+        c = rng.randint(1, 4)
+        if c == 1:
+            ev = dead_ref()
+        elif c == 2:
+            ev = make_string()
+        elif c == 3:
+            ev = rng.choice(number_pool)
+        else:
+            ev = make_list(vrs, False)
+        emit(ctx, f"print({ev})")
+
+    def add_pass(ctx, will_run=True):
+        emit(ctx, "pass")
+
+    def rand_comprehension(ctx, will_run=True):
+        v = gen_lst_var(ctx)
+        it = create_var_name()  # comprehension-local loop var
+        body = rng.choice([it, f"{it} * {rng.choice(number_pool)}",
+                           f"{it} + {rng.choice(number_pool)}", make_string()])
+        emit(ctx, f"{v} = [{body} for {it} in range(0, {rng.randint(2, 6)})]")
+        return v
+
+    def rand_ternary(ctx, will_run=True):
+        v = gen_num_var(ctx)
+        cond = opaque_cond(ctx, truth=bool(rng.randint(0, 1)))
+        emit(ctx, f"{v} = {rng.choice(number_pool)} if {cond} else {rng.choice(number_pool)}")
+        return v
+
+    def rand_dict(ctx, will_run=True):
+        v = gen_lst_var(ctx)
+        items = ', '.join(f"{make_string()}: {rng.choice(number_pool)}"
+                          for _ in range(rng.randint(1, 3)))
+        emit(ctx, f"{v} = {{{items}}}")
+        return v
+
+    def rand_fstring(ctx, will_run=True):
+        v = gen_str_var(ctx)
+        w1 = rng.choice(word_pool); w2 = rng.choice(word_pool)
+        emit(ctx, f'{v} = f"{w1} {{{rng.choice(number_pool)}}} {w2}"')
+        return v
+
+    def rand_tuple(ctx, will_run=True):
+        a, b = create_var_names(2)
+        _push('all', a); _push('all', b)
+        emit(ctx, f"{a}, {b} = {rng.choice(number_pool)}, {make_string()}")
+        return a
+
+    def dead_expr():
+        # A larger expression referencing several decoy/real names. Only ever placed
+        # in a never-taken branch (so it can reference anything and can't error),
+        # its job is to drag many decoy vars into a real var's backward slice.
+        parts = [dead_ref()]
+        for _ in range(rng.randint(1, 3)):
+            parts.append(f"{rng.choice(_binops)} {dead_ref()}")
+        return ' '.join(parts)
+
+    def _noop_rebind(ctx, tgt):
+        # rebind tgt to ITSELF (no-op for ANY type) with a decoy woven into the
+        # never-taken branch, so tgt's backward slice can't shed the decoy.
+        shape = rng.randint(0, 3)
+        if shape == 0:
+            emit(ctx, f"{tgt} = {tgt} if {opaque_cond(ctx, True)} else {dead_expr()}")
+        elif shape == 1:
+            emit(ctx, f"{tgt} = {dead_expr()} if {opaque_cond(ctx, False)} else {tgt}")
+        elif shape == 2:
+            emit(ctx, f"{tgt} = ({tgt}, {rich_expr_safe()})[{opaque_cond(ctx, False)}]")
+        else:
+            emit(ctx, f"{tgt} = {{0: {tgt}, 1: {rich_expr_safe()}}}[{opaque_cond(ctx, False)}]")
+
+    def rand_entangle(ctx, will_run=True):
+        # Tangle real and decoy data flow so a backward slice from the output can't
+        # separate them. Three modes, all runtime no-ops for the real values:
+        #   backward: a real var rebinds to itself, decoy pulled into its slice
+        #   forward:  a real var's VALUE flows into a fresh decoy var
+        #   hide:     a decoy var gets the same shape, so the pattern doesn't leak
+        #             which vars are real.
+        real = ctx.entangle
+        m = rng.random()
+        if real and m < 0.4:
+            _noop_rebind(ctx, rng.choice(real))
+        elif real and m < 0.65:
+            dv = gen_other_var()
+            emit(ctx, f"{dv} = ({rng.choice(real)}, {rich_expr_safe()})[{opaque_cond(ctx, False)}]")
+        else:
+            tgt = gen_other_var()
+            emit(ctx, f"{tgt} = {rich_expr_safe()}")
+            _noop_rebind(ctx, tgt)
+        return None
+
+    def rand_dead_block(ctx, will_run=True):
+        # An opaque-dead loop: the guard is genuinely falsy at runtime (body never
+        # runs -> behavior safe) but isn't statically foldable, so a DCE pass can't
+        # remove the decoys inside it.
+        if ctx.depth >= MAX_DEPTH:
+            return add_random_line(ctx, will_run)
+        cond = opaque_cond(ctx, truth=False)
+        if rng.random() < 1 / 2:
+            emit(ctx, f"while {cond}:")
+        else:
+            emit(ctx, f"for {gen_other_var()} in range(0, {cond}):")
+        ctx.indent += indent_unit
+        ctx.depth += 1
+        for _ in range(rng.randint(1, 2)):  # dead body, kept short
+            add_random_line(ctx, will_run=False)
+        ctx.depth -= 1
+        ctx.indent = ctx.indent[:-len(indent_unit)]
+
+    def _fake_flag_expr():
+        # A fake flag-shaped value built via the harvested primitives (never a
+        # literal), so a dynamic tap on chr()/bytes() sees plausible candidates
+        # mixed in with the real secret. Uses only builtins -> always safe to run.
+        forms = []
+        if 'chr' in _calls:
+            forms.append('chr')
+        if 'bytes' in _calls or 'bytearray' in _calls:
+            forms.append('bytes')
+        if not forms:
+            return None
+        if rng.choice(forms) == 'chr':
+            pre = ' + '.join(f'chr({rng.randint(65, 90)})' for _ in range(rng.randint(2, 4)))
+            body = ' + '.join(f'chr({rng.randint(48, 122)})' for _ in range(rng.randint(6, 16)))
+            return f"{pre} + chr(123) + {body} + chr(125)"   # X..X{...}
+        return f"bytes([{', '.join(str(rng.randint(33, 126)) for _ in range(rng.randint(8, 24)))}])"
+
+    def rand_honeypot(ctx, will_run=True):
+        # LIVE: builds a fake flag-shaped value and drops it in an unused var, so it
+        # flows through the same primitives as the real secret at runtime.
+        e = _fake_flag_expr()
+        if e is None:
+            return rand_rich(ctx, will_run)
+        v = gen_str_var(ctx)
+        emit(ctx, f"{v} = {e}")
+        return v
+
+    def _fake_if_else(ctx, levels):
+        # if <opaque_false>: <dead>  else: (nested if/else, or live decoys). Nested
+        # (not elif) so opaque_cond's setup lines sit safely inside the else block.
+        emit(ctx, f"if {opaque_cond(ctx, False)}:")
+        ctx.indent += indent_unit; ctx.depth += 1
+        _emit_dead_construct(ctx)
+        ctx.depth -= 1; ctx.indent = ctx.indent[:-len(indent_unit)]
+        emit(ctx, "else:")
+        ctx.indent += indent_unit; ctx.depth += 1
+        if levels > 1 and ctx.depth < MAX_DEPTH:
+            _fake_if_else(ctx, levels - 1)              # deeper -> multi-branch look
+        else:
+            for _ in range(rng.randint(1, 2)):
+                add_random_line(ctx, will_run=True)     # the one branch that runs -> safe
+        ctx.depth -= 1; ctx.indent = ctx.indent[:-len(indent_unit)]
+
+    def rand_fake_flow(ctx, will_run=True):
+        # Bogus but real-looking control flow, so real decision points drown among
+        # fake ones. All branches that fire are behavior-safe.
+        if ctx.depth >= MAX_DEPTH:
+            return add_random_line(ctx, will_run)
+        if ctx.in_func and rng.random() < 0.4:
+            emit(ctx, f"if {opaque_cond(ctx, False)}:")     # dead guard clause, never returns
+            ctx.indent += indent_unit
+            emit(ctx, f"return {dead_expr()}")
+            ctx.indent = ctx.indent[:-len(indent_unit)]
+            return
+        _fake_if_else(ctx, rng.randint(1, 2))
+
+    def _params(n):
+        return ', '.join(create_var_names(n))  # k distinct names (no dup params)
+
+    def rand_func(ctx, will_run=True):
+        if ctx.depth >= MAX_DEPTH:
+            return add_random_line(ctx, will_run)
+        name = create_var_name()
+        _push('fun', name); _push('all', name)
+        emit(ctx, f"def {name}({_params(rng.randint(0, 3))}):")
+        ctx.indent += indent_unit
+        ctx.depth += 1
+        body_vars = []
+        for _ in range(rng.randint(1, 3)):
+            v = add_random_line(ctx, will_run=True)
+            if v:
+                body_vars.append(v)
+        if body_vars and rng.random() < 2 / 3:
+            ret = ', '.join(rng.choice(body_vars) for _ in range(rng.randint(1, 2)))
+            emit(ctx, f"return {ret}")
+        ctx.depth -= 1
+        ctx.indent = ctx.indent[:-len(indent_unit)]
+        return name
+
+    def rand_class(ctx, will_run=True):
+        if ctx.depth >= MAX_DEPTH:
+            return add_random_line(ctx, will_run)
+        name = create_var_name()
+        _push('cls', name); _push('all', name)
+        emit(ctx, f"class {name}:")
+        ctx.indent += indent_unit
+        ctx.depth += 1
+        members = 0
+        # class-level attributes (run at definition time -> must be safe literals)
+        for _ in range(rng.randint(0, 3)):
+            attr = create_var_name()
+            kind = rng.randint(1, 3)
+            if kind == 1:
+                emit(ctx, f"{attr} = {rng.choice(number_pool)}")
+            elif kind == 2:
+                emit(ctx, f"{attr} = {make_string()}")
+            else:
+                emit(ctx, f"{attr} = {make_list(vrs, True)}")
+            members += 1
+        # decoy methods (defined, never called)
+        for _ in range(rng.randint(1, 2)):
+            mname = create_var_name()
+            extra = _params(rng.randint(0, 2))
+            sig = 'self' + (', ' + extra if extra else '')
+            emit(ctx, f"def {mname}({sig}):")
+            ctx.indent += indent_unit
+            ctx.depth += 1
+            mvars = []
+            for _ in range(rng.randint(1, 2)):
+                v = add_random_line(ctx, will_run=False)
+                if v:
+                    mvars.append(v)
+            if mvars and rng.random() < 1 / 2:
+                emit(ctx, f"return {rng.choice(mvars)}")
+            ctx.depth -= 1
+            ctx.indent = ctx.indent[:-len(indent_unit)]
+            members += 1
+        if members == 0:
+            emit(ctx, "pass")
+        ctx.depth -= 1
+        ctx.indent = ctx.indent[:-len(indent_unit)]
+        return name
+
+    def rand_call_func(ctx, will_run=False):  # dead only
+        if vrs['fun'] and (not real_names_list or rng.random() < 1 / 2):
+            callee = rng.choice(vrs['fun'])
+        elif real_names_list:
+            callee = rng.choice(real_names_list)  # "call" real code (never executes)
+        else:
+            return add_random_line(ctx, will_run)
+        args = ', '.join(dead_ref() for _ in range(rng.randint(0, 2)))
+        emit(ctx, f"{callee}({args})")
+
+    # ---- construct/grammar reproduction --------------------------------------
+    # Decoys that use the SAME operations the source uses (its calls, methods,
+    # operators, slices, subscripts, comprehensions, imports), so grepping for a
+    # real construct (`ord(`, `.append(`, ` ^ `, `[::-1]`, `import X`) returns
+    # thousands of decoy hits instead of isolating the ~6 real lines. Live variants
+    # use ONLY literals (safe to execute); dead variants (inside opaque-false
+    # blocks) use real names / arbitrary receivers -> never execute, can't error.
+    _calls = feats['calls']
+    _methods = feats['methods']
+    _binops = feats['binops'] or ['+', '-', '*']
+    _cmpops = feats['cmpops']
+    _imports = feats['imports']
+
+    def _charlit():
+        return repr(chr(rng.randint(65, 90)))
+
+    def _intlist(lo=1, hi=4):
+        return '[' + ', '.join(rng.choice(number_pool) for _ in range(rng.randint(lo, hi))) + ']'
+
+    def _bytelist():
+        return '[' + ', '.join(str(rng.randint(0, 255)) for _ in range(rng.randint(1, 5))) + ']'
+
+    def _strlist():
+        return '[' + ', '.join(make_string() for _ in range(rng.randint(1, 3))) + ']'
+
+    _SAFE_CALL = {
+        'ord': _charlit, 'chr': (lambda: str(rng.randint(65, 122))),
+        'len': make_string, 'int': (lambda: repr(rng.choice(number_pool))),
+        'str': (lambda: rng.choice(number_pool)), 'hex': (lambda: rng.choice(number_pool)),
+        'bin': (lambda: rng.choice(number_pool)), 'oct': (lambda: rng.choice(number_pool)),
+        'abs': (lambda: '-' + rng.choice(number_pool)), 'bool': (lambda: rng.choice(number_pool)),
+        'float': (lambda: rng.choice(number_pool)), 'bytes': _bytelist, 'bytearray': _bytelist,
+        'sum': _intlist, 'min': _intlist, 'max': _intlist, 'sorted': _intlist,
+        'list': _strlist, 'tuple': _intlist, 'set': _intlist, 'frozenset': _intlist,
+        'repr': make_string, 'hash': (lambda: rng.choice(number_pool)),
+        'reversed': _intlist, 'enumerate': _intlist, 'iter': _intlist,
+    }
+    _STR_SAFE_M = {'encode', 'split', 'rsplit', 'strip', 'lstrip', 'rstrip', 'upper', 'lower',
+                   'title', 'capitalize', 'swapcase', 'isdigit', 'isalpha', 'isspace',
+                   'startswith', 'endswith', 'count', 'find', 'rfind', 'replace', 'join',
+                   'zfill', 'ljust', 'rjust', 'format'}
+    _LIST_SAFE_M = {'append', 'count', 'copy', 'sort', 'reverse', 'clear', 'insert', 'extend', 'pop'}
+    _BYTES_SAFE_M = {'hex', 'decode'}
+
+    def _safe_method_expr(m):
+        if m in _STR_SAFE_M:
+            recv = make_string()
+            if m == 'join':
+                return f"{recv}.join({_strlist()})"
+            if m in ('startswith', 'endswith', 'count', 'find', 'rfind'):
+                return f"{recv}.{m}({make_string()})"
+            if m == 'replace':
+                return f"{recv}.replace({make_string()}, {make_string()})"
+            if m in ('zfill', 'ljust', 'rjust'):
+                return f"{recv}.{m}({rng.randint(1, 12)})"
+            return f"{recv}.{m}()"
+        if m in _LIST_SAFE_M:
+            recv = _intlist(2, 4)
+            if m == 'insert':
+                return f"{recv}.insert(0, {rng.choice(number_pool)})"
+            if m in ('append', 'count'):
+                return f"{recv}.{m}({rng.choice(number_pool)})"
+            if m == 'extend':
+                return f"{recv}.extend({_intlist()})"
+            return f"{recv}.{m}()"
+        if m in _BYTES_SAFE_M:
+            if m == 'decode':
+                return f"bytes({_bytelist()}).decode('latin1')"  # never raises
+            return f"bytes({_bytelist()}).hex()"
+        return None
+
+    def _safe_binop():
+        op = rng.choice(_binops)
+        if op in ('/', '//', '%'):
+            return f"{rng.choice(number_pool)} {op} {rng.randint(1, 99)}"
+        if op == '**':
+            return f"{rng.randint(0, 12)} ** {rng.randint(0, 4)}"
+        if op in ('<<', '>>'):
+            return f"{rng.choice(number_pool)} {op} {rng.randint(0, 8)}"
+        return f"{rng.choice(number_pool)} {op} {rng.choice(number_pool)}"
+
+    def rich_expr_safe():
+        opts = ['bin']
+        if _calls: opts.append('call')
+        if _methods: opts.append('meth')
+        if _cmpops: opts.append('cmp')
+        if feats['slice']: opts.append('slice')
+        if feats['subscript']: opts.append('sub')
+        if feats['comp']: opts.append('comp')
+        kind = rng.choice(opts)
+        if kind == 'call':
+            safe = [c for c in _calls if c in _SAFE_CALL]
+            if safe:
+                c = rng.choice(safe)
+                return f"{c}({_SAFE_CALL[c]()})"
+        elif kind == 'meth':
+            for _ in range(3):
+                e = _safe_method_expr(rng.choice(_methods))
+                if e:
+                    return e
+        elif kind == 'cmp':
+            op = rng.choice(_cmpops)
+            if op in ('in', 'not in'):
+                return f"{make_string()} {op} {_strlist()}"
+            if op in ('is', 'is not'):   # name receiver: `5 is None` warns, `len is None` doesn't
+                return f"{rng.choice(['len', 'str', 'list', 'dict', 'type', 'object', 'set'])} {op} None"
+            return f"{rng.choice(number_pool)} {op} {rng.choice(number_pool)}"
+        elif kind == 'slice':
+            recv = make_string() if rng.random() < 0.5 else _intlist(3, 6)
+            return f"{recv}[{rng.choice(['::-1', '1:', '::2', ':3', '1:3'])}]"
+        elif kind == 'sub':
+            return f"{_intlist(2, 5)}[0]"
+        elif kind == 'comp':
+            it = create_var_name()  # ops safe for ANY operand (no %, //, / -> no div-by-zero)
+            op = rng.choice([o for o in _binops if o in ('+', '-', '*', '^', '&', '|')] or ['+'])
+            return f"[{it} {op} {rng.choice(number_pool)} for {it} in range(0, {rng.randint(2, 6)})]"
+        return _safe_binop()
+
+    def rand_rich(ctx, will_run=True):            # live: runs, literal operands only
+        v = gen_other_var()
+        emit(ctx, f"{v} = {rich_expr_safe()}")
+        return v
+
+    def _emit_dead_construct(ctx):
+        r = rng.random()
+        if _methods and r < 0.28:
+            args = ', '.join(dead_ref() for _ in range(rng.randint(0, 2)))
+            emit(ctx, f"{dead_name()}.{rng.choice(_methods)}({args})")
+        elif _calls and r < 0.5:
+            args = ', '.join(dead_ref() for _ in range(rng.randint(0, 2)))
+            emit(ctx, f"{gen_other_var()} = {rng.choice(_calls)}({args})")
+        elif feats['subscript'] and r < 0.62:
+            emit(ctx, f"{gen_other_var()} = {dead_name()}[{dead_ref()}]")  # name receiver: no int-subscript warning
+        elif feats['unpack_for'] and r < 0.74 and ctx.depth < MAX_DEPTH:
+            a, b = create_var_names(2)
+            emit(ctx, f"for {a}, {b} in {dead_ref()}:")
+            ctx.indent += indent_unit
+            emit(ctx, f"{gen_other_var()} = {a} {rng.choice(_binops)} {b}")
+            ctx.indent = ctx.indent[:-len(indent_unit)]
+        elif r < 0.88:
+            emit(ctx, f"{gen_other_var()} = {dead_ref()} {rng.choice(_binops)} {dead_ref()}")
+        else:
+            emit(ctx, f"{gen_other_var()} = {rich_expr_safe()}")
+
+    def rich_stmt_dead(ctx, will_run=True):       # opaque-dead block of real-name constructs
+        if ctx.depth >= MAX_DEPTH:
+            v = gen_other_var()
+            emit(ctx, f"{v} = {rich_expr_safe()}")
+            return v
+        emit(ctx, f"if {opaque_cond(ctx, truth=False)}:")
+        ctx.indent += indent_unit
+        ctx.depth += 1
+        for _ in range(rng.randint(2, 4)):
+            _emit_dead_construct(ctx)
+        ctx.depth -= 1
+        ctx.indent = ctx.indent[:-len(indent_unit)]
+
+    def rand_import(ctx, will_run=True):          # dead import (reproduces import fingerprints)
+        if not _imports:
+            return add_random_line(ctx, will_run)
+        # ALWAYS alias to a decoy name: a bare `import asyncio` (even in dead code)
+        # makes `asyncio` a local of the enclosing function and shadows the real
+        # module -> UnboundLocalError. `import X as <decoy>` binds only the decoy.
+        m = rng.choice(_imports)
+        emit(ctx, f"if {opaque_cond(ctx, truth=False)}:")
+        ctx.indent += indent_unit
+        if rng.random() < 0.5:
+            emit(ctx, f"import {m} as {create_var_name()}")
+        else:
+            emit(ctx, f"from {m} import {rng.choice(name_pool)} as {create_var_name()}")
+        ctx.indent = ctx.indent[:-len(indent_unit)]
+
+    # live (will_run=True) generators: safe to actually execute (no reads of
+    # possibly-out-of-scope decoy vars, no side effects, dead loops never iterate).
+    _live = [rand_num, rand_num_add, rand_str, rand_lst, add_pass, rand_func, rand_class,
+             rand_dead_block, rand_comprehension, rand_ternary, rand_dict, rand_fstring, rand_tuple,
+             rand_rich, rich_stmt_dead, rand_import, rand_honeypot, rand_fake_flow]
+    _live_w = [4, 4, 4, 3, 2, 2, 2, 3, 3, 3, 3, 3, 2, 6, 7, 2, 10, 7]
+    # single-line live generators (used at max nesting depth; no blocks)
+    _live_flat = [rand_num, rand_num_add, rand_str, rand_lst, add_pass,
+                  rand_comprehension, rand_ternary, rand_dict, rand_fstring, rand_tuple, rand_rich,
+                  rand_honeypot]
+    _live_flat_w = [4, 4, 4, 3, 2, 3, 3, 3, 3, 2, 8, 10]
+    # dead (will_run=False) generators: only ever placed inside never-executed
+    # blocks, so they may reference real names / out-of-scope decoys freely.
+    _dead = _live + [rand_var, rand_print, rand_var_add, rand_call_func]
+    _dead_w = _live_w + [4, 3, 3, 2]
+    _dead_flat = _live_flat + [rand_var, rand_print, rand_var_add]
+    _dead_flat_w = _live_flat_w + [4, 3, 3]
+
+    if entangle:
+        _live = _live + [rand_entangle]; _live_w = _live_w + [10]
+        _live_flat = _live_flat + [rand_entangle]; _live_flat_w = _live_flat_w + [10]
+
+    # Expand the weighted pools ONCE into flat lists, so per-call dispatch is a
+    # single rng.choice instead of random.choices re-accumulating the weight table
+    # every call.
+    def _expand(pool, weights):
+        out = []
+        for gen, wt in zip(pool, weights):
+            out.extend([gen] * wt)
+        return out
+
+    _live_x = _expand(_live, _live_w)
+    _live_flat_x = _expand(_live_flat, _live_flat_w)
+    _dead_x = _expand(_dead, _dead_w)
+    _dead_flat_x = _expand(_dead_flat, _dead_flat_w)
+
+    def add_random_line(ctx, will_run=True):
+        if ctx.depth >= MAX_DEPTH:
+            pool = _live_flat_x if will_run else _dead_flat_x
+        else:
+            pool = _live_x if will_run else _dead_x
+        return rng.choice(pool)(ctx, will_run)
+
+    # ---- compute safe insertion points from the AST ----
+    # Walk scope-aware so we can refuse to inject where it would change behavior:
+    #   * class scope (incl. class-level loops/ifs): added names become class
+    #     attributes -> corrupts Enum/Flag members, metaclass ns, vars()/__dict__.
+    #   * any scope that calls locals()/globals()/vars()/dir(): added names show up
+    #     in what it returns.
+    # And never inject before an `elif` line (an elif is a nested ast.If in the
+    # parent's orelse; a decoy there would split the if/elif chain).
+    points = []  # (zero-based line index, indent string)
+    seen = set()
+
+    def add_body_points(owner, field, body, scope_binds, in_func):
+        start_idx = 0
+        if _is_docstring(body[0]):
+            start_idx = 1
+        if isinstance(owner, ast.Module) and field == 'body':
+            while start_idx < len(body) and _is_future_import(body[start_idx]):
+                start_idx += 1
+        for idx in range(start_idx, len(body)):
+            stmt = body[idx]
+            L = _eff_start_line(stmt)
+            line = lines[L - 1]
+            stripped = line.lstrip()
+            ws = _leading_ws(line)
+            if getattr(stmt, 'decorator_list', None):
+                if not stripped.startswith('@'):
+                    continue
+            elif stmt.col_offset != len(ws):
+                continue
+            if _ELIF_RE.match(stripped):       # never split an if/elif chain
+                continue
+            if L in dno_protected or (L - 1) in seen:
+                continue
+            seen.add(L - 1)
+            # real locals definitely bound before this line -> safe to entangle
+            ent = tuple(sorted({nm for nm, bl in scope_binds if bl < L})) if scope_binds else ()
+            points.append((L - 1, ws, ent, in_func))
+
+    def visit(node, scope_ok, in_class, scope_binds, in_func):
+        is_class = isinstance(node, ast.ClassDef)
+        for field, value in ast.iter_fields(node):
+            if (isinstance(value, list) and value
+                    and all(isinstance(x, ast.stmt) for x in value)):
+                if scope_ok and not in_class and not (is_class and field == 'body'):
+                    add_body_points(node, field, value, scope_binds, in_func)
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                visit(child, not _scope_introspects(child), False,
+                      _scope_bindings(child) if entangle else (), True)
+            elif isinstance(child, ast.ClassDef):
+                visit(child, scope_ok, True, (), False)
+            else:
+                visit(child, scope_ok, in_class, scope_binds, in_func)
+
+    visit(tree, not _scope_introspects(tree), False,
+          _scope_bindings(tree) if entangle else (), False)
+
+    # Module-end fallback: appending decoys AFTER every real statement is always
+    # safe (any in-module locals()/globals()/vars()/dir() call already ran, and
+    # module-level names never become class attributes), so even all-class or
+    # namespace-introspecting modules -- which otherwise have no injectable scope
+    # -- can still be diluted and reach a new_lines_target. Indexed one past the
+    # last physical line so the splice appends it at the very end.
+    ment = tuple(sorted({nm for nm, _ in _scope_bindings(tree)})) if entangle else ()
+    points.append((len(lines), '', ment, False))  # module-end (always available)
+    points.sort(key=lambda p: p[0])
+
+    # ---- generate decoys against a global line budget ----
+    # Two ways to size the output:
+    #   new_lines_target > 0 : pad the FINAL file to ~this many lines (a floor --
+    #       files already bigger than the target are left as-is, since we never
+    #       remove real code). One pass, exact, deterministic; good for making a
+    #       whole project's files a uniform length so the "main" file doesn't stand
+    #       out. Overrides new_line_ratio.
+    #   otherwise            : add ~new_line_ratio decoy lines per real code line.
+    n_code_lines = sum(1 for ln in lines if ln.strip())
+    if new_lines_target and new_lines_target > 0:
+        budget = max(0, int(new_lines_target) - len(lines))  # decoys needed to reach target
+    else:
+        budget = round(ratio * n_code_lines)
+    inserts = {}
+    if points and budget > 0:
+        ctxs = {idx: Ctx(ind, ent, infn) for idx, ind, ent, infn in points}
+        keys = [idx for idx, _, _, _ in points]
+        produced = 0
+        safety = budget * 4 + 100
+        while produced < budget and safety > 0:
+            safety -= 1
+            ctx = ctxs[rng.choice(keys)]
+            before = len(ctx.out)
+            add_random_line(ctx, will_run=True)
+            produced += len(ctx.out) - before
+        inserts = {idx: ctx.out for idx, ctx in ctxs.items() if ctx.out}
+
+    # ---- splice decoys in front of their target lines ----
+    out_lines = []
+    for i, ln in enumerate(lines):
+        if i in inserts:
+            out_lines.extend(inserts[i])
+        out_lines.append(ln)
+    if len(lines) in inserts:           # module-end fallback decoys
+        out_lines.extend(inserts[len(lines)])
+    return '\n'.join(out_lines)
 
 _CYAN = '\033[96m'
 _RESET = '\033[0m'

@@ -17,7 +17,7 @@ Can be installed with `pip install zhmiscellany`
 
 Supports Linux! (Some functionality reduced)
 
-Currently, the package stands at 149 functions/classes/bindings across 15 modules.
+Currently, the package stands at 148 functions/classes/bindings across 15 modules.
 
 The git repository for this package can be found [here](https://gitlab.com/zenham/zhmiscellany). The docs also look nicer on github.
 
@@ -1452,9 +1452,13 @@ Simulates a mouse click at a given position using the raw SendInput method for b
 `zhmiscellany.macro.press_key()`
 ---
 
-`zhmiscellany.macro.press_key(vk_code, shift=False, act_start=True, act_end=True, key_hold_time=0)`
+`zhmiscellany.macro.press_key(vk_code=None, shift=False, act_start=True, act_end=True, key_hold_time=0, directinput=True, key=None)`
 
-Simulates a key press using the raw SendInput method. Supports holding shift and specifying key hold duration.
+Simulates a key press. Supports holding shift and specifying key hold duration.
+
+`directinput=True` (the default) sends the press using direct input, so games and other applications that ignore ordinary synthetic input still pick it up. Set it to False to use the raw SendInput method instead.
+
+You can name the key however you like, `key='w'` takes a plain string, `vk_code=0x57` takes a virtual key code, and `KEY_CODES` names like `'NumpadKey0'` work in either. Whichever form the underlying method actually needs is worked out for you, so `press_key('w')` and `press_key(0x57)` do the same thing. `vk_code` is still the first argument so old scripts keep working.
 
 #
 
@@ -1527,15 +1531,6 @@ Records keyboard and mouse events and generates zhmiscellany.macro code to emula
 `zhmiscellany.macro.is_key_pressed_async(vk_code)`
 
 See if a key is pressed.
-
-#
-
-`zhmiscellany.macro.press_key_directinput()`
----
-
-`zhmiscellany.macro.press_key_directinput(key, shift=False, act_start=True, act_end=True, key_hold_time=0)`
-
-press key using direct input library
 
 #
 

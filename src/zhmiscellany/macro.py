@@ -184,30 +184,95 @@ def click_pixel(x=None, y=None, click_duration=None, right_click=False, middle_c
     if double_click:
         click_pixel(x, y, click_duration, right_click, shift, ctrl, act_start, act_end, middle_click, click_end_duration, pre_click_duration=pre_click_duration, pre_click_wiggle=pre_click_wiggle)
 
+# DEPRECATED: use zhmiscellany.macro.press_key instead, it does directinput by default now
+# (press_key(key='w', ...) is exactly this function, kept only so old scripts don't break)
 def press_key_directinput(key, shift=False, act_start=True, act_end=True, key_hold_time=0):
-    if not IS_WINDOWS:
-        print("press_key_directinput() only supports Windows! Functionality disabled")
-        return
-        
-    import pydirectinput
-    import zhmiscellany.misc
-    pydirectinput.PAUSE = 0
-    pydirectinput.FAILSAFE = False
-    if shift: pydirectinput.keyDown('shift')
-    if act_start: pydirectinput.keyDown(key)
-    if key_hold_time: zhmiscellany.misc.high_precision_sleep(key_hold_time)
-    if act_end: pydirectinput.keyUp(key)
-    if shift: pydirectinput.keyUp('shift')
+    press_key(key=key, shift=shift, act_start=act_start, act_end=act_end, key_hold_time=key_hold_time, directinput=True)
 
-def press_key(vk_code, shift=False, act_start=True, act_end=True, key_hold_time=0):
+# virtual key codes -> the key names pydirectinput understands, so press_key can take either form
+_VK_TO_DIRECTINPUT = {
+    8: 'backspace', 9: 'tab', 13: 'enter', 16: 'shift', 17: 'ctrl', 18: 'alt', 19: 'pause',
+    20: 'capslock', 27: 'esc', 32: 'space', 33: 'pageup', 34: 'pagedown', 35: 'end', 36: 'home',
+    37: 'left', 38: 'up', 39: 'right', 40: 'down', 44: 'printscreen', 45: 'insert', 46: 'delete',
+    91: 'winleft', 92: 'winright', 93: 'apps', 106: 'multiply', 107: 'add', 109: 'subtract',
+    110: 'decimal', 111: 'divide', 144: 'numlock', 145: 'scrolllock', 160: 'shiftleft',
+    161: 'shiftright', 162: 'ctrlleft', 163: 'ctrlright', 164: 'altleft', 165: 'altright',
+    186: ';', 187: '=', 188: ',', 189: '-', 190: '.', 191: '/', 192: '`',
+    219: '[', 220: '\\', 221: ']', 222: "'",
+}
+_VK_TO_DIRECTINPUT.update({vk: chr(vk) for vk in range(48, 58)})  # 0-9
+_VK_TO_DIRECTINPUT.update({vk: chr(vk).lower() for vk in range(65, 91)})  # a-z
+_VK_TO_DIRECTINPUT.update({111 + n: f'f{n}' for n in range(1, 13)})  # f1-f12
+_DIRECTINPUT_TO_VK = {name: vk for vk, name in _VK_TO_DIRECTINPUT.items()}
+_DIRECTINPUT_TO_VK.update({  # the aliases pydirectinput also accepts
+    'escape': 27, 'return': 13, 'del': 46, 'prtsc': 44, 'prtscr': 44, 'prntscrn': 44,
+})
+_directinput_names = None
+_warned_no_directinput = set()
+
+
+def _resolve_key(key):
+    """Takes a vk code, a KEY_CODES name or a pydirectinput key name, returns (vk_code, directinput_name).
+    Either half is None if that form isn't available for this key."""
+    if not isinstance(key, str):
+        return key, _VK_TO_DIRECTINPUT.get(key)
+
+    global _directinput_names
+    if _directinput_names is None:
+        try:
+            import pydirectinput
+            _directinput_names = set(pydirectinput.KEYBOARD_MAPPING)
+        except Exception:
+            _directinput_names = set(_DIRECTINPUT_TO_VK)
+
+    name = key.lower()
+    vk_code = _DIRECTINPUT_TO_VK.get(name)
+    if vk_code is None:
+        for key_name, code in KEY_CODES.items():  # allow the KEY_CODES spellings too, eg 'NumpadKey0'
+            if key_name.lower() == name:
+                vk_code = code
+                break
+    if name not in _directinput_names:  # a name only KEY_CODES knows, translate it if we can
+        name = _VK_TO_DIRECTINPUT.get(vk_code)
+    return vk_code, name
+
+
+def press_key(vk_code=None, shift=False, act_start=True, act_end=True, key_hold_time=0, directinput=True, key=None):
     if not IS_WINDOWS:
         print("press_key() only supports Windows! Functionality disabled")
         return
-        
+
+    import zhmiscellany.misc
+
+    given_key = key if key is not None else vk_code  # either argument takes either form, pick whichever was given
+    if given_key is None:
+        print("press_key() needs a key! Give it key='w' or vk_code=0x57")
+        return
+    vk_code, directinput_key = _resolve_key(given_key)
+
+    if directinput and directinput_key is None:
+        # pydirectinput has no name for this one (numpad keys, f13+, media keys), so use the normal path
+        if given_key not in _warned_no_directinput:
+            _warned_no_directinput.add(given_key)
+            print(f"press_key() has no directinput name for {given_key!r}, falling back to directinput=False for it")
+    elif directinput:
+        import pydirectinput
+        pydirectinput.PAUSE = 0
+        pydirectinput.FAILSAFE = False
+        if shift: pydirectinput.keyDown('shift')
+        if act_start: pydirectinput.keyDown(directinput_key)
+        if key_hold_time: zhmiscellany.misc.high_precision_sleep(key_hold_time)
+        if act_end: pydirectinput.keyUp(directinput_key)
+        if shift: pydirectinput.keyUp('shift')
+        return
+
+    if vk_code is None:
+        print(f"press_key() doesn't know the key {given_key!r}! Functionality disabled")
+        return
+
     import win32api
     import win32con
-    import zhmiscellany.misc
-    
+
     if shift:
         win32api.keybd_event(win32con.VK_SHIFT, 0, 0, 0)
     if act_start:
@@ -251,7 +316,7 @@ def type_string(text=None, delay=None, key_hold_time=None, vk_codes=None, combin
                 vk_code, shift = char_to_vk[lower_char]
                 if char.isupper():
                     shift = True
-                press_key(vk_code, shift, act_end=not combine, key_hold_time=key_hold_time)
+                press_key(vk_code, shift, act_end=not combine, key_hold_time=key_hold_time, directinput=False)
             else:
                 print(f"Character '{char}' not supported")
             if delay:
@@ -264,18 +329,18 @@ def type_string(text=None, delay=None, key_hold_time=None, vk_codes=None, combin
                     vk_code, shift = char_to_vk[lower_char]
                     if char.isupper():
                         shift = True
-                    press_key(vk_code, shift, act_start=False, act_end=True, key_hold_time=key_hold_time)
+                    press_key(vk_code, shift, act_start=False, act_end=True, key_hold_time=key_hold_time, directinput=False)
                 else:
                     print(f"Character '{char}' not supported")
     if vk_codes:
         for vk_code in vk_codes:
-            press_key(vk_code, False, act_end=not combine, key_hold_time=key_hold_time)
+            press_key(vk_code, False, act_end=not combine, key_hold_time=key_hold_time, directinput=False)
             if delay:
                 zhmiscellany.misc.high_precision_sleep(delay)
         if combine:
             key_hold_time = 0  # release all keys at the same time
             for vk_code in vk_codes:
-                press_key(vk_code, False, act_start=False, act_end=True, key_hold_time=key_hold_time)
+                press_key(vk_code, False, act_start=False, act_end=True, key_hold_time=key_hold_time, directinput=False)
 
 def is_key_pressed_async(vk_code):
     """
@@ -496,7 +561,7 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
             "zhmiscellany.misc.die_on_key('f9')",
             "",
             "m = zhmiscellany.macro.click_pixel",
-            "k = zhmiscellany.macro.press_key_directinput",
+            "k = zhmiscellany.macro.press_key",
             "s = zhmiscellany.macro.scroll",
             "sleep = zhmiscellany.misc.high_precision_sleep",
             "click_down_time = 1/30",
