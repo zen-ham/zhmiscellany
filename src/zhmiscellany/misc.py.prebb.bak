@@ -1,22 +1,351 @@
-"""
-Rewritten obfuscate_python.
+import sys
+# LITE-START-DROP
+import zhmiscellany.macro
+# LITE-END-DROP
+import types
 
-Same concept as the original (a code *diluter*: it strips prints/comments and
-injects plausible-but-dead decoy statements around your real code so the logic
-is buried in junk -- it does NOT rename your real identifiers), but the
-hand-rolled string parsing that decided *where* a decoy could go has been
-replaced with a real `ast` + `tokenize` pass. That makes it handle all valid
-Python (multi-line literals with/without trailing commas, dict/set/comprehension
-literals, triple-quoted strings, f-strings, `#` inside strings, backslash
-continuations, decorators, else/elif/except/finally, match/case, semicolons,
-docstrings, __future__ imports, ...), and it now also emits decoy *classes*, not
-just decoy functions.
+WIN32_AVAILABLE = False
+if sys.platform == "win32":
+    WIN32_AVAILABLE = True
 
-Drop-in: same signature as the original plus an optional `seed=`.
-Deterministic by default (same input -> same output); pass `seed=<int>` for a
-different-but-reproducible result.
-"""
+# LITE-START-DROP
+# support backwards compatibility
+click_pixel = zhmiscellany.macro.click_pixel
+type_string = zhmiscellany.macro.type_string
+scroll = zhmiscellany.macro.scroll
+get_mouse_xy = zhmiscellany.macro.get_mouse_xy
+KEY_CODES = zhmiscellany.macro.KEY_CODES
+# LITE-END-DROP
 
+
+def get_actual_screen_resolution():
+    import ctypes
+    if not WIN32_AVAILABLE:
+        print("get_actual_screen_resolution only supports Windows! Returning (0, 0)")
+        return (0, 0)
+    hdc = ctypes.windll.user32.GetDC(0)
+    width = ctypes.windll.gdi32.GetDeviceCaps(hdc, 118)  # HORZRES
+    height = ctypes.windll.gdi32.GetDeviceCaps(hdc, 117)  # VERTRES
+    ctypes.windll.user32.ReleaseDC(0, hdc)
+    return width, height
+
+
+def force_focus_window(hwnd):
+    import time
+    import psutil
+    import ctypes
+    if not WIN32_AVAILABLE:
+        print("focus_window only supports Windows!")
+        return
+    else:
+        import win32gui, win32con, win32process
+
+    SWP_NOMOVE = 0x0002
+    SWP_NOSIZE = 0x0001
+    HWND_TOPMOST = -1
+    HWND_NOTOPMOST = -2
+
+    # Import user32.dll for additional window handling
+    user32 = ctypes.windll.user32
+    try:
+        # Get window placement info
+        placement = win32gui.GetWindowPlacement(hwnd)
+
+        # Force restore if minimized
+        if placement[1] == win32con.SW_SHOWMINIMIZED:
+            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+
+        # Set window position and focus aggressively
+        user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
+        user32.SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
+
+        # Multiple focus attempts
+        user32.ShowWindow(hwnd, win32con.SW_SHOW)
+        user32.SetForegroundWindow(hwnd)
+        user32.BringWindowToTop(hwnd)
+        user32.SetActiveWindow(hwnd)
+        user32.SetFocus(hwnd)
+
+        # Force input processing
+        user32.BlockInput(True)
+        time.sleep(0.01)  # Brief pause
+        user32.BlockInput(False)
+
+    except Exception as e:
+        print(f"Focus attempt error: {str(e)}")
+
+
+def focus_window(process_name: str, interval=0):
+    import time
+    import psutil
+    import ctypes
+    if not WIN32_AVAILABLE:
+        print("focus_window only supports Windows!")
+        return
+    else:
+        import win32gui, win32con, win32process
+    
+    # Import user32.dll for additional window handling
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+    
+    # Constants
+    SWP_NOMOVE = 0x0002
+    SWP_NOSIZE = 0x0001
+    HWND_TOPMOST = -1
+    HWND_NOTOPMOST = -2
+    
+    def get_window_handle(process_name):
+        handles = []
+        
+        def callback(hwnd, _):
+            if win32gui.IsWindowVisible(hwnd):
+                try:
+                    _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                    if psutil.Process(pid).name().lower() == process_name.lower():
+                        handles.append(hwnd)
+                except:
+                    pass
+            return True
+        
+        win32gui.EnumWindows(callback, None)
+        return handles[0] if handles else None
+    
+    try:
+        while True:
+            hwnd = get_window_handle(process_name)
+            
+            if hwnd:
+                # Attempt multiple focus methods
+                force_focus_window(hwnd)
+                
+                # Additional focus attempts with thread attachment
+                try:
+                    fore_hwnd = user32.GetForegroundWindow()
+                    fore_thread = user32.GetWindowThreadProcessId(fore_hwnd, None)
+                    target_thread = user32.GetWindowThreadProcessId(hwnd, None)
+                    
+                    user32.AttachThreadInput(target_thread, fore_thread, True)
+                    force_focus_window(hwnd)
+                    user32.AttachThreadInput(target_thread, fore_thread, False)
+                except:
+                    pass
+            
+            if interval == 0:
+                return
+            time.sleep(interval)
+    
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+    finally:
+        # Ensure input is not blocked if script is interrupted
+        user32.BlockInput(False)
+
+
+def setup_console_window(xy=(0, 0), wh=(400, 100), always_on_top=True):
+    import ctypes
+    if not WIN32_AVAILABLE:
+        print("setup_console_window only supports Windows!")
+        return
+    else:
+        import win32gui, win32con, win32process
+    
+    # Get the console window handle
+    hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+    ontop = win32con.HWND_NOTOPMOST
+    if always_on_top:
+        ontop = win32con.HWND_TOPMOST
+    # Set window to always be on top
+    win32gui.SetWindowPos(
+        hwnd,
+        ontop,
+        xy[0], xy[1],  # x, y coordinates
+        wh[0], wh[1],  # width, height
+        win32con.SWP_SHOWWINDOW
+    )
+
+
+def die():
+    import os
+    import signal
+    os.kill(os.getpid(), signal.SIGTERM)
+
+
+def show_progress(things, total_things, extra_data='', smart_ratelimit=False, max_prints=1000):
+    import zhmiscellany.math
+    do_print = True
+
+    if smart_ratelimit:
+        if total_things > max_prints:
+            if not smart_every_nth(things, round(total_things/max_prints), total_things):
+                do_print = False
+
+    if do_print:
+        print(f'\r{zhmiscellany.math.smart_percentage(things, total_things)}% {extra_data}', end='')
+    if things == total_things:
+        print('')
+
+
+def every_nth(number, n):
+    if number % n == 0:
+        return True
+    return False
+
+
+def smart_every_nth(number, n, total):
+    if number % n == 0:
+        return True
+    if number == total:
+        return True
+    return False
+
+
+def calculate_eta(timestamps, total_timestamps):
+    import time
+    import zhmiscellany.string
+    if not timestamps:
+        return "Not enough data to calculate ETA."
+
+    if total_timestamps <= len(timestamps):
+        return "All timestamps recorded."
+
+    # Calculate average time per timestamp
+    total_time = timestamps[-1] - timestamps[0]
+    average_time_per_timestamp = total_time / len(timestamps)
+
+    # Calculate remaining time based on the average time per timestamp
+    remaining_timestamps = total_timestamps - len(timestamps)
+    estimated_remaining_time = remaining_timestamps * average_time_per_timestamp
+
+    # Calculate the estimated arrival time
+    current_time = time.time()
+    estimated_arrival_time = current_time + estimated_remaining_time
+
+    return zhmiscellany.string.timestamp_to_time(estimated_arrival_time)
+
+
+def decide(options, text):
+    output = input(f'{text} ({"/".join(options)})')
+    while not output in options:
+        output = input(f'{text} ({"/".join(options)})')
+    return output
+
+
+def import_module_from_path(path, module_name=None):
+    import importlib
+    import zhmiscellany.string
+    if not module_name:
+        module_name = zhmiscellany.string.get_universally_unique_string()
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def base62_hash(anything):
+    import hashlib
+    import zhmiscellany.string
+    return zhmiscellany.string.convert_to_base62(int(int(hashlib.md5(anything if isinstance(anything, bytes) else str(anything).encode()).hexdigest(), 16)**0.5))
+
+
+def md5_int_hash(anything):
+    import hashlib
+    return int(hashlib.md5(anything if isinstance(anything, bytes) else str(anything).encode()).hexdigest(), 16)
+
+
+_hr_timer_tls = None  # threading.local, lazily created on first Windows use
+
+
+def high_precision_sleep(duration):
+    """Sleep precisely for `duration` seconds with sub-millisecond accuracy.
+
+    On Windows 10 1803+ this uses a kernel `CreateWaitableTimerExW` with the
+    `CREATE_WAITABLE_TIMER_HIGH_RESOLUTION` flag, which gives sub-ms accuracy
+    (typically ~0.5 ms) WITHOUT touching the global timer resolution via
+    `timeBeginPeriod` (so it doesn't slow the rest of your machine down the
+    way that trick does). The timer handle is cached per-thread.
+
+    On older Windows or other OSes the function falls back to a hybrid
+    `time.sleep` + busy-wait, the same one this used to do. That fallback
+    typically lands within ~1-2 ms of the target on Windows and within
+    100 us on Linux/macOS.
+
+    A no-op for `duration <= 0`.
+    """
+    if duration <= 0:
+        return
+
+    # Fast path: cached high-res Win32 waitable timer.
+    if WIN32_AVAILABLE:
+        global _hr_timer_tls
+        import ctypes
+        if _hr_timer_tls is None:
+            import threading
+            _hr_timer_tls = threading.local()
+        handle = getattr(_hr_timer_tls, "handle", None)
+        if handle is None:
+            kernel32 = ctypes.windll.kernel32
+            # CreateWaitableTimerExW(SecurityAttrs, Name, Flags, Access)
+            # Flags = CREATE_WAITABLE_TIMER_HIGH_RESOLUTION = 0x2
+            # Access = TIMER_ALL_ACCESS = 0x1F0003
+            h = kernel32.CreateWaitableTimerExW(None, None, 0x2, 0x1F0003)
+            if h:
+                _hr_timer_tls.handle = h
+                _hr_timer_tls.kernel32 = kernel32
+                handle = h
+            else:
+                # Pre-1803 Windows; remember so we skip the syscall next time.
+                _hr_timer_tls.handle = False
+                handle = False
+        if handle:
+            kernel32 = _hr_timer_tls.kernel32
+            # SetWaitableTimer: due time in 100-nanosecond intervals, negative
+            # value = relative time from now.
+            due = ctypes.c_int64(-int(duration * 10_000_000))
+            kernel32.SetWaitableTimer(handle, ctypes.byref(due), 0, None, None, False)
+            kernel32.WaitForSingleObject(handle, 0xFFFFFFFF)  # INFINITE
+            return
+
+    # Fallback: hybrid sleep + busy-wait.
+    import time
+    start_time = time.perf_counter()
+    while True:
+        elapsed_time = time.perf_counter() - start_time
+        remaining_time = duration - elapsed_time
+        if remaining_time <= 0:
+            break
+        if remaining_time > 0.02:
+            time.sleep(max(remaining_time / 2, 0.0001))
+        else:
+            pass
+
+
+def is_admin():
+    import ctypes
+    if not WIN32_AVAILABLE:
+        print("is_admin only supports Windows! Returning False")
+        return False
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin() == 1
+    except Exception:
+        return False
+
+
+def die_on_key(key='f9', show_message=False):
+    import zhmiscellany.macro
+    import zhmiscellany.processing
+    def _die_on_key(key):
+        zhmiscellany.macro.better_wait_for(key)
+        if show_message:
+            print("Stopping the process because exit key was pressed.")
+        die()
+    zhmiscellany.processing.start_daemon(target=_die_on_key, args=(key,))
+
+if WIN32_AVAILABLE:
+    def get_temp_folder():
+        import os
+        temp_folder = os.popen(r'echo %TEMP%').read().replace('\n', '')
+        return temp_folder
 
 def obfuscate_python(python_code_string,
                      do_not_obfuscate_indent_block_comment='# DNO',
@@ -26,8 +355,7 @@ def obfuscate_python(python_code_string,
                      new_line_ratio=10,
                      new_lines_target=0,
                      entangle=False,
-                     seed=None,
-                     _light=False):
+                     seed=None):
     """
     Rewritten obfuscate_python.
 
@@ -74,121 +402,33 @@ def obfuscate_python(python_code_string,
     # predicates span a huge structural space and CANNOT be recognized by a fixed
     # template matcher (unlike a small fixed set). Validated for all ints; {v} is a
     # fresh int-literal decoy var.
-    # Families of expressions that are GENUINELY 0 for every integer value of the
-    # vars, drawn from a WIDE, non-fixed space so no small fixed-modulus regex
-    # (`% (2|6|12|24|30|42)|& 1`) can recognize -- and strip -- the dead code.
-    # Cheap families (multiple-of-k / parity / bitwise) dominate so the guards stay
-    # fast on the obfuscated program's hot path; Fermat adds prime moduli and the
-    # consecutive-product family adds factorial moduli, spreading `%` literals over
-    # dozens of values. Every form holds for negatives, 0, and huge ints
-    # (validated exhaustively by opaque_proof.py). See _zero_core below.
-    _OPAQUE_PRIMES = [5, 7, 11, 13, 17]                   # Fermat: (b**p - b) % p == 0 for all int b
-    _CONSEC_FACT = {2: 2, 3: 6, 4: 24, 5: 120, 6: 720}    # product of m consecutive ints divisible by m!
-    _PARITY_CORES = [
-        '({v}*{v} + {v}) % 2', '({v}*{v} - {v}) % 2',
-        '({v}*({v} + 1)) % 2', '({v}*({v} - 1)) % 2',
-        '({v}*{v}*{v} - {v}) % 6', '({v}*({v} + 1)*({v} - 1)) % 6',
-        '({v}*{v}*{v}*{v} - {v}*{v}) % 12',
-        '({v}*{v}*{v}*{v}*{v} - {v}) % 30',
-    ]
-    _BIT_CORES = [                                        # no `%` literal at all -> breaks the "% is always there" heuristic
-        '(({v} & 1) * (({v} + 1) & 1))',                  # consecutive low bits -> one is 0
-        '(({v} & 1) & ((~{v}) & 1))',                     # a bit AND its complement -> 0
-        '(({v} | 0) - {v})',                              # x|0 == x  -> 0  (looks like real bit-or)
-        '(({v} & {v}) - {v})',                            # x&x == x  -> 0
+    _ZERO_CORES = [
+        '({v}*{v} + {v}) % 2',                          # n^2+n even
+        '({v}*{v} - {v}) % 2',
+        '({v}*({v} + 1)) % 2',                          # consecutive product even
+        '({v}*({v} - 1)) % 2',
+        '({v}*{v}*{v} - {v}) % 6',                      # n^3-n divisible by 6
+        '({v}*({v} + 1)*({v} + 2)) % 6',
+        '({v}*({v} + 1)*({v} - 1)) % 6',
+        '({v}*{v}*{v}*{v} - {v}*{v}) % 12',             # n^4-n^2 divisible by 12
+        '({v}*{v}*{v}*{v}*{v} - {v}) % 30',             # n^5-n divisible by 30 (Fermat)
+        '({v}*({v} + 1)*({v} + 2)*({v} + 3)) % 24',
+        '(({v}*{v} + {v} + 1) % 2) - 1',                # odd minus 1 -> 0
+        '({v} & 1) * (({v} + 1) & 1)',                  # consecutive parities -> one is 0
+        '(({v} % 2) * (({v} + 1) % 2))',
+        '({v}*{v}*{v}*{v}*{v}*{v}*{v} - {v}) % 42',     # n^7-n divisible by 42
     ]
 
 
-    # Mixed Boolean-Arithmetic (MBA) identities that equal 0 for EVERY integer value
-    # of the vars -- valid over Python's unbounded two's-complement ints (verified for
-    # negatives/0/huge by opaque_proof.py). Deeply nested, these are provably constant
-    # but blow up general symbolic simplifiers/SMT solvers, so the static "prove this
-    # is dead / prove this cancels, then strip it" step becomes computationally brutal.
-    # The 2-var carry identities are the hard ones; 1-var forms are cheap fallbacks.
-    _MBA_ZERO_2 = [
-        '(({x} + {y}) - ({x} ^ {y}) - 2*({x} & {y}))',     # carry identity
-        '(({x} | {y}) + ({x} & {y}) - {x} - {y})',
-        '(({x} ^ {y}) - ({x} | {y}) + ({x} & {y}))',
-        '(({x} + {y}) - ({x} | {y}) - ({x} & {y}))',
-    ]
-    _MBA_ZERO_1 = [
-        '((~{x} + 1) + {x})',                              # -x + x
-        '(({x} ^ {x}))',
-        '(({x} | {x}) - {x})',
-        '(({x} & {x}) - {x})',
-        '(({x} ^ 0) - {x})',
-    ]
-
-
-    def _mba_zero(rng, vnames, number_pool, depth=None):
-        """A Mixed Boolean-Arithmetic expression string that is 0 for every integer
-        assignment of the vars. Nested to `depth` so simplifying it is expensive."""
-        if depth is None:
-            depth = rng.randint(1, 3)
-        x = rng.choice(vnames)
-        if len(vnames) >= 2 and rng.random() < 0.75:
-            y = rng.choice([v for v in vnames if v != x] or vnames)
-            e = rng.choice(_MBA_ZERO_2).format(x=x, y=y)
-        else:
-            e = rng.choice(_MBA_ZERO_1).format(x=x)
-        for _ in range(depth):                             # zero-preserving nesting: 0^0, 0+0, 0&k
-            r = rng.random()
-            if r < 0.5:
-                e = '({e} ^ ({z}))'.format(e=e, z=_mba_zero(rng, vnames, number_pool, 0))
-            elif r < 0.8:
-                e = '({e} + ({z}))'.format(e=e, z=_mba_zero(rng, vnames, number_pool, 0))
-            else:
-                kv = rng.choice(number_pool)
-                k = abs(int(kv)) if kv.lstrip('-').isdigit() else 255
-                e = '(({e}) & {k})'.format(e=e, k=k)
-        return e
-
-
-    def _zero_core(rng, vnames, number_pool, light=False):
-        """One expression string that is 0 for EVERY integer assignment of the vars,
-        picked from families with a wide modulus spread. Pure/deterministic.
-        light=True restricts to CHEAP families (multiple-of-k / parity / bitwise) and
-        skips the runtime-heavier MBA / Fermat / consecutive-product forms -- used when
-        the guard sits on a hot path (self-host build) and only needs to be dead, not
-        solver-hostile."""
-        if not light and rng.random() < 0.30:              # deep MBA: the solver-hostile family
-            return _mba_zero(rng, vnames, number_pool)
-        v = rng.choice(vnames)
-        r = rng.random()
-        if r < (0.60 if light else 0.46):                 # dominant + cheap: multiple-of-k mod k, ARBITRARY k
-            ks = [n for n in number_pool if n.lstrip('-').isdigit() and abs(int(n)) >= 2]
-            k = rng.choice(ks) if ks and rng.random() < 0.6 else str(rng.choice([50, 64, 97, 128, 251, 999]))
-            k = str(abs(int(k)))
-            x = '({v} % {b})'.format(v=v, b=rng.choice([50, 64, 97, 128]))
-            return rng.choice([
-                '(({k} * {x}) % {k})'.format(k=k, x=x),
-                '(({x} * {k}) % {k})'.format(k=k, x=x),
-                '(({k} * {x} + {k}) % {k})'.format(k=k, x=x),
-                '(({k} + {k} * {x}) % {k})'.format(k=k, x=x),
-            ])
-        if r < (0.85 if light else 0.70):                 # parity / low-degree polynomial (cheap)
-            return _PARITY_CORES[rng.randrange(len(_PARITY_CORES))].format(v=v)
-        if not light and r < 0.82:                        # Fermat little theorem, PRIME modulus
-            p = rng.choice(_OPAQUE_PRIMES)
-            return '(({v} % {p})**{p} - ({v} % {p})) % {p}'.format(v=v, p=p)
-        if not light and r < 0.92:                        # consecutive product, FACTORIAL modulus
-            m = rng.choice(list(_CONSEC_FACT))
-            b = '({v} % {r})'.format(v=v, r=rng.choice([13, 17, 19, 23, 29]))
-            terms = '*'.join('({b} + {i})'.format(b=b, i=i) if i else b for i in range(m))
-            return '(({t}) % {f})'.format(t=terms, f=_CONSEC_FACT[m])
-        return _BIT_CORES[rng.randrange(len(_BIT_CORES))].format(v=v)      # bitwise, breaks "% is always there"
-
-
-    def _opaque_guard(rng, vnames, number_pool, truth, light=False):
+    def _opaque_guard(rng, vnames, number_pool, truth):
         """Build an opaque predicate string over the already-assigned int vars `vnames`.
         Genuinely constant at runtime (falsy if truth=False, truthy if truth=True) but
-        drawn from a large compositional space. Pure/deterministic; unit-tested directly.
-        light=True -> a single cheap core, no compositional layering (hot-path guards)."""
-        core = _zero_core(rng, vnames, number_pool, light)              # == 0 at runtime
-        for _ in range(0 if light else rng.randint(0, 2)):
+        drawn from a large compositional space. Pure/deterministic; unit-tested directly."""
+        core = rng.choice(_ZERO_CORES).format(v=rng.choice(vnames))     # == 0 at runtime
+        for _ in range(rng.randint(0, 2)):
             r = rng.random()
             if r < 0.4:                                                 # 0 + 0, 0 | 0, 0 ^ 0
-                core = f"({core}) {rng.choice(['+', '|', '^'])} ({_zero_core(rng, vnames, number_pool)})"
+                core = f"({core}) {rng.choice(['+', '|', '^'])} ({rng.choice(_ZERO_CORES).format(v=rng.choice(vnames))})"
             elif r < 0.7:                                               # 0 * junk
                 core = f"(({core}) * ({rng.choice(vnames)} {rng.choice(['+', '-', '*'])} {rng.choice(number_pool)}))"
             else:                                                       # 0 & junk
@@ -234,26 +474,6 @@ def obfuscate_python(python_code_string,
 
     def _is_future_import(stmt):
         return isinstance(stmt, ast.ImportFrom) and stmt.module == '__future__'
-
-
-    # Statements we must NOT re-nest (move into an injected wrapper):
-    #   compound stmts -> their own suite would have to move too (skip; we re-nest
-    #     only self-contained simple statements);
-    #   break/continue -> would rebind to an injected loop instead of the real one;
-    #   global/nonlocal -> declarations, keep at their scope;
-    #   __future__ -> must stay at module top.
-    _COMPOUND_STMT = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.For, ast.AsyncFor,
-                      ast.While, ast.If, ast.With, ast.AsyncWith, ast.Try)
-    _COMPOUND_STMT += tuple(t for t in (getattr(ast, 'TryStar', None), getattr(ast, 'Match', None)) if t)
-    _NOWRAP_STMT = (ast.Break, ast.Continue, ast.Global, ast.Nonlocal)
-
-
-    def _wrappable(stmt):
-        """True if `stmt` is a self-contained simple statement we can move verbatim into
-        an injected always-true wrapper without changing behavior (order/scope preserved)."""
-        return (not isinstance(stmt, _COMPOUND_STMT)
-                and not isinstance(stmt, _NOWRAP_STMT)
-                and not _is_future_import(stmt))
 
 
     def _eff_start_line(stmt):
@@ -426,14 +646,6 @@ def obfuscate_python(python_code_string,
         return binds
 
 
-    # _light: STATIC-BURIAL mode -- inject only opaque-dead blocks with CHEAP guards
-    # and no live decoys / re-nesting / entanglement. The output is still an
-    # unreadable wall of template-shaped junk (static black-box) but runs at
-    # near-clean speed because nothing injected executes. Used to self-host this
-    # tool without the ~300x runtime blow-up of diluting a hot loop with the
-    # anti-dynamic (live) decoys, which only matter for protecting USER code.
-    if _light:
-        entangle = False
     src = python_code_string
     dno_sig = do_not_obfuscate_indent_block_comment
 
@@ -531,24 +743,6 @@ def obfuscate_python(python_code_string,
         name_pool = sorted(_VOCAB)
     word_pool = list(name_pool)  # for plausible string contents
 
-    # Real string LITERALS from the source. Scattering verbatim copies of these as
-    # decoys defeats the "grep the one distinctive status string" anchor -- the real
-    # string now appears many times, so content no longer isolates it. Also used as
-    # style templates so decoy strings match the program's own string distribution.
-    real_strings = sorted({n.value for n in ast.walk(tree)
-                           if isinstance(n, ast.Constant) and isinstance(n.value, str)
-                           and 0 < len(n.value) <= 120})
-
-    # First module-level statement index (after docstring + __future__): where we
-    # inject the runtime-varying honeypot counter so it's bound before any real code.
-    _pb = tree.body
-    _psi = 0
-    if _pb and _is_docstring(_pb[0]):
-        _psi = 1
-    while _psi < len(_pb) and _is_future_import(_pb[_psi]):
-        _psi += 1
-    _prepend_idx = (_pb[_psi].lineno - 1) if _psi < len(_pb) else len(lines)
-
     # real identifiers, safe to *reference* from dead (never-executed) decoy code,
     # so the decoy data-flow graph isn't a disconnected island a slicer can isolate.
     # Exclude global/nonlocal-declared names: referencing one inside its function
@@ -618,41 +812,7 @@ def obfuscate_python(python_code_string,
     def pick(seq, fallback):
         return rng.choice(seq) if seq else fallback
 
-    _HEXD = '0123456789abcdef'
-
-    def _rand_hex(n):
-        return ''.join(rng.choice(_HEXD) for _ in range(n))
-
-    def _flag_literal():
-        inner = '_'.join(rng.choice(word_pool) if rng.random() < 0.5 else _rand_hex(rng.randint(2, 6))
-                         for _ in range(rng.randint(1, 3)))
-        tag = rng.choice(['X', 'FLAG', 'CTF', 'KEY', 'TOKEN', rng.choice(word_pool).upper()])
-        return repr('{}{{{}}}'.format(tag, inner))
-
-    def make_rich_string():
-        # A feature-bearing decoy string LITERAL: colons, braces, hex, no-spaces, or
-        # a verbatim copy of a REAL source string. Kills the cheap static anchors
-        # (`grep ':'`, `grep '{'`, hex-grep, "the one distinctive string") by making
-        # every one of those return a swamp. Returns a valid Python str literal.
-        r = rng.random()
-        if real_strings and r < 0.22:
-            return repr(rng.choice(real_strings))          # verbatim real string -> anchor defeat
-        if r < 0.40:                                       # flag-shaped  TAG{...}
-            return _flag_literal()
-        if r < 0.58:                                       # hash / hex-digest shaped
-            return repr(_rand_hex(rng.choice([16, 32, 40, 64])))
-        if r < 0.72:                                       # key: value (colon)
-            return repr('{}: {}'.format(rng.choice(word_pool), rng.choice(word_pool)))
-        if r < 0.85:                                       # no-space token / snake / path
-            parts = [rng.choice(word_pool) for _ in range(rng.randint(2, 3))]
-            sep = rng.choice(['_', '-', '.', '/', ':', ''])
-            return repr(sep.join(parts) + (('_' + _rand_hex(4)) if rng.random() < 0.5 else ''))
-        parts = [rng.choice(word_pool) for _ in range(rng.randint(2, 3))]   # camelCase-ish
-        return repr(parts[0] + ''.join(p.capitalize() for p in parts[1:]))
-
     def make_string():
-        if rng.random() < 0.5:
-            return make_rich_string()
         parts = [rng.choice(word_pool) for _ in range(rng.randint(1, 4))]
         q = rng.choice(["'", '"'])
         return q + ' '.join(parts) + q
@@ -736,13 +896,12 @@ def obfuscate_python(python_code_string,
     def opaque_cond(ctx, truth):
         # Mint 1-3 fresh int vars, then build a parametric opaque predicate over
         # them (see module-level _opaque_guard, which is unit-tested directly).
-        # light: 1 var + a single cheap core (this guard evaluates on the hot path).
         vs = []
-        for _ in range(1 if _light else rng.randint(1, 3)):
+        for _ in range(rng.randint(1, 3)):
             v = create_var_name()
             emit(ctx, f"{v} = {rng.choice(number_pool)}")
             vs.append(v)
-        return _opaque_guard(rng, vs, number_pool, truth, _light)
+        return _opaque_guard(rng, vs, number_pool, truth)
 
     def dead_ref():
         # Operand usable ONLY in dead code: may be a real identifier (the line
@@ -867,22 +1026,16 @@ def obfuscate_python(python_code_string,
 
     def _noop_rebind(ctx, tgt):
         # rebind tgt to ITSELF (no-op for ANY type) with a decoy woven into the
-        # never-taken branch, so tgt's backward slice can't shed the decoy. The
-        # opaque guard is often deep MBA, so pruning the branch needs a solver;
-        # shape 4 drags a WIDE cone of decoy+real refs into tgt's slice.
-        shape = rng.randint(0, 4)
+        # never-taken branch, so tgt's backward slice can't shed the decoy.
+        shape = rng.randint(0, 3)
         if shape == 0:
             emit(ctx, f"{tgt} = {tgt} if {opaque_cond(ctx, True)} else {dead_expr()}")
         elif shape == 1:
             emit(ctx, f"{tgt} = {dead_expr()} if {opaque_cond(ctx, False)} else {tgt}")
         elif shape == 2:
             emit(ctx, f"{tgt} = ({tgt}, {rich_expr_safe()})[{opaque_cond(ctx, False)}]")
-        elif shape == 3:
-            emit(ctx, f"{tgt} = {{0: {tgt}, 1: {rich_expr_safe()}}}[{opaque_cond(ctx, False)}]")
         else:
-            cone = ' '.join([dead_ref()] + [f"{rng.choice(_binops)} {dead_ref()}"
-                                            for _ in range(rng.randint(4, 8))])
-            emit(ctx, f"{tgt} = {tgt} if {opaque_cond(ctx, True)} else ({cone})")
+            emit(ctx, f"{tgt} = {{0: {tgt}, 1: {rich_expr_safe()}}}[{opaque_cond(ctx, False)}]")
 
     def rand_entangle(ctx, will_run=True):
         # Tangle real and decoy data flow so a backward slice from the output can't
@@ -926,45 +1079,27 @@ def obfuscate_python(python_code_string,
         # A fake flag-shaped value built via the harvested primitives (never a
         # literal), so a dynamic tap on chr()/bytes() sees plausible candidates
         # mixed in with the real secret. Uses only builtins -> always safe to run.
-        forms = ['literal']                                 # always available (a flag-shaped str literal)
+        forms = []
         if 'chr' in _calls:
             forms.append('chr')
         if 'bytes' in _calls or 'bytearray' in _calls:
             forms.append('bytes')
-        pick = rng.choice(forms) if len(forms) == 1 else rng.choice(forms[1:] + ['literal'])
-        if pick == 'chr':
-            # FIX 2: mix a runtime-varying term into some chars so the chr() stream
-            # differs every call/iteration (real char no longer the lone variant).
-            def _cc():
-                if rng.random() < 0.5:
-                    return f'chr(65 + ({_vary()}) % 26)'
-                return f'chr({rng.randint(48, 122)})'
-            pre = ' + '.join(_cc() for _ in range(rng.randint(2, 4)))
-            body = ' + '.join(_cc() for _ in range(rng.randint(6, 16)))
+        if not forms:
+            return None
+        if rng.choice(forms) == 'chr':
+            pre = ' + '.join(f'chr({rng.randint(65, 90)})' for _ in range(rng.randint(2, 4)))
+            body = ' + '.join(f'chr({rng.randint(48, 122)})' for _ in range(rng.randint(6, 16)))
             return f"{pre} + chr(123) + {body} + chr(125)"   # X..X{...}
-        if pick == 'bytes':
-            return f"bytes([{', '.join(str(rng.randint(33, 126)) for _ in range(rng.randint(8, 24)))}])"
-        return _flag_literal()
+        return f"bytes([{', '.join(str(rng.randint(33, 126)) for _ in range(rng.randint(8, 24)))}])"
 
     def rand_honeypot(ctx, will_run=True):
-        # LIVE fake-flag pipeline: build a flag-shaped value via the same primitives
-        # the real secret uses, then push it through MORE real primitives (encode/
-        # bytes/hash) and drop a fake hash constant beside it. So an attacker who
-        # hooks a primitive to catch the flag catches a swamp of candidates, and one
-        # who filters "candidate that passes a hash check" also gets many hits.
+        # LIVE: builds a fake flag-shaped value and drops it in an unused var, so it
+        # flows through the same primitives as the real secret at runtime.
         e = _fake_flag_expr()
         if e is None:
             return rand_rich(ctx, will_run)
         v = gen_str_var(ctx)
         emit(ctx, f"{v} = {e}")
-        # FIX 1: push the fake flag through the SAME crypto/encoding primitives the
-        # real code uses (hashlib/hmac/base64/ord/...), so hooking the real primitive
-        # returns a swamp, not one clean hit. Emit 1-2 such live decoy calls.
-        for _ in range(rng.randint(1, 2)):
-            if rng.random() < 0.8:
-                emit(ctx, f"{gen_str_var(ctx)} = {rng.choice(_LIVE_PRIMS)(v)}")
-        if rng.random() < 0.45:           # fake embedded hash constant nearby -> floods hash-greps
-            emit(ctx, f"{gen_str_var(ctx)} = {repr(_rand_hex(rng.choice([32, 40, 64])))}")
         return v
 
     def _fake_if_else(ctx, levels):
@@ -1086,49 +1221,6 @@ def obfuscate_python(python_code_string,
     _cmpops = feats['cmpops']
     _imports = feats['imports']
 
-    # ---- FIX 1: primitive-coverage honeypots ----
-    # Live decoy expressions that route a fake flag var through the SAME safe (pure,
-    # side-effect-free) crypto/encoding primitives the real code uses, so an attacker
-    # hooking hashlib/hmac/base64/ord catches a swamp of fakes, not one real hit.
-    _hpc = create_var_name()   # module-level runtime-varying honeypot counter (a [int])
-    _NAME_POOL[:] = [x for x in _NAME_POOL if x != _hpc]   # reserve it: no other decoy may reuse
-    if not _NAME_POOL:
-        _NAME_POOL.append('_v0')
-
-    def _live_prim_forms():
-        forms = [                                   # builtins: always bound, always safe
-            lambda v: f"ord((str({v}) + 'x')[0])",
-            lambda v: f"len(str({v}).encode())",
-            lambda v: f"str({v}).encode().hex()",
-            lambda v: f"hash(str({v}))",
-        ]
-        # Route through the SAME library primitives the real code imports, via
-        # __import__('mod') -> position-safe (works even if emitted before the real
-        # import line) and idempotent, and it returns the cached module object, so a
-        # hook on `mod.func` still catches these decoy calls.
-        for mod in _imports:
-            if mod == 'hashlib':
-                for fn in ('sha256', 'md5', 'sha1', 'sha512'):
-                    forms.append(lambda v, f=fn: f"__import__('hashlib').{f}(str({v}).encode()).hexdigest()")
-            elif mod == 'hmac':
-                forms.append(lambda v: f"__import__('hmac').new(str({v}).encode(), str({v}).encode(), 'sha256').hexdigest()")
-            elif mod == 'base64':
-                forms.append(lambda v: f"__import__('base64').b64encode(str({v}).encode()).decode()")
-            elif mod == 'binascii':
-                forms.append(lambda v: f"__import__('binascii').hexlify(str({v}).encode()).decode()")
-            elif mod == 'zlib':
-                forms.append(lambda v: f"__import__('zlib').crc32(str({v}).encode())")
-        return forms
-
-    _LIVE_PRIMS = _live_prim_forms()
-
-    def _vary():
-        # a runtime-VARYING int expression (bumps the shared honeypot counter IN
-        # PLACE, bounded), so honeypot values differ every call/iteration and the
-        # real per-iteration datum is no longer the lone token that changes between
-        # repeated blocks. __setitem__ returns None -> `or` yields the new value.
-        return f"({_hpc}.__setitem__(0, ({_hpc}[0] + 1) & 8191) or {_hpc}[0])"
-
     def _charlit():
         return repr(chr(rng.randint(65, 90)))
 
@@ -1163,11 +1255,6 @@ def obfuscate_python(python_code_string,
     def _safe_method_expr(m):
         if m in _STR_SAFE_M:
             recv = make_string()
-            if m == 'format':
-                # receiver must be a BRACE-FREE template (rich strings carry `{...}`
-                # which .format() would read as fields -> KeyError). Extra arg is ignored.
-                plain = repr(' '.join(rng.choice(word_pool) for _ in range(rng.randint(1, 3))))
-                return f"{plain}.format({make_string()})"
             if m == 'join':
                 return f"{recv}.join({_strlist()})"
             if m in ('startswith', 'endswith', 'count', 'find', 'rfind'):
@@ -1293,49 +1380,17 @@ def obfuscate_python(python_code_string,
             emit(ctx, f"from {m} import {rng.choice(name_pool)} as {create_var_name()}")
         ctx.indent = ctx.indent[:-len(indent_unit)]
 
-    def rand_str_flood(ctx, will_run=True):
-        # LIVE: emit feature-bearing decoy strings (colons/braces/hex/no-spaces/real
-        # copies), single or as a list, so static string-greps drown in hits.
-        v = gen_str_var(ctx)
-        if rng.random() < 0.4:
-            elems = ', '.join(make_rich_string() for _ in range(rng.randint(2, 5)))
-            emit(ctx, f"{v} = [{elems}]")
-        else:
-            emit(ctx, f"{v} = {make_rich_string()}")
-        return v
-
-    def rand_hot_loop(ctx, will_run=True):
-        # FIX 3: a LIVE decoy loop that iterates many times doing honeypot primitive
-        # work, so an attacker profiling by execution frequency finds MANY hot loops,
-        # not just the real one. Bounded iterations -> hot but cheap. The body must
-        # NOT depend on the loop var surviving (a decoy in the body may reuse its
-        # name -> a decoy loop var isn't reserved the way real names are), so we do
-        # only self-contained honeypot/decoy work per iteration.
-        if ctx.depth >= MAX_DEPTH:
-            return add_random_line(ctx, will_run)
-        emit(ctx, f"for {gen_other_var()} in range({rng.randint(6, 28)}):")
-        ctx.indent += indent_unit
-        ctx.depth += 1
-        for _ in range(rng.randint(1, 3)):
-            if rng.random() < 0.6:
-                rand_honeypot(ctx, will_run=True)      # hot honeypot primitive work
-            else:
-                add_random_line(ctx, will_run=True)
-        ctx.depth -= 1
-        ctx.indent = ctx.indent[:-len(indent_unit)]
-
     # live (will_run=True) generators: safe to actually execute (no reads of
     # possibly-out-of-scope decoy vars, no side effects, dead loops never iterate).
     _live = [rand_num, rand_num_add, rand_str, rand_lst, add_pass, rand_func, rand_class,
              rand_dead_block, rand_comprehension, rand_ternary, rand_dict, rand_fstring, rand_tuple,
-             rand_rich, rich_stmt_dead, rand_import, rand_honeypot, rand_fake_flow, rand_str_flood,
-             rand_hot_loop]
-    _live_w = [4, 4, 4, 3, 2, 2, 2, 3, 3, 3, 3, 3, 2, 6, 7, 2, 10, 7, 8, 4]
+             rand_rich, rich_stmt_dead, rand_import, rand_honeypot, rand_fake_flow]
+    _live_w = [4, 4, 4, 3, 2, 2, 2, 3, 3, 3, 3, 3, 2, 6, 7, 2, 10, 7]
     # single-line live generators (used at max nesting depth; no blocks)
     _live_flat = [rand_num, rand_num_add, rand_str, rand_lst, add_pass,
                   rand_comprehension, rand_ternary, rand_dict, rand_fstring, rand_tuple, rand_rich,
-                  rand_honeypot, rand_str_flood]
-    _live_flat_w = [4, 4, 4, 3, 2, 3, 3, 3, 3, 2, 8, 10, 8]
+                  rand_honeypot]
+    _live_flat_w = [4, 4, 4, 3, 2, 3, 3, 3, 3, 2, 8, 10]
     # dead (will_run=False) generators: only ever placed inside never-executed
     # blocks, so they may reference real names / out-of-scope decoys freely.
     _dead = _live + [rand_var, rand_print, rand_var_add, rand_call_func]
@@ -1361,14 +1416,6 @@ def obfuscate_python(python_code_string,
     _dead_x = _expand(_dead, _dead_w)
     _dead_flat_x = _expand(_dead_flat, _dead_flat_w)
 
-    if _light:
-        # STATIC-BURIAL: every TOP-LEVEL injection is an opaque-DEAD block -- a cheap
-        # false guard whose rich body never executes. Everything nested lives inside
-        # that dead block, so nothing injected runs (near-clean speed) while the file
-        # is still a wall of template-shaped junk. Only the top-level guard evaluates.
-        _lp = [rich_stmt_dead, rand_dead_block] + ([rand_import] if _imports else [])
-        _live_x = _expand(_lp, [10, 4, 2][:len(_lp)])
-
     def add_random_line(ctx, will_run=True):
         if ctx.depth >= MAX_DEPTH:
             pool = _live_flat_x if will_run else _dead_flat_x
@@ -1385,7 +1432,6 @@ def obfuscate_python(python_code_string,
     # And never inject before an `elif` line (an elif is a nested ast.If in the
     # parent's orelse; a decoy there would split the if/elif chain).
     points = []  # (zero-based line index, indent string)
-    wrappables = []  # (start_idx0, end_idx0, base_ws) of real stmts safe to re-nest
     seen = set()
 
     def add_body_points(owner, field, body, scope_binds, in_func):
@@ -1414,14 +1460,6 @@ def obfuscate_python(python_code_string,
             # real locals definitely bound before this line -> safe to entangle
             ent = tuple(sorted({nm for nm, bl in scope_binds if bl < L})) if scope_binds else ()
             points.append((L - 1, ws, ent, in_func))
-            # can this real statement be re-nested into an injected wrapper? Only
-            # single-physical-line statements: re-indenting a multi-line statement
-            # would prepend whitespace INSIDE a multi-line string literal and change
-            # its content (triple-quoted strings, etc.).
-            if _wrappable(stmt):
-                e = getattr(stmt, 'end_lineno', None) or L
-                if e == L and L not in dno_protected:
-                    wrappables.append((L - 1, e - 1, ws))
 
     def visit(node, scope_ok, in_class, scope_binds, in_func):
         is_class = isinstance(node, ast.ClassDef)
@@ -1479,79 +1517,100 @@ def obfuscate_python(python_code_string,
             produced += len(ctx.out) - before
         inserts = {idx: ctx.out for idx, ctx in ctxs.items() if ctx.out}
 
-    # ---- re-nest a fraction of real statements into injected always-true wrappers.
-    # Same bytes, same execution order, same scope -> still imports and runs, but the
-    # real code stops reading as a flat top-level spine: each wrapped statement sits
-    # several levels deep inside opaque `if` / single-run `for` / `try..finally`
-    # scaffolding, so reconstructing the real control flow is itself a proving
-    # problem. Injected names can't collide with real ones (see _build_name_pool). ----
-    def _mint_ints(ws, k):
-        vs, setup = [], []
-        for _ in range(k):
-            v = create_var_name()
-            setup.append(ws + f"{v} = {rng.choice(number_pool)}")
-            vs.append(v)
-        return vs, setup
-
-    def _wrap_statement(start0, end0, base_ws, levels):
-        body = [(indent_unit * levels) + lines[k] for k in range(start0, end0 + 1)]
-        for i in range(levels - 1, -1, -1):
-            hdr_ws = base_ws + indent_unit * i
-            kind = rng.choice(('if', 'if', 'for', 'try'))       # bias to the cheapest/safest
-            if kind == 'if':
-                vs, setup = _mint_ints(hdr_ws, rng.randint(1, 2))
-                body = setup + [hdr_ws + f"if {_opaque_guard(rng, vs, number_pool, True)}:"] + body
-            elif kind == 'for':
-                vs, setup = _mint_ints(hdr_ws, rng.randint(1, 2))
-                once = '(' + _mba_zero(rng, vs, number_pool) + ') + 1'   # == 1 -> runs exactly once
-                body = setup + [hdr_ws + f"for {create_var_name()} in range({once}):"] + body
-            else:                                                # try/finally: finally runs a harmless decoy
-                body = ([hdr_ws + "try:"] + body
-                        + [hdr_ws + "finally:",
-                           hdr_ws + indent_unit + f"{create_var_name()} = {rng.choice(number_pool)}"])
-        return body
-
-    wrapped = {}
-    for (s0, e0, bws) in ([] if _light else wrappables):   # re-nesting adds LIVE wrappers -> skip in light mode
-        if rng.random() < 0.7:                    # ~70% of eligible real statements get re-nested
-            wrapped[s0] = (e0, _wrap_statement(s0, e0, bws, rng.randint(1, 3)))
-
-    # ---- splice: decoys before each line; a re-nested statement replaces its span.
-    # `_hpc = [0]` (the runtime-varying honeypot counter) is injected once, as the
-    # first line after any docstring/__future__, so every live decoy can bump it. ----
+    # ---- splice decoys in front of their target lines ----
     out_lines = []
-    n = len(lines)
-    i = 0
-    hpc_done = _light   # light mode emits no live honeypots -> no counter needed
-    while i < n:
-        if i == _prepend_idx and not hpc_done:
-            out_lines.append(f"{_hpc} = [0]"); hpc_done = True
+    for i, ln in enumerate(lines):
         if i in inserts:
             out_lines.extend(inserts[i])
-        if i in wrapped:
-            e0, wlines = wrapped[i]
-            out_lines.extend(wlines)
-            i = e0 + 1
-            continue
-        out_lines.append(lines[i])
-        i += 1
-    if not hpc_done:                    # empty/only-docstring body: still bind it before module-end decoys
-        out_lines.append(f"{_hpc} = [0]")
-    if n in inserts:                    # module-end fallback decoys
-        out_lines.extend(inserts[n])
+        out_lines.append(ln)
+    if len(lines) in inserts:           # module-end fallback decoys
+        out_lines.extend(inserts[len(lines)])
     return '\n'.join(out_lines)
 
+_CYAN = '\033[96m'
+_RESET = '\033[0m'
 
-if __name__ == '__main__':
-    demo = (
-        "import math\n"
-        "def area(r):\n"
-        "    return math.pi * r ** 2\n"
-        "vals = [1,\n"
-        "    2,\n"
-        "    3\n"
-        "]\n"
-        "for v in vals:\n"
-        "    print(area(v))\n"
-    )
-    print(obfuscate_python(demo, remove_prints=False))
+def time_it(action=False, clock=0):
+    import time
+    import inspect
+    import zhmiscellany.math
+    import sys
+    global _start
+    try:
+        a = _start
+        if clock not in _start:
+            _start[clock] = time.time()
+    except:
+        _start = {clock: time.time()}
+    if action is not None and not action:
+        frame = inspect.currentframe().f_back
+        lineno = frame.f_lineno
+        action = f'line {lineno}'
+    r_time_vel = time.time()-_start[clock]
+    if action is not None:
+        time_val = zhmiscellany.math.round_to_min_digits(r_time_vel, 3)
+        time_string = f'{time_val} seconds.'
+        sys.stdout.write(f'{_CYAN}{action} took {time_string}{_RESET}\n')
+    _start[clock] = time.time()
+    return r_time_vel
+
+
+def here(*args):
+    import inspect
+    import sys
+    frame = inspect.currentframe().f_back  # Get caller frame
+    filename = frame.f_code.co_filename
+    lineno = frame.f_lineno
+    local_vars = frame.f_locals  # Get caller's local variables
+
+    out_string = _CYAN
+    title = None
+
+    # Extract title if first argument is a string
+    args = list(args)
+    if args and isinstance(args[0], str):
+        title = args.pop(0)
+
+    # Find variable names using identity (`is`) instead of equality (`==`)
+    arg_names = {id(v): k for k, v in local_vars.items()}
+
+    # Format output
+    if title:
+        out_string += title + ' | '
+
+    if not args:
+        out_string += f"{lineno} | {filename}{_RESET}"
+    else:
+        out_string += f"{lineno} | {_RESET}"
+        out_string += f'{_CYAN} | {_RESET}'.join(
+            [f"{_CYAN}{arg_names.get(id(arg), '?')}: {_RESET}{arg}" for arg in args]
+        )
+        out_string += f"{_CYAN} | {filename}{_RESET}"
+
+    out_string += '\n'
+    sys.stdout.write(out_string)
+
+
+line = types.FunctionType(
+    here.__code__,  # Copy code object
+    here.__globals__,  # Same globals
+    name='line',  # New name
+    argdefs=here.__defaults__,  # Copy defaults
+    closure=here.__closure__  # Copy closure
+)
+
+l = types.FunctionType(
+    here.__code__,  # Copy code object
+    here.__globals__,  # Same globals
+    name='l',  # New name
+    argdefs=here.__defaults__,  # Copy defaults
+    closure=here.__closure__  # Copy closure
+)
+
+
+def wait_for_vsync():
+    import ctypes
+    if not WIN32_AVAILABLE:
+        print("wait_for_vsync only supports Windows!")
+        return
+    ctypes.windll.dwmapi.DwmFlush()

@@ -114,14 +114,18 @@ def _mba_zero(rng, vnames, number_pool, depth=None):
     return e
 
 
-def _zero_core(rng, vnames, number_pool):
+def _zero_core(rng, vnames, number_pool, light=False):
     """One expression string that is 0 for EVERY integer assignment of the vars,
-    picked from families with a wide modulus spread. Pure/deterministic."""
-    if rng.random() < 0.30:                            # deep MBA: the solver-hostile family
+    picked from families with a wide modulus spread. Pure/deterministic.
+    light=True restricts to CHEAP families (multiple-of-k / parity / bitwise) and
+    skips the runtime-heavier MBA / Fermat / consecutive-product forms -- used when
+    the guard sits on a hot path (self-host build) and only needs to be dead, not
+    solver-hostile."""
+    if not light and rng.random() < 0.30:              # deep MBA: the solver-hostile family
         return _mba_zero(rng, vnames, number_pool)
     v = rng.choice(vnames)
     r = rng.random()
-    if r < 0.46:                                      # dominant + cheap: multiple-of-k mod k, ARBITRARY k
+    if r < (0.60 if light else 0.46):                 # dominant + cheap: multiple-of-k mod k, ARBITRARY k
         ks = [n for n in number_pool if n.lstrip('-').isdigit() and abs(int(n)) >= 2]
         k = rng.choice(ks) if ks and rng.random() < 0.6 else str(rng.choice([50, 64, 97, 128, 251, 999]))
         k = str(abs(int(k)))
@@ -132,12 +136,12 @@ def _zero_core(rng, vnames, number_pool):
             '(({k} * {x} + {k}) % {k})'.format(k=k, x=x),
             '(({k} + {k} * {x}) % {k})'.format(k=k, x=x),
         ])
-    if r < 0.70:                                      # parity / low-degree polynomial (number-theoretic)
+    if r < (0.85 if light else 0.70):                 # parity / low-degree polynomial (cheap)
         return _PARITY_CORES[rng.randrange(len(_PARITY_CORES))].format(v=v)
-    if r < 0.82:                                      # Fermat little theorem, PRIME modulus
+    if not light and r < 0.82:                        # Fermat little theorem, PRIME modulus
         p = rng.choice(_OPAQUE_PRIMES)
         return '(({v} % {p})**{p} - ({v} % {p})) % {p}'.format(v=v, p=p)
-    if r < 0.92:                                      # consecutive product, FACTORIAL modulus
+    if not light and r < 0.92:                        # consecutive product, FACTORIAL modulus
         m = rng.choice(list(_CONSEC_FACT))
         b = '({v} % {r})'.format(v=v, r=rng.choice([13, 17, 19, 23, 29]))
         terms = '*'.join('({b} + {i})'.format(b=b, i=i) if i else b for i in range(m))
@@ -145,12 +149,13 @@ def _zero_core(rng, vnames, number_pool):
     return _BIT_CORES[rng.randrange(len(_BIT_CORES))].format(v=v)      # bitwise, breaks "% is always there"
 
 
-def _opaque_guard(rng, vnames, number_pool, truth):
+def _opaque_guard(rng, vnames, number_pool, truth, light=False):
     """Build an opaque predicate string over the already-assigned int vars `vnames`.
     Genuinely constant at runtime (falsy if truth=False, truthy if truth=True) but
-    drawn from a large compositional space. Pure/deterministic; unit-tested directly."""
-    core = _zero_core(rng, vnames, number_pool)                     # == 0 at runtime
-    for _ in range(rng.randint(0, 2)):
+    drawn from a large compositional space. Pure/deterministic; unit-tested directly.
+    light=True -> a single cheap core, no compositional layering (hot-path guards)."""
+    core = _zero_core(rng, vnames, number_pool, light)              # == 0 at runtime
+    for _ in range(0 if light else rng.randint(0, 2)):
         r = rng.random()
         if r < 0.4:                                                 # 0 + 0, 0 | 0, 0 ^ 0
             core = f"({core}) {rng.choice(['+', '|', '^'])} ({_zero_core(rng, vnames, number_pool)})"
@@ -399,7 +404,16 @@ def obfuscate_python(python_code_string,
                      new_line_ratio=10,
                      new_lines_target=0,
                      entangle=False,
-                     seed=None):
+                     seed=None,
+                     _light=False):
+    # _light: STATIC-BURIAL mode -- inject only opaque-dead blocks with CHEAP guards
+    # and no live decoys / re-nesting / entanglement. The output is still an
+    # unreadable wall of template-shaped junk (static black-box) but runs at
+    # near-clean speed because nothing injected executes. Used to self-host this
+    # tool without the ~300x runtime blow-up of diluting a hot loop with the
+    # anti-dynamic (live) decoys, which only matter for protecting USER code.
+    if _light:
+        entangle = False
     src = python_code_string
     dno_sig = do_not_obfuscate_indent_block_comment
 
@@ -702,12 +716,13 @@ def obfuscate_python(python_code_string,
     def opaque_cond(ctx, truth):
         # Mint 1-3 fresh int vars, then build a parametric opaque predicate over
         # them (see module-level _opaque_guard, which is unit-tested directly).
+        # light: 1 var + a single cheap core (this guard evaluates on the hot path).
         vs = []
-        for _ in range(rng.randint(1, 3)):
+        for _ in range(1 if _light else rng.randint(1, 3)):
             v = create_var_name()
             emit(ctx, f"{v} = {rng.choice(number_pool)}")
             vs.append(v)
-        return _opaque_guard(rng, vs, number_pool, truth)
+        return _opaque_guard(rng, vs, number_pool, truth, _light)
 
     def dead_ref():
         # Operand usable ONLY in dead code: may be a real identifier (the line
@@ -1326,6 +1341,14 @@ def obfuscate_python(python_code_string,
     _dead_x = _expand(_dead, _dead_w)
     _dead_flat_x = _expand(_dead_flat, _dead_flat_w)
 
+    if _light:
+        # STATIC-BURIAL: every TOP-LEVEL injection is an opaque-DEAD block -- a cheap
+        # false guard whose rich body never executes. Everything nested lives inside
+        # that dead block, so nothing injected runs (near-clean speed) while the file
+        # is still a wall of template-shaped junk. Only the top-level guard evaluates.
+        _lp = [rich_stmt_dead, rand_dead_block] + ([rand_import] if _imports else [])
+        _live_x = _expand(_lp, [10, 4, 2][:len(_lp)])
+
     def add_random_line(ctx, will_run=True):
         if ctx.depth >= MAX_DEPTH:
             pool = _live_flat_x if will_run else _dead_flat_x
@@ -1469,7 +1492,7 @@ def obfuscate_python(python_code_string,
         return body
 
     wrapped = {}
-    for (s0, e0, bws) in wrappables:
+    for (s0, e0, bws) in ([] if _light else wrappables):   # re-nesting adds LIVE wrappers -> skip in light mode
         if rng.random() < 0.7:                    # ~70% of eligible real statements get re-nested
             wrapped[s0] = (e0, _wrap_statement(s0, e0, bws, rng.randint(1, 3)))
 
@@ -1479,7 +1502,7 @@ def obfuscate_python(python_code_string,
     out_lines = []
     n = len(lines)
     i = 0
-    hpc_done = False
+    hpc_done = _light   # light mode emits no live honeypots -> no counter needed
     while i < n:
         if i == _prepend_idx and not hpc_done:
             out_lines.append(f"{_hpc} = [0]"); hpc_done = True
