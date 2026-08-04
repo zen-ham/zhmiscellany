@@ -30,53 +30,8 @@ def get_actual_screen_resolution():
     return width, height
 
 
-def force_focus_window(hwnd):
-    import time
-    import psutil
-    import ctypes
-    if not WIN32_AVAILABLE:
-        print("focus_window only supports Windows!")
-        return
-    else:
-        import win32gui, win32con, win32process
-
-    SWP_NOMOVE = 0x0002
-    SWP_NOSIZE = 0x0001
-    HWND_TOPMOST = -1
-    HWND_NOTOPMOST = -2
-
-    # Import user32.dll for additional window handling
-    user32 = ctypes.windll.user32
-    try:
-        # Get window placement info
-        placement = win32gui.GetWindowPlacement(hwnd)
-
-        # Force restore if minimized
-        if placement[1] == win32con.SW_SHOWMINIMIZED:
-            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-
-        # Set window position and focus aggressively
-        user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
-        user32.SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
-
-        # Multiple focus attempts
-        user32.ShowWindow(hwnd, win32con.SW_SHOW)
-        user32.SetForegroundWindow(hwnd)
-        user32.BringWindowToTop(hwnd)
-        user32.SetActiveWindow(hwnd)
-        user32.SetFocus(hwnd)
-
-        # Force input processing
-        user32.BlockInput(True)
-        time.sleep(0.01)  # Brief pause
-        user32.BlockInput(False)
-
-    except Exception as e:
-        print(f"Focus attempt error: {str(e)}")
-
-
-# focus_window moved to zhmiscellany.macro.focus_window and now takes the hwnd of the window
-# instead of a process name. force_focus_window stays here, macro.focus_window calls it.
+# force_focus_window and focus_window both moved to zhmiscellany.macro, and focus_window now
+# takes the hwnd of the window instead of a process name.
 
 
 def setup_console_window(xy=(0, 0), wh=(400, 100), always_on_top=True):

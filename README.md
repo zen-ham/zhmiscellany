@@ -17,7 +17,7 @@ Can be installed with `pip install zhmiscellany`
 
 Supports Linux! (Some functionality reduced)
 
-Currently, the package stands at 151 functions/classes/bindings across 15 modules.
+Currently, the package stands at 152 functions/classes/bindings across 15 modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
@@ -1553,6 +1553,15 @@ The colour only has to match within threshold on each channel, which defaults to
 `zhmiscellany.macro.rgb_matches(a, b, threshold=3)`
 
 True if two colours are the same to within threshold on every channel.
+
+#
+
+`zhmiscellany.macro.force_focus_window()`
+---
+
+`zhmiscellany.macro.force_focus_window(hwnd)`
+
+One aggressive pass at focusing the window with the given hwnd, restoring it first if it's minimised. focus_window wraps this with retries, use that unless you specifically want a single shot.
 
 #
 

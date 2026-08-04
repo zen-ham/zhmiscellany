@@ -446,6 +446,53 @@ def rgb_matches(a, b, threshold=RGB_THRESHOLD):
     return all(abs(i - j) <= threshold for i, j in zip(a, b))
 
 
+def force_focus_window(hwnd):
+    """One aggressive pass at focusing the window with the given hwnd, restoring it first if
+    it's minimised. focus_window wraps this with retries, use that unless you want a single shot."""
+    if not IS_WINDOWS:
+        print("force_focus_window() only supports Windows! Functionality disabled")
+        return
+
+    import time
+    import ctypes
+    import win32gui
+    import win32con
+
+    SWP_NOMOVE = 0x0002
+    SWP_NOSIZE = 0x0001
+    HWND_TOPMOST = -1
+    HWND_NOTOPMOST = -2
+
+    # Import user32.dll for additional window handling
+    user32 = ctypes.windll.user32
+    try:
+        # Get window placement info
+        placement = win32gui.GetWindowPlacement(hwnd)
+
+        # Force restore if minimized
+        if placement[1] == win32con.SW_SHOWMINIMIZED:
+            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+
+        # Set window position and focus aggressively
+        user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
+        user32.SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
+
+        # Multiple focus attempts
+        user32.ShowWindow(hwnd, win32con.SW_SHOW)
+        user32.SetForegroundWindow(hwnd)
+        user32.BringWindowToTop(hwnd)
+        user32.SetActiveWindow(hwnd)
+        user32.SetFocus(hwnd)
+
+        # Force input processing
+        user32.BlockInput(True)
+        time.sleep(0.01)  # Brief pause
+        user32.BlockInput(False)
+
+    except Exception as e:
+        print(f"Focus attempt error: {str(e)}")
+
+
 def focus_window(hwnd, interval=0):
     """Drags the window with the given hwnd into focus, throwing every method Windows has at
     it since one alone often isn't enough. Pair it with zhmiscellany.gui.get_focused_window or
@@ -464,7 +511,7 @@ def focus_window(hwnd, interval=0):
 
     try:
         while True:
-            zhmiscellany.misc.force_focus_window(hwnd)
+            force_focus_window(hwnd)
 
             # Attaching to the foreground window's input thread lets the focus call through in
             # cases where Windows would otherwise refuse it.
@@ -474,7 +521,7 @@ def focus_window(hwnd, interval=0):
                 target_thread = user32.GetWindowThreadProcessId(hwnd, None)
 
                 user32.AttachThreadInput(target_thread, fore_thread, True)
-                zhmiscellany.misc.force_focus_window(hwnd)
+                force_focus_window(hwnd)
                 user32.AttachThreadInput(target_thread, fore_thread, False)
             except:
                 pass
