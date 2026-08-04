@@ -865,15 +865,6 @@ Retrieves the actual screen resolution using the Windows API.
 
 #
 
-`zhmiscellany.misc.focus_window()`
----
-
-`zhmiscellany.misc.focus_window(process_name, interval=0)`
-
-Attempts to bring a window of the specified process into focus, with multiple fallback methods.
-
-#
-
 `zhmiscellany.misc.setup_console_window()`
 ---
 

@@ -446,6 +446,50 @@ def rgb_matches(a, b, threshold=RGB_THRESHOLD):
     return all(abs(i - j) <= threshold for i, j in zip(a, b))
 
 
+def focus_window(hwnd, interval=0):
+    """Drags the window with the given hwnd into focus, throwing every method Windows has at
+    it since one alone often isn't enough. Pair it with zhmiscellany.gui.get_focused_window or
+    find_window_by_title_fuzzy to get the hwnd. interval of 0 tries once and returns, anything
+    else keeps re-focusing that many seconds apart, for holding focus on something that keeps
+    stealing it back."""
+    if not IS_WINDOWS:
+        print("focus_window() only supports Windows! Functionality disabled")
+        return
+
+    import time
+    import ctypes
+    import zhmiscellany.misc
+
+    user32 = ctypes.windll.user32
+
+    try:
+        while True:
+            zhmiscellany.misc.force_focus_window(hwnd)
+
+            # Attaching to the foreground window's input thread lets the focus call through in
+            # cases where Windows would otherwise refuse it.
+            try:
+                fore_hwnd = user32.GetForegroundWindow()
+                fore_thread = user32.GetWindowThreadProcessId(fore_hwnd, None)
+                target_thread = user32.GetWindowThreadProcessId(hwnd, None)
+
+                user32.AttachThreadInput(target_thread, fore_thread, True)
+                zhmiscellany.misc.force_focus_window(hwnd)
+                user32.AttachThreadInput(target_thread, fore_thread, False)
+            except:
+                pass
+
+            if interval == 0:
+                return
+            time.sleep(interval)
+
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+    finally:
+        # Ensure input is not blocked if script is interrupted
+        user32.BlockInput(False)
+
+
 def rgb_at_pos(x, y=None, rgb=None, threshold=RGB_THRESHOLD):
     """Returns the (r, g, b) of one pixel on screen, in the same coordinate system the
     mouse functions use. Blits just that single pixel out of the screen instead of grabbing

@@ -1009,15 +1009,6 @@ Retrieves the actual screen resolution using the Windows API.
 
 #
 
-`zhmiscellany.misc.focus_window()`
----
-
-`zhmiscellany.misc.focus_window(process_name, interval=0)`
-
-Attempts to bring a window of the specified process into focus, with multiple fallback methods.
-
-#
-
 `zhmiscellany.misc.setup_console_window()`
 ---
 
@@ -1562,6 +1553,16 @@ The colour only has to match within threshold on each channel, which defaults to
 `zhmiscellany.macro.rgb_matches(a, b, threshold=3)`
 
 True if two colours are the same to within threshold on every channel.
+
+#
+
+`zhmiscellany.macro.focus_window()`
+---
+
+`zhmiscellany.macro.focus_window(hwnd, interval=0)`
+
+Brings the window with the given hwnd into focus, throwing every method Windows has at it since one alone often isn't enough. Use zhmiscellany.gui.find_window_by_title_fuzzy or get_focused_window to get an hwnd.
+An interval of 0 tries once and returns, anything else keeps re-focusing that many seconds apart, for holding focus on something that keeps stealing it back. This used to be zhmiscellany.misc.focus_window and took a process name.
 
 #
 
