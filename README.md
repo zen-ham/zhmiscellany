@@ -17,7 +17,7 @@ Can be installed with `pip install zhmiscellany`
 
 Supports Linux! (Some functionality reduced)
 
-Currently, the package stands at 148 functions/classes/bindings across 15 modules.
+Currently, the package stands at 151 functions/classes/bindings across 15 modules.
 
 The git repository for this package can be found [here](https://github.com/zen-ham/zhmiscellany). The docs also look nicer on github.
 
@@ -1519,9 +1519,11 @@ keyboard.wait() requires a clean press of the specified key, and concurrent key 
 `zhmiscellany.macro.record_actions_to_code()`
 ---
 
-`zhmiscellany.macro.record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9')`
+`zhmiscellany.macro.record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9', DRAG_THRESHOLD=10, RGB_KEY='f10', RGB_DELAY=2)`
 
 Records keyboard and mouse events and generates zhmiscellany.macro code to emulate them, I'm so tired..
+A press and release within DRAG_THRESHOLD pixels of each other counts as a click, anything further apart is treated as a drag and gets split over two lines, so a tiny wobble while clicking doesn't turn into a drag.
+Pressing RGB_KEY while hovering something takes the mouse position, waits RGB_DELAY seconds so you can move off it (buttons often highlight under the cursor), samples the colour there, and injects a wait_rgb_at_pos into the generated script at that point. Handy for things that take an unpredictable amount of time, like waiting for a game to finish launching before clicking play, instead of guessing at a sleep.
 
 #
 
@@ -1531,6 +1533,35 @@ Records keyboard and mouse events and generates zhmiscellany.macro code to emula
 `zhmiscellany.macro.is_key_pressed_async(vk_code)`
 
 See if a key is pressed.
+
+#
+
+`zhmiscellany.macro.rgb_at_pos()`
+---
+
+`zhmiscellany.macro.rgb_at_pos(x, y=None, rgb=None, threshold=3)`
+
+Returns the (r, g, b) of one pixel on screen, using the same coordinate system as the mouse functions. Takes x and y, or a single (x, y) tuple. Grabs just that one pixel out of the screen instead of screenshotting everything and throwing the rest away, so it's cheap enough to poll in a loop without the stutter screenshot libraries cause.
+Pass an rgb to compare against and you get True/False back instead of the colour, matching within threshold per channel so a pixel that looks the same but is off by a hair still counts.
+
+#
+
+`zhmiscellany.macro.wait_rgb_at_pos()`
+---
+
+`zhmiscellany.macro.wait_rgb_at_pos(x, y=None, rgb=None, fps=10, timeout=None, threshold=3)`
+
+Blocks until the pixel at the given position is the given colour, checking with rgb_at_pos fps times a second. Returns True once it matches, or False if timeout seconds pass first. Use it instead of hardcoding a sleep when you don't know how long something will take, like waiting for a game to load before clicking play.
+The colour only has to match within threshold on each channel, which defaults to just under what an eye can pick out, so a colour that's visually identical but a tiny bit different still counts.
+
+#
+
+`zhmiscellany.macro.rgb_matches()`
+---
+
+`zhmiscellany.macro.rgb_matches(a, b, threshold=3)`
+
+True if two colours are the same to within threshold on every channel.
 
 #
 

@@ -433,6 +433,137 @@ def get_mouse_buttons():
     ]
 
 
+# How far apart two colours can be per channel and still count as the same colour. Sits a
+# little under the point where an eye would notice the difference, so a pixel that looks
+# identical but is off by a hair (compression, dithering, colour management) still matches.
+RGB_THRESHOLD = 3
+
+
+def rgb_matches(a, b, threshold=RGB_THRESHOLD):
+    """True if two colours are the same to within threshold on every channel."""
+    if a is None or b is None:
+        return False
+    return all(abs(i - j) <= threshold for i, j in zip(a, b))
+
+
+def rgb_at_pos(x, y=None, rgb=None, threshold=RGB_THRESHOLD):
+    """Returns the (r, g, b) of one pixel on screen, in the same coordinate system the
+    mouse functions use. Blits just that single pixel out of the screen instead of grabbing
+    a whole screenshot and throwing all of it away, so it's cheap enough to poll in a loop
+    without the stutter screenshot libraries cause.
+
+    Pass an rgb to compare against and you get True/False instead, matching within threshold
+    so a colour that looks the same but is off by a hair still counts."""
+    if isinstance(x, (tuple, list)):
+        if rgb is None and isinstance(y, (tuple, list)):  # called as rgb_at_pos((x, y), (r, g, b))
+            rgb = y
+        x, y = x[0], x[1]
+
+    colour = _rgb_at_pos_raw(x, y)
+    if rgb is None:
+        return colour
+    return rgb_matches(colour, rgb, threshold)
+
+
+def _rgb_at_pos_raw(x, y):
+    """The actual single pixel screen read, no colour comparison."""
+    if not IS_WINDOWS:
+        print("rgb_at_pos() only supports Windows! Returning None")
+        return None
+
+    import ctypes
+    from ctypes import wintypes
+
+    x, y = int(x), int(y)
+
+    class BITMAPINFOHEADER(ctypes.Structure):
+        _fields_ = [('biSize', wintypes.DWORD), ('biWidth', wintypes.LONG),
+                    ('biHeight', wintypes.LONG), ('biPlanes', wintypes.WORD),
+                    ('biBitCount', wintypes.WORD), ('biCompression', wintypes.DWORD),
+                    ('biSizeImage', wintypes.DWORD), ('biXPelsPerMeter', wintypes.LONG),
+                    ('biYPelsPerMeter', wintypes.LONG), ('biClrUsed', wintypes.DWORD),
+                    ('biClrImportant', wintypes.DWORD)]
+
+    class BITMAPINFO(ctypes.Structure):
+        _fields_ = [('bmiHeader', BITMAPINFOHEADER), ('bmiColors', wintypes.DWORD * 3)]
+
+    SRCCOPY = 0x00CC0020
+    DIB_RGB_COLORS = 0
+    BI_RGB = 0
+
+    user32 = ctypes.windll.user32
+    gdi32 = ctypes.windll.gdi32
+
+    screen_dc = user32.GetDC(0)
+    if not screen_dc:
+        return None
+    mem_dc = None
+    bitmap = None
+    old_bitmap = None
+    try:
+        mem_dc = gdi32.CreateCompatibleDC(screen_dc)
+        bitmap = gdi32.CreateCompatibleBitmap(screen_dc, 1, 1)  # a 1x1 region, the smallest grab there is
+        if not mem_dc or not bitmap:
+            return None
+        old_bitmap = gdi32.SelectObject(mem_dc, bitmap)
+        if not gdi32.BitBlt(mem_dc, 0, 0, 1, 1, screen_dc, x, y, SRCCOPY):
+            return None
+
+        info = BITMAPINFO()
+        info.bmiHeader.biSize = ctypes.sizeof(BITMAPINFOHEADER)
+        info.bmiHeader.biWidth = 1
+        info.bmiHeader.biHeight = -1  # top down
+        info.bmiHeader.biPlanes = 1
+        info.bmiHeader.biBitCount = 32
+        info.bmiHeader.biCompression = BI_RGB
+
+        buffer = (ctypes.c_ubyte * 4)()
+        if not gdi32.GetDIBits(mem_dc, bitmap, 0, 1, ctypes.byref(buffer), ctypes.byref(info), DIB_RGB_COLORS):
+            return None
+        return (buffer[2], buffer[1], buffer[0])  # GDI hands it back as BGRA
+    finally:
+        if old_bitmap:
+            gdi32.SelectObject(mem_dc, old_bitmap)
+        if bitmap:
+            gdi32.DeleteObject(bitmap)
+        if mem_dc:
+            gdi32.DeleteDC(mem_dc)
+        user32.ReleaseDC(0, screen_dc)
+
+
+def wait_rgb_at_pos(x, y=None, rgb=None, fps=10, timeout=None, threshold=RGB_THRESHOLD):
+    """Blocks until the pixel at the given position is the given colour, polling with
+    rgb_at_pos at `fps` checks a second. Handy for waiting on something whose timing you
+    can't predict, like a game finishing loading, instead of guessing at a sleep.
+    Returns True once the colour matches, or False if `timeout` seconds go by first.
+    The colour only has to match within `threshold` per channel, so one that looks the
+    same but is off by a hair still counts."""
+    if isinstance(x, (tuple, list)):
+        if rgb is None:  # called as wait_rgb_at_pos((x, y), (r, g, b))
+            rgb = y
+        x, y = x[0], x[1]
+    if rgb is None:
+        raise Exception('wait_rgb_at_pos() needs a colour to wait for, eg wait_rgb_at_pos((100, 200), (255, 0, 0))')
+
+    if not IS_WINDOWS:
+        print("wait_rgb_at_pos() only supports Windows! Returning False")
+        return False
+
+    import time
+    import zhmiscellany.misc
+
+    rgb = tuple(rgb)
+    interval = 1 / fps if fps else 0
+    start_time = time.time()
+    while True:
+        if rgb_matches(_rgb_at_pos_raw(x, y), rgb, threshold):
+            return True
+        if timeout is not None and time.time() - start_time >= timeout:
+            return False
+        if interval:
+            zhmiscellany.misc.high_precision_sleep(interval)
+
+
 def better_wait_for(key, wait_for_release=False):
     import threading
     import keyboard
@@ -500,8 +631,9 @@ def toggle_function(func, key='f8', blocking=True, hold=False, event=False, evl=
         t.start()
         return t
 
-def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
+def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9', DRAG_THRESHOLD=10, RGB_KEY='f10', RGB_DELAY=2):
     import time
+    import threading
     import pynput
     import pyperclip
 
@@ -563,6 +695,7 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
             "m = zhmiscellany.macro.click_pixel",
             "k = zhmiscellany.macro.press_key",
             "s = zhmiscellany.macro.scroll",
+            "w = zhmiscellany.macro.wait_rgb_at_pos",
             "sleep = zhmiscellany.misc.high_precision_sleep",
             "click_down_time = 1/30",
             "click_release_time = 1/30",
@@ -620,7 +753,13 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
                         action_str = value
                         break
 
-                if next_event and next_event['action'] == 'click' and (next_event['x'], next_event['y']) == (x, y):
+                # A press and release close enough together is one click, not a drag. Without a
+                # threshold a 1px wobble while clicking gets recorded as a drag and gets split
+                # across two lines, which it shouldn't be.
+                if (next_event and next_event['action'] == 'click' and pressed and not next_event['pressed']
+                        and next_event['button'] == button
+                        and abs(next_event['x'] - x) <= DRAG_THRESHOLD
+                        and abs(next_event['y'] - y) <= DRAG_THRESHOLD):
                     action_str = ''
                     skip_next = 1
 
@@ -629,6 +768,13 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
             elif action == 'move':
                 x, y = event['x'], event['y']
                 code_lines.append(f"m(({x}, {y}), click_end_duration=mouse_move_dly)")
+
+            elif action == 'wait_rgb':
+                if event['rgb'] is None:
+                    print(f"a colour wait was marked at ({event['x']}, {event['y']}) but recording stopped before it "
+                          f"could be sampled, leaving it out of the script")
+                else:
+                    code_lines.append(f"w(({event['x']}, {event['y']}), {tuple(event['rgb'])})")
 
             elif action == 'scroll':
                 x, y, dx, dy = event['x'], event['y'], event['dx'], event['dy']
@@ -653,6 +799,7 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
                 key_str = format_key(key)
                 if '.' in key_str:
                     key_str = key_str.split('.')[1]
+                key_str = key_str.strip("'")  # format_key already quotes char keys, don't quote them twice
                 replacements = {
                     'ctrl': 'ctrl',
                     'shift': 'shift',
@@ -711,12 +858,40 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
     def on_scroll(x, y, dx, dy):
         events.append({'action': 'scroll', 'x': x, 'y': y, 'dx': dx, 'dy': dy, 'time': time.time()})
 
+    rgb_key_held = [False]
+
+    def mark_rgb_wait():
+        """Records 'wait until this pixel is this colour' at this point in the script. The
+        position is taken now, but the colour is sampled RGB_DELAY seconds later so you have
+        time to move the mouse off the thing, since buttons tend to highlight under the cursor."""
+        x, y = get_mouse_xy()
+        # Appended immediately so it lands in the right place in the script, the colour gets
+        # filled in later once the mouse is out of the way.
+        event = {'action': 'wait_rgb', 'x': x, 'y': y, 'rgb': None, 'time': time.time()}
+        events.append(event)
+        print(f"marked ({x}, {y}) for a colour wait, move the mouse off it, sampling in {RGB_DELAY}s...")
+
+        def sample():
+            time.sleep(RGB_DELAY)
+            event['rgb'] = rgb_at_pos(x, y)
+            print(f"sampled {event['rgb']} at ({x}, {y}), the script will wait for that colour here")
+
+        threading.Thread(target=sample, daemon=True).start()
+
     def on_press(key):
+        if getattr(key, 'name', None) == RGB_KEY:
+            if not rgb_key_held[0]:  # ignore the key repeating while it's held down
+                rgb_key_held[0] = True
+                mark_rgb_wait()
+            return
         events.append({'action': 'key_press', 'key': key, 'time': time.time()})
 
     def on_release(key):
         try:
             print(key.name)
+            if key.name == RGB_KEY:
+                rgb_key_held[0] = False
+                return
             if key.name == STOP_KEY:
                 # Stop listeners
                 return False
@@ -725,6 +900,7 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
         events.append({'action': 'key_release', 'key': key, 'time': time.time()})
 
     print(f"Press '{STOP_KEY}' to stop recording and generate the script.")
+    print(f"Press '{RGB_KEY}' while hovering something to make the script wait for it to appear before moving on.")
     print("...")
 
     start_time = time.time()
@@ -741,6 +917,12 @@ def record_actions_to_code(RECORD_MOUSE_MOVEMENT=False, STOP_KEY='f9'):
 
     # Stop the mouse listener explicitly once the keyboard one has finished
     mouse_listener.stop()
+
+    # A colour wait marked just before stopping may still be waiting out its RGB_DELAY, give it
+    # a chance to land rather than dropping it from the script.
+    deadline = time.time() + RGB_DELAY + 0.5
+    while any(e['action'] == 'wait_rgb' and e['rgb'] is None for e in events) and time.time() < deadline:
+        time.sleep(0.05)
 
     # Generate the replay script
     return generate_code(events, start_time)
